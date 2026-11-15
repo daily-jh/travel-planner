@@ -24,6 +24,8 @@ Claude에게 여행 메모(날짜·인원·숙소·항공·가고 싶은 곳)를
 테마: `hakata`(남색·매화), `ocean`(바다·섬), `forest`(숲·온천), `snow`(겨울·설경), `citrus`(열대·휴양), `temple`(고도·사찰).
 일본이 아닌 곳은 `lang`(회화 언어·택시 카드 문장)과 `timezone`을 바꿔요. 아는 도시는 `new_trip.py`가 자동으로 넣어요.
 
+국내 여행도 돼요. `--city 강릉`처럼 국내 도시를 주면 `country`가 `한국`이 되고, 장소 링크는 **네이버 지도**(휴대폰은 네이버 지도 앱)로 열려요. 환율·면세·회화·택시 카드·현지 시각처럼 해외에서만 쓰는 도구는 숨겨요. 자세한 건 [`planner/TRIP_FORMAT.md`](planner/TRIP_FORMAT.md)의 '국내 여행'.
+
 로컬에서 보기: `python planner/build.py` 후 `_site/index.html`을 열어요.
 
 ## 캘린더

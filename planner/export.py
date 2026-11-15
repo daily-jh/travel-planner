@@ -59,6 +59,7 @@ def title(ws, text, sub, pri):
 
 
 def workbook(slug, t):
+    B.use_map(t)
     pri, soft = theme_hex(t)
     plain = B.plain
     wb = Workbook()
@@ -66,6 +67,8 @@ def workbook(slug, t):
     start, end = B.d_of(t["start"]), B.d_of(t["end"])
     nights = (end - start).days
     cur = t.get("currency") or {}
+    if B.domestic(t) or not cur:  # 국내 여행: 원화 그대로 (환율 칸은 100 = 1:1)
+        cur = {"symbol": "₩", "fallback_krw_per_100": 100}
     sym = cur.get("symbol", "")
 
     # 1. 요약
@@ -102,7 +105,7 @@ def workbook(slug, t):
         for p in d.get("places", []):
             rows.append([f"{i}일차 {B.md(d['date'])}", p["name"], p.get("local", ""), plain(p.get("address", "")), plain(p.get("hours", "")),
                          plain(p.get("cost", "")), plain(p.get("why", "")), B.gmap(p.get("query") or p["name"])])
-    n = table(ws, ["날짜", "장소", "현지 이름", "주소", "영업·휴무", "예상 비용", "추천 이유", "구글 지도"], rows, [14, 26, 24, 26, 34, 18, 40, 20], fill=pri)
+    n = table(ws, ["날짜", "장소", "현지 이름", "주소", "영업·휴무", "예상 비용", "추천 이유", B.MAP["name"]], rows, [14, 26, 24, 26, 34, 18, 40, 20], fill=pri)
     for r in range(2, n + 1):
         c = ws.cell(row=r, column=8)
         c.hyperlink, c.value = c.value, "지도 열기"
@@ -112,7 +115,7 @@ def workbook(slug, t):
     # 4. 후보
     ws = wb.create_sheet("후보")
     rows = [[c["group"], c["name"], B.STATUS[c["status"]], c.get("rating", ""), c.get("category", ""), c.get("memo", ""), plain(c.get("reason", ""))] for c in t.get("candidates", [])]
-    n = table(ws, ["분류", "장소", "상태", "구글 평점(리뷰)", "종류", "지도 메모", "이유"], rows, [26, 30, 7, 14, 18, 14, 44], fill=pri)
+    n = table(ws, ["분류", "장소", "상태", "평점(리뷰)", "종류", "지도 메모", "이유"], rows, [26, 30, 7, 14, 18, 14, 44], fill=pri)
     ws.auto_filter.ref = f"A1:G{n}"
 
     # 5. 예상 비용: 환율 칸을 고치면 원화가 다시 계산된다
@@ -120,7 +123,7 @@ def workbook(slug, t):
     if b:
         ws = wb.create_sheet("예상 비용")
         title(ws, b["title"], plain(b.get("note", "")), pri)
-        ws["A3"], ws["B3"] = f"원화 환율 (₩ / {sym}100)", cur.get("fallback_krw_per_100", 0)
+        ws["A3"], ws["B3"] = (f"원화 환율 (₩ / {sym}100)" if sym != "₩" else "원화 그대로 (100)"), cur.get("fallback_krw_per_100", 0)
         ws["B3"].font, ws["B3"].fill = INPUT, EDIT_FILL
         ws["C3"] = "가정: trip.json 기본 환율. 바뀌면 이 칸만 고쳐요."
         ws["C3"].font = Font(name=FONT, italic=True, color="6E6E73")
@@ -173,7 +176,8 @@ def workbook(slug, t):
     summary = [("총 지출", f"=SUM({R})"), ("1인당", f"=IFERROR(K5/{len(names)},0)")]
     for n_ in names:
         summary.append((f"{n_}가 낸 돈", f'=SUMIF($D$5:$D${rows_end},"{n_}",{R})'))
-    summary.append(("면세 구매 합계", f'=SUMIF($F$5:$F${rows_end},"면세",{R})'))
+    if not B.domestic(t):
+        summary.append(("면세 구매 합계", f'=SUMIF($F$5:$F${rows_end},"면세",{R})'))
     for k, (lab, f) in enumerate(summary, 5):
         ws[f"J{k}"], ws[f"K{k}"] = lab, f
         ws[f"K{k}"].number_format = '#,##0'
@@ -204,7 +208,8 @@ def workbook(slug, t):
         ws[f"F1"], ws[f"G1"] = "챙긴 개수", f'=COUNTIF(D2:D{n},"?*")&" / {len(rows)}"'
         dv = DataValidation(type="list", formula1='"✓,"', allow_blank=True)
         ws.add_data_validation(dv)
-        dv.add(f"D2:D{n}")
+        if n >= 2:
+            dv.add(f"D2:D{n}")
     bf = t.get("before")
     if bf:
         ws = wb.create_sheet("출발 전 확인")
@@ -214,7 +219,8 @@ def workbook(slug, t):
             ws[f"C{r}"].fill, ws[f"C{r}"].font = EDIT_FILL, INPUT
         dv = DataValidation(type="list", formula1='"✓,"', allow_blank=True)
         ws.add_data_validation(dv)
-        dv.add(f"C2:C{n}")
+        if n >= 2:  # 빈 목록이면 범위를 만들 수 없다
+            dv.add(f"C2:C{n}")
     wb.properties.title = f"{short} 여행 일정표"
     wb.properties.creator = "여행 플래너"
     return wb
