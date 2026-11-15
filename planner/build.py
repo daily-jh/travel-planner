@@ -216,25 +216,69 @@ def render_trip(slug, t):
     # 여행 도구 (트리플·완더로그·스티플에서 흔한 기능을 정적 사이트로)
     cur = t.get("currency") or {}
     sym = cur.get("symbol", "")
-    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><p class="lead">날씨, 환율, 현지 말, 함께 쓴 돈을 한곳에서 봐요.</p><div class="tools">'
-      '<button type="button" class="tool t-wx" data-open="tool-wx"><span class="ti">☀︎</span><b>날씨</b><small class="wx-mini">' + e((t.get("geo") or {}).get("city", "")) + '</small></button>'
-      '<button type="button" class="tool t-fx" data-open="tool-fx"><span class="ti">' + e(sym or "₩") + '</span><b>환율 계산</b><small class="fx-mini">' + e(f'{sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")}' if cur else "") + '</small></button>'
-      + ('<button type="button" class="tool t-ph" data-open="tool-ph"><span class="ti">あ</span><b>현지 한마디</b><small>누르면 소리로 들려요</small></button>' if t.get("phrases") else '')
-      + '<button type="button" class="tool t-ex" data-open="tool-ex"><span class="ti">÷</span><b>함께 쓴 돈</b><small class="ex-mini">기록하고 나눠요</small></button>'
-      '<a class="tool t-pk" href="#before"><span class="ti">✓</span><b>준비물</b><small class="pk-mini">출발 전 체크</small></a>'
-      '<button type="button" class="tool t-tz" data-open="tool-tz"><span class="ti">◷</span><b>현지 시각</b><small class="tz-mini">' + e(t.get("local_tz_note", "")) + '</small></button>'
-      '</div></section>')
-    w(sheet("tool-wx", "날씨", e((t.get("geo") or {}).get("city", "")) + " · 여행 날짜 기준", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">출발 16일 전부터는 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨를 보여 줘요. 자료: Open-Meteo</p>'))
+    city = (t.get("geo") or {}).get("city", "")
+    ph = t.get("phrases") or []
+    if ph and isinstance(ph[0], list):
+        ph = [{"cat": "기본", "items": ph}]
+    pk = t.get("packing") or []
+    npk = sum(len(c["items"]) for c in pk)
+    fx_mini = f'{sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")}' if cur else ""
+    tiles = [
+        ("t-wx", "tool-wx", "☀︎", "날씨", f'<small class="wx-mini">{e(city)}</small>'),
+        ("t-fx", "tool-fx", e(sym or "₩"), "환율 계산", f'<small class="fx-mini">{e(fx_mini)}</small>'),
+        ("t-ph", "tool-ph", "あ", "일본어 회화", f'<small>{sum(len(c["items"]) for c in ph)}문장 · 소리로 듣기</small>') if ph else None,
+        ("t-bag", "tool-bag", "⌸", "캐리어 짐", f'<small class="bag-mini">{npk}개 챙기기</small>') if pk else None,
+        ("t-ex", "tool-ex", "÷", "함께 쓴 돈", '<small class="ex-mini">기록하고 나눠요</small>'),
+        ("t-go", "", "➚", "다음 장소 길찾기", '<small class="go-mini">구글 지도로 열기</small>'),
+        ("t-pk", "", "✓", "출발 전 확인", '<small class="pk-mini">예약·확인 체크</small>'),
+        ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급·영사콜센터</small>') if t.get("emergency") else None,
+        ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
+    ]
+    tl = []
+    for x in tiles:
+        if not x:
+            continue
+        cls, did, ic, name, sub = x
+        if cls == "t-pk":
+            tl.append(f'<a class="tool {cls}" href="#before"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
+        elif cls == "t-go":
+            tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
+        else:
+            tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
+    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><p class="lead">날씨, 환율, 회화, 짐 싸기, 함께 쓴 돈을 한곳에서 봐요.</p><div class="tools">' + "".join(tl) + '</div></section>')
+    w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행 날짜는 출발 16일 전부터 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요. 자료: Open-Meteo</p>'))
     if cur:
-        w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx"><label class="fx-row"><span>{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="{e(cur.get("name", ""))} 금액"></label>'
-              f'<div class="fx-out">₩ <b>-</b></div><div class="fx-quick">' + "".join(f'<button type="button" class="btn" data-fx="{v}">{sym}{v:,}</button>' for v in (500, 1000, 3000, 5000, 10000)) + '</div>'
-              f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
-    if t.get("phrases"):
-        w(sheet("tool-ph", "현지 한마디", "누르면 일본어 발음이 나와요", '<ul class="phr">' + "".join(f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(k)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button></li>' for k, j, r in t["phrases"]) + '</ul>'))
+        w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
+              f'<label class="fx-row"><span class="fx-from">{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="금액"></label>'
+              f'<div class="fx-out"><span class="fx-to">₩</span> <b>-</b></div><div class="fx-quick"></div>'
+              f'<p class="fx-tax">면세: 같은 가게에서 하루 세금 제외 {e(sym)}5,000 이상 사면 소비세 10%를 빼 줘요. 여권을 꼭 챙겨요.</p>'
+              f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
+    if ph:
+        tabs = '<div class="seg" role="tablist">' + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>'
+        lists = "".join(f'<ul class="phr" data-cat="{k}"{"" if k == 0 else " hidden"}>' + "".join(
+            f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(ko)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button><button type="button" class="big" data-big="{e(j)}" data-bigko="{e(ko)}" aria-label="크게 보여주기">⤢</button></li>'
+            for ko, j, r in c["items"]) + '</ul>' for k, c in enumerate(ph))
+        w(sheet("tool-ph", "일본어 회화", "누르면 소리로 들려요 · ⤢ 누르면 크게 보여 줘요", tabs + lists))
+        w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
+    if pk:
+        inner = ('<div class="bag-top"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" pathLength="100"/></svg><b class="bag-pct">0%</b></div>'
+                 '<div class="bag-filter seg" role="group"><button type="button" data-bf="all" aria-pressed="true">전체</button><button type="button" data-bf="기내" aria-pressed="false">기내</button><button type="button" data-bf="위탁" aria-pressed="false">위탁</button><button type="button" data-bf="left" aria-pressed="false">남은 것</button></div></div>'
+                 + "".join(f'<div class="bag-cat"><h4>{e(c["cat"])}</h4><ul class="bag">' + "".join(
+                     f'<li data-bag="{e(c["cat"])}-{n}" data-where="{e(wh)}" tabindex="0" role="checkbox" aria-checked="false"><span class="box"></span><span class="nm">{e(it)}</span><span class="wh {"cab" if wh == "기내" else "chk"}">{e(wh)}</span></li>'
+                     for n, (it, wh) in enumerate(c["items"])) + '</ul></div>' for c in pk)
+                 + '<form class="bag-add"><input name="it" placeholder="챙길 것 직접 추가" required><select name="wh" aria-label="기내 또는 위탁"><option>기내</option><option>위탁</option></select><button class="btn primary" type="submit">추가</button></form>'
+                 '<div class="bag-mine"></div><button type="button" class="btn bag-reset">체크 모두 지우기</button>')
+        w(sheet("tool-bag", "캐리어 짐 싸기", "2월 말 후쿠오카 날씨 기준 · 이 휴대폰에 저장돼요", inner))
+    cats = ["식비", "교통", "쇼핑", "카페·간식", "입장료", "기타"]
     w(sheet("tool-ex", "함께 쓴 돈", "이 휴대폰에 저장돼요", '<form class="exf"><input name="what" placeholder="무엇에 썼나요 (예: 라멘)" required>'
+            '<div class="exf-cat seg" role="group" aria-label="분류">' + "".join(f'<button type="button" data-cat="{c}" aria-pressed="{str(k == 0).lower()}">{c}</button>' for k, c in enumerate(cats)) + '</div>'
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
-            '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}"{" aria-pressed=true" if n == 0 else " aria-pressed=false"}>{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
-            '<button class="btn primary" type="submit">추가</button></form><div class="exsum"></div><ul class="exlist"></ul>'))
+            '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
+            '<button class="btn primary" type="submit">추가</button></form><div class="exsum"></div><div class="excat"></div><ul class="exlist"></ul>'))
+    if t.get("emergency"):
+        w(sheet("tool-sos", "비상 연락", "누르면 전화가 걸려요", '<ul class="sos">' + "".join(
+            (f'<li><a href="tel:{e(num.replace("-", ""))}"><span>{e(nm)}</span><b>{e(num)}</b></a></li>' if any(ch.isdigit() for ch in num) else f'<li><a href="{e(t.get("emergency_link", "#"))}" target="_blank" rel="noopener"><span>{e(nm)}</span><b>{e(num)} ↗</b></a></li>')
+            for nm, num in t["emergency"]) + '</ul><p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>'))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2><span class="num">2</span>한눈에 보기</h2><p class="lead">숙소, 이동, 날짜별 강도·복귀 계획이에요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)

@@ -294,18 +294,26 @@ document.querySelectorAll('.route').forEach(function(card){
   var q=new URLSearchParams(location.search).get('now'); // 미리보기: ?now=2027-02-27T13:30
   var localNow=function(){ return q?new Date(q):tzNow('Asia/Tokyo'); };
 
-  // 환율
-  var cur=C.currency||{}, rate=(cur.fallback_krw_per_100||0)/100, live=false;
+  // 환율 (양방향)
+  var cur=C.currency||{}, rate=(cur.fallback_krw_per_100||0)/100, dir='f', sym=cur.symbol||'';
   var fxIn=document.querySelector('.fx-in'), fxOut=document.querySelector('.fx-out b'), fxRate=document.querySelector('.fx-rate'), fxMini=document.querySelector('.fx-mini');
-  function fx(){ if(fxIn&&fxOut) fxOut.textContent=fmt((parseFloat(fxIn.value)||0)*rate); }
-  if(fxIn){ fxIn.addEventListener('input',fx); fx();
-    document.querySelectorAll('[data-fx]').forEach(function(b){ b.addEventListener('click',function(){ fxIn.value=b.dataset.fx; fx(); }); });
+  var fxQ=document.querySelector('.fx-quick'), fxFrom=document.querySelector('.fx-from'), fxTo=document.querySelector('.fx-to');
+  var QV={f:[500,1000,3000,5000,10000],k:[10000,30000,50000,100000]};
+  function fx(){ if(!fxIn||!fxOut) return; var v=parseFloat(fxIn.value)||0; fxOut.textContent=dir==='f'?fmt(v*rate):fmt(v/(rate||1)); }
+  function fxDir(d){ dir=d; if(!fxQ) return;
+    document.querySelectorAll('[data-dir]').forEach(function(b){ b.setAttribute('aria-pressed',b.dataset.dir===d); });
+    fxFrom.textContent=d==='f'?sym:'₩'; fxTo.textContent=d==='f'?'₩':sym;
+    fxQ.innerHTML=QV[d].map(function(v){ return '<button type="button" class="btn" data-fx="'+v+'">'+(d==='f'?sym:'₩')+fmt(v)+'</button>'; }).join('');
+    fxIn.value=QV[d][1]; fx(); }
+  if(fxIn){ fxIn.addEventListener('input',fx);
+    document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-fx]'); if(b){ fxIn.value=b.dataset.fx; fx(); } var d=ev.target.closest('[data-dir]'); if(d) fxDir(d.dataset.dir); });
+    fxDir('f');
     if(cur.code) fetch('https://open.er-api.com/v6/latest/'+cur.code).then(function(r){return r.json()}).then(function(j){
-      if(j&&j.rates&&j.rates.KRW){ rate=j.rates.KRW; live=true; fx();
+      if(j&&j.rates&&j.rates.KRW){ rate=j.rates.KRW; fx();
         var t=(j.time_last_update_utc||'').slice(5,16);
-        fxRate.textContent=cur.symbol+'100 ≈ ₩'+fmt(rate*100)+' · '+t+' 기준 환율';
-        if(fxMini) fxMini.textContent=cur.symbol+'100 ≈ ₩'+fmt(rate*100); }
-    }).catch(function(){ fxRate.textContent=cur.symbol+'100 ≈ ₩'+(cur.fallback_krw_per_100||'')+' (기본값, 인터넷 연결 시 실시간으로 바뀌어요)'; });
+        fxRate.textContent=sym+'100 ≈ ₩'+fmt(rate*100)+' · '+t+' 기준 환율';
+        if(fxMini) fxMini.textContent=sym+'100 ≈ ₩'+fmt(rate*100); }
+    }).catch(function(){ fxRate.textContent=sym+'100 ≈ ₩'+(cur.fallback_krw_per_100||'')+' (기본값, 인터넷 연결 시 실시간으로 바뀌어요)'; });
   }
 
   // 날씨: 16일 안이면 예보, 아니면 작년 같은 날짜 실측
@@ -348,27 +356,73 @@ document.querySelectorAll('.route').forEach(function(card){
     if(th) th.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:'Asia/Seoul'},o)); }
   clock(); setInterval(clock,30000);
 
-  // 함께 쓴 돈
+  // 함께 쓴 돈 (분류·원화·날짜별)
   var EK='tp-exp-'+slug, ex=LS.get(EK,[]), names=(C.travelers||[]).map(function(x){return x.name});
-  var exf=document.querySelector('.exf'), exl=document.querySelector('.exlist'), exs=document.querySelector('.exsum'), exMini=document.querySelector('.ex-mini');
+  var exf=document.querySelector('.exf'), exl=document.querySelector('.exlist'), exs=document.querySelector('.exsum'), exc=document.querySelector('.excat'), exMini=document.querySelector('.ex-mini');
+  var krw=function(v){ return rate&&cur.symbol?' <small>₩'+fmt(v*rate)+'</small>':''; };
   function renderEx(){
-    if(!exl) return; var sym=cur.symbol||'₩', tot=0, paid={}; names.forEach(function(n){paid[n]=0});
-    exl.innerHTML=ex.map(function(x,i){ tot+=x.amt; paid[x.who]=(paid[x.who]||0)+x.amt;
-      return '<li><span class="w">'+x.what.replace(/</g,'&lt;')+'<small>'+x.who+' · '+x.date+'</small></span><b>'+sym+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+i+'" aria-label="삭제">✕</button></li>'; }).reverse().join('');
+    if(!exl) return; var s0=cur.symbol||'₩', tot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
+    ex.forEach(function(x){ tot+=x.amt; paid[x.who]=(paid[x.who]||0)+x.amt; byCat[x.cat||'기타']=(byCat[x.cat||'기타']||0)+x.amt; byDay[x.date]=(byDay[x.date]||0)+x.amt; });
+    var day=null, rows=[];
+    ex.map(function(x,i){return [x,i]}).reverse().forEach(function(p){ var x=p[0];
+      if(x.date!==day){ day=x.date; rows.push('<li class="exday"><span>'+day+'</span><b>'+s0+fmt(byDay[day])+'</b></li>'); }
+      rows.push('<li><span class="w">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+x.who+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
+    exl.innerHTML=rows.join('');
     var share=names.length?tot/names.length:0, line='';
     if(names.length===2&&tot>0){ var a=names[0],b=names[1],d=paid[a]-share;
-      line=Math.abs(d)<1?'딱 반반이에요':(d>0?b+' → '+a:a+' → '+b)+' <b>'+sym+fmt(Math.abs(d))+'</b>'+(rate&&cur.symbol?' (₩'+fmt(Math.abs(d)*rate)+')':''); }
-    exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+sym+fmt(tot)+'</b></div><div><small>1인당</small><b>'+sym+fmt(share)+'</b></div><div class="settle"><small>정산</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
-    if(exMini) exMini.textContent=ex.length?'총 '+sym+fmt(tot):'기록하고 나눠요';
+      line=Math.abs(d)<1?'딱 반반이에요':(d>0?b+' → '+a:a+' → '+b)+' <b>'+s0+fmt(Math.abs(d))+'</b>'+krw(Math.abs(d)); }
+    exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+s0+fmt(tot)+'</b>'+krw(tot)+'</div><div><small>1인당</small><b>'+s0+fmt(share)+'</b>'+krw(share)+'</div><div class="settle"><small>정산</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
+    var cs=Object.keys(byCat).sort(function(x,y){return byCat[y]-byCat[x]});
+    exc.innerHTML=cs.length?'<div class="catbar">'+cs.map(function(c,i){return '<i style="flex:'+byCat[c]+'" class="cb'+i+'"></i>'}).join('')+'</div><div class="catleg">'+cs.map(function(c,i){return '<span><i class="cb'+i+'"></i>'+c+' '+s0+fmt(byCat[c])+'</span>'}).join('')+'</div>':'';
+    if(exMini) exMini.textContent=ex.length?'총 '+s0+fmt(tot):'기록하고 나눠요';
   }
   if(exf){
-    exf.addEventListener('click',function(ev){ var b=ev.target.closest('[data-payer]'); if(!b) return; exf.querySelectorAll('[data-payer]').forEach(function(x){x.setAttribute('aria-pressed',x===b)}); });
-    exf.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(exf), who=exf.querySelector('[data-payer][aria-pressed="true"]');
+    exf.addEventListener('click',function(ev){ var b=ev.target.closest('[data-payer]'); if(b) exf.querySelectorAll('[data-payer]').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+      var c=ev.target.closest('[data-cat]'); if(c) exf.querySelectorAll('[data-cat]').forEach(function(x){x.setAttribute('aria-pressed',x===c)}); });
+    exf.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(exf), who=exf.querySelector('[data-payer][aria-pressed="true"]'), cat=exf.querySelector('[data-cat][aria-pressed="true"]');
       var amt=parseFloat(f.get('amt')); if(!amt) return;
-      var d=localNow(); ex.push({what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:names[0],date:(d.getMonth()+1)+'/'+d.getDate()});
-      LS.set(EK,ex); exf.reset(); renderEx(); });
+      var d=localNow(); ex.push({what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:names[0],cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
+      LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); });
     exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; ex.splice(+b.dataset.del,1); LS.set(EK,ex); renderEx(); });
     renderEx();
+  }
+
+  // 일본어 회화: 분류 탭, 크게 보여주기
+  var ph=document.getElementById('tool-ph');
+  if(ph){ ph.addEventListener('click',function(ev){ var t=ev.target.closest('[data-cat]'); if(!t||!t.closest('.seg')) return;
+      ph.querySelectorAll('.seg [data-cat]').forEach(function(x){x.setAttribute('aria-selected',x===t)});
+      ph.querySelectorAll('ul.phr').forEach(function(u){u.hidden=u.dataset.cat!==t.dataset.cat}); }); }
+  var big=document.querySelector('.bigshow');
+  document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-big]'); if(b&&big){ big.querySelector('b').textContent=b.dataset.big; big.querySelector('small').textContent=b.dataset.bigko; if(big.showModal) big.showModal(); return; }
+    if(big&&big.open&&ev.target.closest('.bigshow')) big.close(); });
+
+  // 캐리어 짐
+  var BK='tp-bag-'+slug, bag=LS.get(BK,{c:{},mine:[]}), bf='all';
+  var bagRoot=document.getElementById('tool-bag'), bagMini=document.querySelector('.bag-mini');
+  function bagItems(){ return bagRoot?bagRoot.querySelectorAll('li[data-bag]'):[]; }
+  function renderBag(){
+    if(!bagRoot) return;
+    var mine=bagRoot.querySelector('.bag-mine');
+    mine.innerHTML=bag.mine.length?'<h4>직접 추가</h4><ul class="bag">'+bag.mine.map(function(x,i){ return '<li data-bag="m-'+x.id+'" data-where="'+x.wh+'" tabindex="0" role="checkbox"><span class="box"></span><span class="nm">'+x.it.replace(/</g,'&lt;')+'</span><span class="wh '+(x.wh==='기내'?'cab':'chk')+'">'+x.wh+'</span><button type="button" class="del" data-bdel="'+i+'" aria-label="삭제">✕</button></li>'; }).join('')+'</ul>':'';
+    var all=bagItems(), n=0;
+    all.forEach(function(li){ var on=!!bag.c[li.dataset.bag]; li.setAttribute('aria-checked',on); li.classList.toggle('done',on); if(on) n++;
+      li.hidden=(bf==='left'&&on)||(bf!=='all'&&bf!=='left'&&li.dataset.where!==bf); });
+    bagRoot.querySelectorAll('.bag-cat').forEach(function(c){ c.hidden=![].some.call(c.querySelectorAll('li'),function(li){return !li.hidden}); });
+    var pct=all.length?Math.round(n/all.length*100):0;
+    bagRoot.querySelector('.ring .fg').style.strokeDasharray=pct+' 100';
+    bagRoot.querySelector('.bag-pct').textContent=pct+'%';
+    if(bagMini) bagMini.textContent=n+' / '+all.length+' 챙김';
+  }
+  if(bagRoot){
+    bagRoot.addEventListener('click',function(ev){
+      var d=ev.target.closest('[data-bdel]'); if(d){ var it=bag.mine.splice(+d.dataset.bdel,1)[0]; if(it) delete bag.c['m-'+it.id]; LS.set(BK,bag); renderBag(); return; }
+      var f=ev.target.closest('[data-bf]'); if(f){ bf=f.dataset.bf; bagRoot.querySelectorAll('[data-bf]').forEach(function(x){x.setAttribute('aria-pressed',x===f)}); renderBag(); return; }
+      if(ev.target.closest('.bag-reset')){ bag.c={}; LS.set(BK,bag); renderBag(); return; }
+      var li=ev.target.closest('li[data-bag]'); if(li){ bag.c[li.dataset.bag]=!bag.c[li.dataset.bag]; LS.set(BK,bag); renderBag(); } });
+    bagRoot.addEventListener('keydown',function(ev){ var li=ev.target.closest('li[data-bag]'); if(li&&(ev.key===' '||ev.key==='Enter')){ ev.preventDefault(); li.click(); } });
+    bagRoot.querySelector('.bag-add').addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(ev.target);
+      bag.mine.push({id:Date.now().toString(36),it:String(f.get('it')).slice(0,40),wh:f.get('wh')}); LS.set(BK,bag); ev.target.reset(); renderBag(); });
+    renderBag();
   }
 
   // 준비물 체크 (이 휴대폰에 저장)
@@ -392,6 +446,10 @@ document.querySelectorAll('.route').forEach(function(card){
     var left=nx>=0?tm(bl[nx].time)-mins:null;
     nc.innerHTML='<div class="nc-h"><span class="live"></span>여행 '+(di+1)+'일차 · 지금'+(left!==null&&left>0?'<em>다음 일정까지 '+(left>=60?Math.floor(left/60)+'시간 ':'')+(left%60)+'분</em>':'')+'</div>'+row(ci,'지금')+row(nx,'다음')+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
     nc.hidden=false;
+    var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
+    if(go&&tgt&&tgt.place){ var dest=tgt.place.split('→').pop().trim()+' '+((C.geo||{}).city||'');
+      go.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
+      var m=go.querySelector('.go-mini'); if(m) m.textContent=tgt.place.split('→').pop().trim(); }
   }
   nowMode(); setInterval(nowMode,60000);
 })();
