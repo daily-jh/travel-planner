@@ -461,7 +461,7 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
 .daytabs button b{font-family:var(--f-sys);font-weight:700;font-size:15px}
 .daytabs button small{font-size:12px}
 .daytabs button[aria-selected="true"]{background:var(--accent,var(--pri));box-shadow:0 6px 16px -6px var(--accent,var(--pri))}
-.daytabs button[aria-selected="true"] b,.daytabs button[aria-selected="true"] small{color:#fff}
+.daytabs button[aria-selected="true"] b,.daytabs button[aria-selected="true"] small{color:var(--on-accent)}
 .dayhead{border-top:none;padding-top:18px}
 .dayhead .t{font-family:var(--f-sys);font-weight:800;font-size:24px;letter-spacing:-.03em}
 .dayhead .s{font-family:var(--f-sys);font-size:15px}
@@ -480,8 +480,8 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
 .blocks tr.tap td.place::after{content:"";display:inline-block;width:7px;height:7px;margin-left:8px;border-top:2px solid var(--label3);border-right:2px solid var(--label3);transform:translateY(-2px) rotate(45deg)}
 /* 경로 칩 */
 .route li a{background:var(--fill);padding:4px 12px 4px 4px;font-size:14px}
-.route li a.on{outline:none;background:var(--accent,var(--pri));color:#fff}
-.route li a.on i{background:#fff;color:var(--accent,var(--pri))}
+.route li a.on{outline:none;background:var(--accent,var(--pri));color:var(--on-accent)}
+.route li a.on i{background:var(--on-accent);color:var(--accent,var(--pri))}
 .route li:not(:last-child)::after{background:var(--sep)}
 /* 장소·그룹 칩 */
 .pchip,.gchip{padding:14px 16px}
@@ -495,7 +495,7 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.02em}
 .pickpanel{border:none}
 .pp-h h3{font-family:var(--f-sys);font-size:20px;font-weight:800;color:var(--ink)}
 .pp-who button{font-family:var(--f-sys);font-size:15px;font-weight:600;border:none;background:color-mix(in srgb,var(--tone) 12%,transparent);padding:7px 16px}
-.pp-who button[aria-pressed="true"]{background:var(--tone);color:#fff}
+.pp-who button[aria-pressed="true"]{background:var(--tone);color:var(--on-accent)}
 .pk-badge{font-family:var(--f-sys);font-size:12px;font-weight:600;padding:2px 9px}
 .pk-heart{border:none;background:color-mix(in srgb,var(--tone) 12%,transparent);font-weight:600;padding:3px 11px}
 .pk-heart[aria-pressed="true"]{color:#fff}
@@ -663,7 +663,7 @@ ul.bag li.done .box::after{content:"";width:5px;height:10px;border:solid #fff;bo
 ul.bag li.done .nm{color:var(--label2);text-decoration:line-through;text-decoration-color:var(--label3)}
 ul.bag .nm{flex:1;min-width:0}
 ul.bag .wh{flex:none;font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 7px}
-ul.bag .wh.cab{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
+ul.bag .wh.cab{background:color-mix(in srgb,#0a84ff 14%,transparent);color:var(--blue-ink)}
 ul.bag .wh.chk{background:color-mix(in srgb,#8e8e93 18%,transparent);color:var(--label2)}
 ul.bag .del{border:none;background:none;color:var(--label3);cursor:pointer;padding:4px}
 .bag-add{display:flex;gap:6px;margin-top:16px}
@@ -696,7 +696,7 @@ ul.bag .del{border:none;background:none;color:var(--label3);cursor:pointer;paddi
 .bcs{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px 8px}
 .bc{font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 10px;background:var(--fill);color:var(--ink)}
 .bc[data-open]{cursor:pointer}
-.bc.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
+.bc.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:var(--blue-ink)}
 .bc.cash{background:color-mix(in srgb,#ff9f0a 18%,transparent);color:#c26b00}
 .bc.warn{background:color-mix(in srgb,#ff3b30 14%,transparent);color:#ff3b30}
 .bc.ok{background:color-mix(in srgb,#34c759 16%,transparent);color:#248a3d}
@@ -708,7 +708,7 @@ ul.bag .del{border:none;background:none;color:var(--label3);cursor:pointer;paddi
 .nc-tmr{margin:4px 0 2px;padding:10px 12px;border-radius:14px;border:1px dashed var(--sep);display:grid;gap:2px}
 .nc-tmr small{font-size:12px;font-weight:600;color:var(--label2)} .nc-tmr b{font-size:15px} .nc-tmr span{font-size:13px;color:var(--label2)}
 .fl{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;vertical-align:2px}
-.fl.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
+.fl.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:var(--blue-ink)}
 .fl.cash{background:color-mix(in srgb,#ff9f0a 18%,transparent);color:#c26b00}
 .fl.line{background:var(--fill);color:var(--label2)}
 .blocks tr.tap td.place .fl+.fl{margin-left:3px}
@@ -777,13 +777,13 @@ details.day.today>summary b::after{content:"오늘";margin-left:8px;font-size:11
 .bud li.tot{border-top:1.5px solid var(--ink);margin-top:4px}
 .bud li.tot em{font-size:16px;font-weight:800}
 /* 플랜 B */
-.gchip.planb .k{color:#0a84ff}
+.gchip.planb .k{color:var(--blue-ink)}
 dialog.sheet .alts{grid-template-columns:1fr}
 dialog.sheet .alt{background:var(--fill);border-radius:14px;padding:12px 14px;box-shadow:none}
 dialog.sheet .alt b{font-size:15px}
 dialog.sheet .alt p{margin:4px 0 0;font-size:15px}
-.bc.rain{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
-.planb-btn{font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:none;border-radius:999px;padding:3px 10px;margin-left:4px;background:#0a84ff;color:#fff}
+.bc.rain{background:color-mix(in srgb,#0a84ff 14%,transparent);color:var(--blue-ink)}
+.planb-btn{font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;border:none;border-radius:999px;padding:3px 10px;margin-left:4px;background:var(--blue-ink);color:var(--on-blue)}
 /* 시간표의 지금 줄 */
 .blocks tr.now td.time{color:var(--accent,var(--pri))}
 .blocks tr.now td.time::after{content:"지금";margin-left:6px;font-size:11px;font-weight:700;color:#fff;background:#ff3b30;border-radius:999px;padding:1px 7px}
@@ -940,7 +940,7 @@ dialog.sheet .alt p{margin:4px 0 0;font-size:15px}
 @media (prefers-reduced-motion: reduce){.shop{animation:none}}
 
 /* 플랜 B 하루 대안 일정 */
-.day-go.pb{margin-top:-8px;background:color-mix(in srgb,#0a84ff 10%,transparent);color:#0a84ff}
+.day-go.pb{margin-top:-8px;background:color-mix(in srgb,#0a84ff 10%,transparent);color:var(--blue-ink)}
 dialog.sheet .pbday{display:grid;gap:10px;margin-bottom:14px}
 .pb-when{margin:0;font-size:14px;color:var(--muted)}
 dialog.sheet .pbday .simple{background:var(--card);border:1px solid var(--line);border-radius:14px}
@@ -952,3 +952,62 @@ dialog.sheet .pbday .simple{background:var(--card);border:1px solid var(--line);
 .pb-places p.hrs{color:var(--muted);font-size:12.5px}
 .pb-places .btn{flex:none}
 .pb-title{font-size:17px;font-weight:800}
+/* ============ 디자인 2탄 (2026-11) : 대비·움직임·팝업 다듬기 ============ */
+/* 보조 글자 대비: 밝은 화면 회색 글자가 흰 바탕에서 3.4:1이라 WCAG AA(4.5:1) 미달 → 4.9:1로 */
+:root{--label2:rgba(60,60,67,.78)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--label2:rgba(235,235,245,.6)}}
+:root[data-theme="dark"]{--label2:rgba(235,235,245,.6)}
+/* 옅은 바탕 위 강조색 글자는 밝은 화면에서 한 단계 짙게 (어두운 화면은 그대로) */
+:root{--lantern:#94600c}
+a.trip .dday{color:color-mix(in srgb,var(--acc) 80%,#000)}
+.pp-who button:not([aria-pressed="true"]){color:color-mix(in srgb,var(--tone) 80%,#000)}
+button.fb{color:color-mix(in srgb,var(--acc) 80%,#000)} .day-go{color:color-mix(in srgb,var(--accent,var(--pri)) 80%,#000)}
+:root{--blue-ink:#0063c4;--on-blue:#fff}
+.tag.act{color:color-mix(in srgb,var(--tide) 85%,#000)} .st.sel{color:color-mix(in srgb,var(--ok) 85%,#000)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--blue-ink:#409cff;--on-blue:#000} :root:not([data-theme="light"]) button.fb{color:var(--acc)} :root:not([data-theme="light"]) .day-go{color:var(--accent,var(--pri))}
+ :root:not([data-theme="light"]) .tag.act{color:var(--tide)} :root:not([data-theme="light"]) .st.sel{color:var(--ok)}}
+:root[data-theme="dark"]{--blue-ink:#409cff;--on-blue:#000} :root[data-theme="dark"] button.fb{color:var(--acc)} :root[data-theme="dark"] .day-go{color:var(--accent,var(--pri))}
+:root[data-theme="dark"] .tag.act{color:var(--tide)} :root[data-theme="dark"] .st.sel{color:var(--ok)}
+button.fb:hover{color:var(--on-accent)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--lantern:#e4b25a}
+ :root:not([data-theme="light"]) a.trip .dday{color:var(--acc)} :root:not([data-theme="light"]) .pp-who button:not([aria-pressed="true"]){color:var(--tone)}}
+:root[data-theme="dark"]{--lantern:#e4b25a}
+:root[data-theme="dark"] a.trip .dday{color:var(--acc)} :root[data-theme="dark"] .pp-who button:not([aria-pressed="true"]){color:var(--tone)}
+
+/* 아래 탭: 고른 탭 배경이 미끄러져 옮겨 감 */
+.tabbar{position:fixed}
+.tb-ind{position:absolute;left:0;top:5px;bottom:5px;width:0;border-radius:999px;background:color-mix(in srgb,var(--pri) 13%,transparent);pointer-events:none;z-index:0}
+.tabbar.tb-ready .tb-ind{transition:transform .38s var(--ease),width .38s var(--ease)}
+.tabbar button{position:relative;z-index:1}
+.tabbar button[aria-current="page"]{background:transparent}
+.tabbar span{font-size:12px}
+.tabbar button:focus-visible{outline:2px solid var(--pri);outline-offset:-2px}
+/* 화면 바꿈: 고른 탭 방향에서 살짝 밀려 들어옴 */
+@keyframes viewfwd{from{opacity:0;transform:translateX(14px)}}
+@keyframes viewback{from{opacity:0;transform:translateX(-14px)}}
+body.views[data-vdir="fwd"] main [data-view]{animation-name:viewfwd!important}
+body.views[data-vdir="back"] main [data-view]{animation-name:viewback!important}
+/* 날짜 넘기기: 민 방향에서 들어옴 */
+#detail[data-swipe="next"] .daypane:not([hidden]){animation:viewfwd .3s var(--ease) both}
+#detail[data-swipe="prev"] .daypane:not([hidden]){animation:viewback .3s var(--ease) both}
+
+/* 팝업 시트: 닫힐 때도 움직임, 끌어내리기 */
+@keyframes sheetout{to{opacity:0;transform:translateY(18px)}}
+@keyframes fadeout{to{opacity:0}}
+dialog.sheet[data-phase="closing"]{animation:sheetout .2s cubic-bezier(.4,0,1,1) both}
+dialog.sheet[data-phase="closing"]::backdrop{animation:fadeout .2s ease both}
+@media (max-width:640px){
+ @keyframes sheetdown{to{transform:translateY(100%)}}
+ dialog.sheet[data-phase="closing"]{animation:sheetdown .26s cubic-bezier(.4,0,1,1) both}
+ dialog.sheet.dragged[data-phase="closing"]{animation-duration:.18s}
+ dialog.sheet .sheet-h{touch-action:none}
+}
+dialog.sheet .sheet-b{overscroll-behavior:contain}
+
+@media (prefers-reduced-motion: reduce){
+ .tabbar.tb-ready .tb-ind{transition:none}
+ body.views[data-vdir] main [data-view],#detail[data-swipe] .daypane{animation:none!important}
+ dialog.sheet[data-phase="closing"],dialog.sheet[data-phase="closing"]::backdrop{animation:none}
+}
+/* 쇼핑 출처·사진 저작자 표기: 연회색(1.7:1) → 보조 글자색, 최소 12px */
+.shop-src,.shop-credit,.shop-credit a{color:var(--label2);font-size:12px}

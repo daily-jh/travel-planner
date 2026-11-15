@@ -123,10 +123,21 @@ document.querySelectorAll('.route').forEach(function(card){
   });
   document.body.classList.add('views');
   var tabs=[].slice.call(bar.querySelectorAll('[data-tab]'));
+  // 움직이는 표시: 고른 탭 뒤의 둥근 배경이 미끄러져 옮겨 간다
+  var ind=document.createElement('span'); ind.className='tb-ind'; ind.setAttribute('aria-hidden','true'); bar.insertBefore(ind,bar.firstChild);
+  function slide(){ var b=bar.querySelector('[aria-current="page"]'); if(!b) return; ind.style.width=b.offsetWidth+'px'; ind.style.transform='translateX('+b.offsetLeft+'px)'; }
+  window.addEventListener('resize',slide);
+  // 화면마다 보던 위치를 기억해 다시 돌아오면 그 자리로
+  var pos={};
   function view(v,keep){
+    var prev=document.body.dataset.view;
+    if(prev&&prev!==v) pos[prev]=window.scrollY;
+    var order=tabs.map(function(b){return b.dataset.tab});
+    document.body.dataset.vdir=prev&&order.indexOf(v)<order.indexOf(prev)?'back':'fwd';
     document.body.dataset.view=v;
     tabs.forEach(function(b){ if(b.dataset.tab===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-    if(!keep) window.scrollTo(0,0);
+    slide(); if(prev) bar.classList.add('tb-ready');
+    if(!keep) window.scrollTo(0,pos[v]||0);
     try{sessionStorage.setItem('tp-view',v)}catch(e){}
   }
   function go(id){
@@ -136,7 +147,10 @@ document.querySelectorAll('.route').forEach(function(card){
     el.scrollIntoView(); return true;
   }
   window.TPGo=go;
-  bar.addEventListener('click',function(ev){ var b=ev.target.closest('[data-tab]'); if(b) view(b.dataset.tab); });
+  bar.addEventListener('click',function(ev){ var b=ev.target.closest('[data-tab]'); if(!b) return;
+    // 지금 탭을 한 번 더 누르면 맨 위로 (휴대폰 앱과 같은 약속)
+    if(b.dataset.tab===document.body.dataset.view){ pos[b.dataset.tab]=0; window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); return; }
+    view(b.dataset.tab); });
   document.addEventListener('click',function(ev){
     var g=ev.target.closest('[data-goto]'); if(g){ var dl=g.closest('dialog[open]'); if(dl) dl.close(); go(g.dataset.goto); return; }
     var a=ev.target.closest('a[href^="#"]');
@@ -839,4 +853,85 @@ document.querySelectorAll('.route').forEach(function(card){
     if(big&&big.open&&ev.target.closest('.bigshow')) big.close();
   });
   paint();
+})();
+
+// ---------------------------------------------------------------- 디자인 2탄: 팝업 시트 다듬기
+// 1) 휴대폰 뒤로 가기(안드로이드 버튼·아이폰 쓸어 넘기기)로 열린 팝업만 닫힌다
+// 2) 닫힐 때도 아래로 내려가며 사라진다 (Esc·✕·바깥·뒤로 가기 모두 같은 움직임)
+// 3) 휴대폰에서 팝업 윗부분을 아래로 끌어내리면 닫힌다
+(function(){
+  var P=window.HTMLDialogElement&&HTMLDialogElement.prototype; if(!P||!P.showModal) return;
+  var still=function(){ return matchMedia('(prefers-reduced-motion: reduce)').matches; };
+  var nativeClose=P.close, popping=false;
+  P.close=function(rv){
+    var d=this;
+    if(!d.classList.contains('sheet')||!d.open||still()||d.dataset.phase==='closing') return nativeClose.call(d,rv);
+    d.dataset.phase='closing';
+    var done=false, fin=function(){ if(done) return; done=true; delete d.dataset.phase; d.style.transform=''; d.style.transition=''; nativeClose.call(d,rv); };
+    d.addEventListener('animationend',function h(e){ if(e.target===d){ d.removeEventListener('animationend',h); fin(); } });
+    setTimeout(fin,320);
+  };
+  function openSheets(){ return [].slice.call(document.querySelectorAll('dialog.sheet[open]')).filter(function(d){return d.dataset.phase!=='closing'}); }
+  // 뒤로 가기용 기록: 팝업이 처음 열릴 때 한 칸, 모두 닫히면 그 칸을 되돌린다
+  function onOpen(d){
+    if(history.state&&history.state.tpSheet) return;
+    if(/^#sync=/.test(location.hash)) return;
+    try{ history.pushState({tpSheet:1},'',location.href); }catch(e){}
+  }
+  function onClose(){
+    setTimeout(function(){
+      if(openSheets().length||popping){ popping=false; return; }
+      if(history.state&&history.state.tpSheet){ popping=true; history.back(); }
+    },0);
+  }
+  window.addEventListener('popstate',function(){
+    if(popping){ popping=false; return; }
+    var o=openSheets(); if(o.length){ popping=true; o.forEach(function(d){ d.close(); }); }
+  });
+  var mo=new MutationObserver(function(list){ list.forEach(function(m){ var d=m.target; if(!d.classList.contains('sheet')) return; if(d.open) onOpen(d); else onClose(d); }); });
+  document.querySelectorAll('dialog.sheet').forEach(function(d){
+    mo.observe(d,{attributes:true,attributeFilter:['open']});
+    // Esc도 닫힘 움직임을 거치도록 기본 동작 대신 close()를 부른다
+    d.addEventListener('cancel',function(ev){ if(still()) return; ev.preventDefault(); d.close(); });
+  });
+  // 끌어내려 닫기 (손가락 화면에서만)
+  if(!matchMedia('(pointer: coarse)').matches) return;
+  var drag=null;
+  document.addEventListener('touchstart',function(ev){
+    var d=ev.target.closest&&ev.target.closest('dialog.sheet[open]'); if(!d||ev.touches.length!==1) return;
+    if(ev.target.closest('input,textarea,select,canvas,.seg,[data-noswipe]')) return;
+    var body=d.querySelector('.sheet-b'), inHead=!!ev.target.closest('.sheet-h');
+    if(!inHead&&body&&body.scrollTop>0) return;
+    drag={d:d,y0:ev.touches[0].clientY,x0:ev.touches[0].clientX,t0:Date.now(),dy:0,head:inHead,on:false};
+  },{passive:true});
+  document.addEventListener('touchmove',function(ev){
+    if(!drag) return; var t=ev.touches[0], dy=t.clientY-drag.y0, dx=t.clientX-drag.x0;
+    if(!drag.on){ if(Math.abs(dy)<8) return; if(dy<0||Math.abs(dx)>Math.abs(dy)){ drag=null; return; } drag.on=true; drag.d.style.transition='none'; }
+    drag.dy=Math.max(0,dy); drag.d.style.transform='translateY('+drag.dy+'px)';
+    if(ev.cancelable) ev.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchend',function(){
+    if(!drag) return; var g=drag; drag=null; if(!g.on) return;
+    var v=g.dy/Math.max(1,Date.now()-g.t0);
+    if(g.dy>110||v>.6){ g.d.classList.add('dragged'); g.d.close(); setTimeout(function(){g.d.classList.remove('dragged')},400); }
+    else { g.d.style.transition='transform .3s var(--ease)'; g.d.style.transform=''; setTimeout(function(){ g.d.style.transition=''; },320); }
+  });
+})();
+
+// 일정 탭: 휴대폰에서 날짜 화면을 옆으로 밀면 앞뒤 날로 넘어간다
+(function(){
+  var sec=document.getElementById('detail'); if(!sec||!matchMedia('(pointer: coarse)').matches) return;
+  var tabs=[].slice.call(sec.querySelectorAll('.daytabs button')); if(tabs.length<2) return;
+  var s=null;
+  function scrollsX(el){ for(;el&&el!==sec;el=el.parentElement){ if(el.scrollWidth>el.clientWidth+2&&/(auto|scroll)/.test(getComputedStyle(el).overflowX)) return true; if(el.tagName==='IFRAME') return true; } return false; }
+  sec.addEventListener('touchstart',function(ev){ if(ev.touches.length!==1||ev.target.closest('.daytabs')||scrollsX(ev.target)){ s=null; return; } s={x:ev.touches[0].clientX,y:ev.touches[0].clientY,t:Date.now()}; },{passive:true});
+  sec.addEventListener('touchend',function(ev){
+    if(!s) return; var t=ev.changedTouches[0], dx=t.clientX-s.x, dy=t.clientY-s.y, dt=Date.now()-s.t; s=null;
+    if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>700) return;
+    var i=tabs.findIndex(function(b){return b.getAttribute('aria-selected')==='true'}), j=i+(dx<0?1:-1);
+    if(j<0||j>=tabs.length) return;
+    sec.dataset.swipe=dx<0?'next':'prev'; tabs[j].click(); tabs[j].focus({preventScroll:true});
+    var top=sec.getBoundingClientRect().top; if(top<0) sec.scrollIntoView();
+    setTimeout(function(){ delete sec.dataset.swipe; },400);
+  },{passive:true});
 })();
