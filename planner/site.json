@@ -1,1 +1,6 @@
-{"feedback_phone": "", "feedback_name": "지훈"}
+{
+ "feedback": true,
+ "feedback_name": "지훈",
+ "supabase_url": "",
+ "supabase_anon_key": ""
+}

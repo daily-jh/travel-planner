@@ -80,14 +80,14 @@ document.querySelectorAll('.route').forEach(function(card){
   });
 })();
 
-// 의견 보내기: 계획한 사람 번호로 문자 창을 연다 (번호는 화면에도 보여서 직접 보낼 수도 있음)
+// 의견 보내기: 장소 이름과 링크를 적은 문자 창을 연다 (받는 사람은 보내는 사람이 연락처에서 고름)
 (function(){
-  var m=document.querySelector('meta[name="feedback-phone"]'); if(!m) return;
-  var phone=m.content, ios=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  if(!document.querySelector('meta[name="feedback"]')) return;
+  var ios=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
   document.querySelectorAll('button.fb').forEach(function(b){
     b.addEventListener('click',function(){
-      var body='['+b.dataset.subject+'] 의견: ';
-      location.href='sms:'+phone+(ios?'&':'?')+'body='+encodeURIComponent(body+'\n'+location.href.split('#')[0]);
+      var body='['+b.dataset.subject+'] 의견: \n'+location.href.split('#')[0];
+      location.href='sms:'+(ios?'&':'?')+'body='+encodeURIComponent(body);
     });
   });
 })();
@@ -98,7 +98,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var tabs=[].slice.call(sec.querySelectorAll('.daytabs button')); if(!tabs.length) return;
   sec.classList.add('tabs-on');
   function show(id,scroll){
-    tabs.forEach(function(b){var on=b.dataset.pane===id; b.setAttribute('aria-selected',on); b.tabIndex=on?0:-1; var p=document.getElementById(b.dataset.pane); if(p) p.hidden=!on; if(on) b.scrollIntoView({block:'nearest',inline:'center'});});
+    tabs.forEach(function(b){var on=b.dataset.pane===id; b.setAttribute('aria-selected',on); b.tabIndex=on?0:-1; var p=document.getElementById(b.dataset.pane); if(p) p.hidden=!on; if(on){var bar=b.parentNode; bar.scrollLeft=b.offsetLeft-bar.clientWidth/2+b.clientWidth/2;}});
     if(scroll) sec.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
   tabs.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.pane,false); history.replaceState(null,'','#'+b.dataset.pane);});});
@@ -120,4 +120,140 @@ document.querySelectorAll('.route').forEach(function(card){
     if(ev.target.tagName==='DIALOG'&&ev.target.classList.contains('sheet')){ close(ev.target); }
   });
   document.querySelectorAll('dialog.sheet').forEach(function(d){ d.addEventListener('close',function(){document.body.classList.remove('sheet-open')}); });
+})();
+
+// ---------------------------------------------------------------- 우리의 픽
+// 저장소: site.json 에 Supabase 주소·키가 있으면 모두가 함께 보는 DB, 없으면 이 휴대폰(localStorage)
+(function(){
+  var el=document.getElementById('trip-cfg'); if(!el) return;
+  var cfg=JSON.parse(el.textContent), trip=cfg.trip, sb=cfg.supabase||{};
+  var shared=!!(sb.url&&sb.key);
+  var tones={}; cfg.travelers.forEach(function(x){tones[x.name]=x.tone||'pri'});
+  var LS='tp-picks-'+trip, ME='tp-me';
+  var saved={}, draft=null, me=null;
+  function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function toast(m){var t=document.querySelector('.toast'); if(!t) return; t.textContent=m; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(function(){t.hidden=true},2600);}
+  function hdr(){return {'apikey':sb.key,'Authorization':'Bearer '+sb.key,'Content-Type':'application/json'};}
+
+  // saved: { 장소이름: [이름, ...] }
+  function load(){
+    if(!shared){ try{saved=JSON.parse(lsGet(LS)||'{}')}catch(e){saved={}} return Promise.resolve(); }
+    return fetch(sb.url+'/rest/v1/picks?select=place,person&trip=eq.'+encodeURIComponent(trip),{headers:hdr()})
+      .then(function(r){if(!r.ok) throw r; return r.json();})
+      .then(function(rows){saved={}; rows.forEach(function(r){(saved[r.place]=saved[r.place]||[]).push(r.person)});})
+      .catch(function(){toast('픽을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.')});
+  }
+  function mine(){var s={}; Object.keys(saved).forEach(function(p){if(saved[p].indexOf(me)>=0) s[p]=1}); return s;}
+  function persist(next){
+    var before=mine(), add=[], del=[];
+    Object.keys(next).forEach(function(p){if(!before[p]) add.push(p)});
+    Object.keys(before).forEach(function(p){if(!next[p]) del.push(p)});
+    if(!shared){
+      add.forEach(function(p){(saved[p]=saved[p]||[]).push(me)});
+      del.forEach(function(p){saved[p]=saved[p].filter(function(x){return x!==me}); if(!saved[p].length) delete saved[p];});
+      lsSet(LS,JSON.stringify(saved)); return Promise.resolve(add.length+del.length);
+    }
+    var jobs=[];
+    if(add.length) jobs.push(fetch(sb.url+'/rest/v1/picks',{method:'POST',headers:Object.assign(hdr(),{'Prefer':'resolution=merge-duplicates'}),body:JSON.stringify(add.map(function(p){return {trip:trip,place:p,person:me}}))}));
+    del.forEach(function(p){jobs.push(fetch(sb.url+'/rest/v1/picks?trip=eq.'+encodeURIComponent(trip)+'&person=eq.'+encodeURIComponent(me)+'&place=eq.'+encodeURIComponent(p),{method:'DELETE',headers:hdr()}))});
+    return Promise.all(jobs).then(function(rs){rs.forEach(function(r){if(!r.ok) throw r}); return load();}).then(function(){return add.length+del.length});
+  }
+
+  function badge(name,both){var b=document.createElement('span'); b.className='pk-badge tone-'+(tones[name]||'pri')+(both?' both':''); b.textContent=both?'둘 다 픽':name+' 픽'; return b;}
+  function render(){
+    document.querySelectorAll('.pickbar').forEach(function(bar){
+      var key=bar.dataset.pick, who=bar.querySelector('.who'), ed=bar.querySelector('.pk-edit');
+      var people=(saved[key]||[]).slice();
+      if(draft){ people=people.filter(function(x){return x!==me}); if(draft[key]) people.push(me); }
+      who.textContent='';
+      if(people.length>1&&people.length===cfg.travelers.length) who.appendChild(badge(people[0],true));
+      else people.forEach(function(n){who.appendChild(badge(n,false))});
+      ed.textContent='';
+      if(draft){
+        var h=document.createElement('button'); h.type='button'; h.className='pk-heart tone-'+(tones[me]||'pri');
+        h.setAttribute('aria-pressed',draft[key]?'true':'false'); h.textContent=draft[key]?me+' 픽':'가고 싶어요';
+        h.addEventListener('click',function(ev){ev.stopPropagation(); if(draft[key]) delete draft[key]; else draft[key]=1; render();});
+        ed.appendChild(h);
+      }
+    });
+    summary(); dock();
+  }
+  function summary(){
+    var box=document.querySelector('.pp-sum'), counts={}, both=[];
+    cfg.travelers.forEach(function(x){counts[x.name]=0});
+    Object.keys(saved).forEach(function(p){saved[p].forEach(function(n){counts[n]=(counts[n]||0)+1}); if(saved[p].length===cfg.travelers.length) both.push(p);});
+    if(box) box.innerHTML=cfg.travelers.map(function(x){return x.name+' <b>'+counts[x.name]+'</b>곳'}).join(' · ')+(cfg.travelers.length>1?' · 둘 다 <b>'+both.length+'</b>곳':'');
+    var list=document.querySelector('.pk-list'); if(!list) return;
+    var html='';
+    function sec(title,arr){html+='<h4>'+title+'</h4>'+(arr.length?'<ul>'+arr.map(function(p){return '<li>'+p.replace(/[<>&]/g,'')+'</li>'}).join('')+'</ul>':'<p class="empty">아직 없어요</p>');}
+    if(cfg.travelers.length>1) sec('둘 다 가고 싶은 곳',both);
+    cfg.travelers.forEach(function(x){sec(x.name+' 픽',Object.keys(saved).filter(function(p){return saved[p].indexOf(x.name)>=0&&both.indexOf(p)<0}))});
+    list.innerHTML=html;
+  }
+  var dockEl=null;
+  function dock(){
+    if(!draft){ if(dockEl){dockEl.remove(); dockEl=null;} document.body.classList.remove('picking'); return; }
+    document.body.classList.add('picking');
+    if(!dockEl){
+      dockEl=document.createElement('div'); dockEl.className='pickdock';
+      dockEl.innerHTML='<span></span><button type="button" class="ghost" data-pk="cancel">취소</button><button type="button" data-pk="save">저장</button>';
+      document.body.appendChild(dockEl);
+    }
+    dockEl.querySelector('span').textContent=me+' · '+Object.keys(draft).length+'곳 선택';
+  }
+  function setMe(n){me=n; lsSet(ME,n); document.querySelectorAll('.pp-who button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.me===n?'true':'false')});}
+  function buttons(){
+    var start=document.querySelector('[data-pk="start"]');
+    document.querySelectorAll('.pp-actions [data-pk="save"],.pp-actions [data-pk="cancel"]').forEach(function(b){b.hidden=!draft});
+    if(start){ start.hidden=!!draft; start.textContent=Object.keys(mine()).length?'픽 수정':'픽 고르기'; }
+  }
+  document.querySelectorAll('.pp-who button').forEach(function(b){
+    b.addEventListener('click',function(){ if(draft&&me!==b.dataset.me){ toast('먼저 저장하거나 취소해 주세요.'); return; } setMe(b.dataset.me); buttons(); });
+  });
+  document.addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-pk]'); if(!b) return;
+    var a=b.dataset.pk;
+    if(a==='start'){ if(!me){ toast('먼저 "나는" 옆에서 이름을 눌러 주세요.'); return; } draft=mine(); render(); buttons(); toast('가고 싶은 곳의 하트를 누른 뒤 저장하세요.'); }
+    if(a==='cancel'){ draft=null; render(); buttons(); }
+    if(a==='save'){ var d=draft; b.disabled=true;
+      persist(d).then(function(n){ draft=null; render(); buttons(); toast(n?'픽을 저장했어요.':'바뀐 픽이 없어요.'); })
+        .catch(function(){ toast('저장하지 못했어요. 인터넷 연결을 확인하고 다시 저장해 주세요.'); })
+        .then(function(){ b.disabled=false; }); }
+  });
+  var st=document.querySelector('.pp-store'); if(st) st.textContent=shared?'모두와 함께 저장돼요':'지금은 이 휴대폰에만 저장돼요';
+  var m=lsGet(ME); if(m&&tones[m]) setMe(m);
+  load().then(function(){render(); buttons();});
+})();
+
+// ---------------------------------------------------------------- 머리 장식: 테마별로 꽃잎·눈·물방울이 천천히 떨어진다
+(function(){
+  var c=document.querySelector('canvas.petals'); if(!c||!c.getContext) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var th=(document.body.className.match(/theme-(\w+)/)||[])[1]||'hakata';
+  var kind={hakata:'petal',temple:'petal',snow:'snow',ocean:'bubble',citrus:'leaf',forest:'leaf'}[th]||'petal';
+  var ctx=c.getContext('2d'), W=0, H=0, dpr=Math.min(2,window.devicePixelRatio||1), parts=[], run=true;
+  var cs=getComputedStyle(document.body), col=(kind==='snow'?cs.getPropertyValue('--pri-soft'):cs.getPropertyValue('--acc')).trim()||'#c13d69';
+  function size(){var r=c.getBoundingClientRect(); W=r.width; H=r.height; c.width=W*dpr; c.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);}
+  function spawn(y){return {x:Math.random()*W,y:y==null?-10:y,r:3+Math.random()*4,vy:.25+Math.random()*.45,vx:-.2+Math.random()*.4,a:Math.random()*6.28,va:-.02+Math.random()*.04,o:.25+Math.random()*.35};}
+  size(); for(var i=0;i<Math.round(W/28);i++) parts.push(spawn(Math.random()*H));
+  window.addEventListener('resize',size);
+  if('IntersectionObserver' in window) new IntersectionObserver(function(e){run=e[0].isIntersecting; if(run) requestAnimationFrame(tick);}).observe(c);
+  function draw(p){
+    ctx.save(); ctx.globalAlpha=p.o; ctx.fillStyle=col; ctx.translate(p.x,p.y); ctx.rotate(p.a);
+    ctx.beginPath();
+    if(kind==='petal'){ ctx.ellipse(0,0,p.r*1.3,p.r*.75,0,0,6.283); }
+    else if(kind==='leaf'){ ctx.ellipse(0,0,p.r*1.5,p.r*.55,0,0,6.283); }
+    else if(kind==='bubble'){ ctx.globalAlpha=p.o*.8; ctx.lineWidth=1.2; ctx.strokeStyle=col; ctx.arc(0,0,p.r,0,6.283); ctx.stroke(); ctx.restore(); return; }
+    else { ctx.arc(0,0,p.r*.6,0,6.283); }
+    ctx.fill(); ctx.restore();
+  }
+  function tick(){
+    if(!run) return;
+    ctx.clearRect(0,0,W,H);
+    parts.forEach(function(p,i){ p.y+=kind==='bubble'?-p.vy:p.vy; p.x+=p.vx+Math.sin(p.y/30)*.25; p.a+=p.va;
+      if(p.y>H+10||p.y<-12){ parts[i]=spawn(kind==='bubble'?H+8:-8); } draw(p); });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 })();

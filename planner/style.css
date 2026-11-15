@@ -290,3 +290,51 @@ dialog.sheet::backdrop{background:rgba(15,18,27,.45);animation:fadein .2s ease b
 .sheet-b .row button.fb{margin-top:0}
 .sheet-b .cand:first-child{border-top:none}
 body.sheet-open{overflow:hidden}
+/* ---------- 감성 디테일 ---------- */
+:root{--f-hand:"Gaegu","Noto Sans KR",cursive}
+header.hero{position:relative;overflow:hidden}
+header.hero .wrap{position:relative;z-index:1}
+canvas.petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.dayhead .s{font-family:var(--f-hand);font-size:17px;color:var(--muted)}
+.card,.day,a.trip,.pchip,.gchip{border-radius:16px}
+.card{box-shadow:0 1px 2px rgba(27,34,56,.04),0 10px 30px -12px color-mix(in srgb,var(--pri) 25%,transparent)}
+.hero p{font-size:15.5px}
+/* ---------- 픽 ---------- */
+.pickpanel{border:1.5px dashed color-mix(in srgb,var(--acc) 55%,var(--line))}
+.pp-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pp-h h3{font-family:var(--f-hand);font-size:24px;font-weight:700;color:var(--acc);margin:0 0 4px}
+.pp-store{font-size:12px;color:var(--muted)}
+.pp-who{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pp-who::before{content:"나는";align-self:center;font-size:13px;color:var(--muted)}
+.pp-who button{font:inherit;font-family:var(--f-hand);font-size:19px;font-weight:700;cursor:pointer;border-radius:999px;padding:2px 16px;border:1.5px solid var(--tone);color:var(--tone);background:var(--surface)}
+.pp-who button[aria-pressed="true"]{background:var(--tone);color:var(--on-accent)}
+.tone-pri{--tone:var(--pri)} .tone-acc{--tone:var(--acc)} .tone-tide{--tone:var(--tide)} .tone-lantern{--tone:var(--lantern)}
+.pp-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pp-sum{margin-top:10px;font-size:14px;color:var(--muted)}
+.pp-sum b{color:var(--ink)}
+.pitem{display:grid;gap:4px;min-width:0}
+.pickbar{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:0}
+.pickbar:empty{display:none}
+.cand .pickbar{grid-column:1/-1}
+.pickbar .ai{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:linear-gradient(90deg,var(--pri-soft),var(--acc-soft));color:var(--pri)}
+.lead .ai{font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;background:linear-gradient(90deg,var(--pri-soft),var(--acc-soft));color:var(--pri)}
+.pickbar .who{display:contents}
+.pk-badge{font-family:var(--f-hand);font-size:15px;font-weight:700;line-height:1.2;border-radius:999px;padding:0 9px;background:color-mix(in srgb,var(--tone) 14%,var(--surface));color:var(--tone);animation:pop .3s cubic-bezier(.3,1.6,.5,1) both}
+.pk-badge::before{content:"♥ "}
+.pk-badge.both{background:var(--acc);color:var(--on-accent)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.pk-edit:empty{display:none}
+.pk-heart{font:inherit;cursor:pointer;border:1.5px solid var(--tone);color:var(--tone);background:var(--surface);border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700}
+.pk-heart[aria-pressed="true"]{background:var(--tone);color:var(--on-accent)}
+.pk-heart[aria-pressed="true"]::before{content:"♥ "}
+.pk-heart[aria-pressed="false"]::before{content:"♡ "}
+body.picking .pitem{outline:1.5px dashed color-mix(in srgb,var(--acc) 40%,transparent);outline-offset:3px;border-radius:16px}
+.pickdock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;gap:8px;align-items:center;background:var(--ink);color:var(--paper);border-radius:999px;padding:6px 6px 6px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px);animation:rise .3s ease both}
+.pickdock span{font-size:13.5px;white-space:nowrap}
+.pickdock button{font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;border:none;border-radius:999px;padding:7px 14px;background:var(--acc);color:var(--on-accent)}
+.pickdock button.ghost{background:transparent;color:var(--paper)}
+body.picking .totop{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.pk-list h4{font-family:var(--f-hand);font-size:20px;margin:14px 0 6px;color:var(--acc)}
+.pk-list h4:first-child{margin-top:0}
+.pk-list ul{margin:0;padding-left:18px;font-size:14px;display:grid;gap:3px}
+.pk-list .empty{color:var(--muted);font-size:14px}

@@ -19,12 +19,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "_site")
 SITE_NAME = "여행 플래너"
 SITE = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "site.json"), encoding="utf-8"))
-PHONE = re.sub(r"[^0-9+]", "", SITE.get("feedback_phone", ""))
+FEEDBACK = bool(SITE.get("feedback"))  # 번호는 공개 사이트에 두지 않는다: 문자 창에서 받는 사람을 직접 고른다
 
 
 def fb(subject, label="의견 보내기"):
-    """일행이 누르면 계획한 사람 번호로 문자 창이 열리는 버튼. 번호가 없으면 아무것도 안 그린다."""
-    if not PHONE:
+    """누르면 장소 이름과 링크가 미리 적힌 문자 창이 열린다. 받는 사람은 보내는 사람이 연락처에서 고른다."""
+    if not FEEDBACK:
         return ""
     return f'<button class="fb" type="button" data-subject="{e(subject)}">{e(label)}</button>'
 WEEK = "월화수목금토일"
@@ -40,7 +40,7 @@ def fonts(themes):
     q = "&".join("family=" + f.replace(" ", "+") for f in fams)
     return ('<link rel="preconnect" href="https://fonts.googleapis.com">'
             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-            f'<link href="https://fonts.googleapis.com/css2?{q}&family=IBM+Plex+Mono:wght@500;600'
+            f'<link href="https://fonts.googleapis.com/css2?{q}&family=Gaegu:wght@400;700&family=IBM+Plex+Mono:wght@500;600'
             '&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">')
 
 
@@ -81,6 +81,25 @@ def md(s):
     return f"{d.month}/{d.day}({WEEK[d.weekday()]})"
 
 
+def ai_reco(c):
+    """AI 추천: 구글 평점 4.6 이상이면서 리뷰 1,000개 이상이거나, 지도 메모에 '필수'가 있는 곳."""
+    m = re.match(r"([\d.]+)\(([\d,]+)\)", c.get("rating") or "")
+    r, n = (float(m.group(1)), int(m.group(2).replace(",", ""))) if m else (0, 0)
+    why = []
+    if r >= 4.6 and n >= 1000:
+        why.append(f"평점 {r} · 리뷰 {n:,}개")
+    if "필수" in (c.get("memo") or ""):
+        why.append("지도 메모 '필수'")
+    return " · ".join(why)
+
+
+def pick_bar(key, ai):
+    """픽 배지 자리(스크립트가 채움) + AI 추천 배지 + 픽 편집 버튼."""
+    return (f'<span class="pickbar" data-pick="{e(key)}">'
+            + (f'<span class="ai" title="{e(ai)}">AI 추천</span>' if ai else "")
+            + '<span class="who"></span><span class="pk-edit"></span></span>')
+
+
 def sheet(did, title, sub, inner):
     """팝업(아래에서 올라오는 시트). data-open 버튼으로 연다."""
     return (f'<dialog class="sheet" id="{did}" aria-labelledby="{did}-t"><div class="sheet-h"><div><b id="{did}-t">{title}</b>'
@@ -92,7 +111,7 @@ def page(title, body, depth, theme="hakata", font_themes=None):
     up = "../" * depth
     return (f'<!doctype html>\n<html lang="ko">\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-            + (f'<meta name="feedback-phone" content="{e(PHONE)}">' if PHONE else "") + f'<title>{e(title)}</title>\n{fonts(font_themes or [theme])}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
+            + ('<meta name="feedback" content="on">' if FEEDBACK else "") + f'<title>{e(title)}</title>\n{fonts(font_themes or [theme])}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
             f'<body class="theme-{e(theme)}">\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
 
 
@@ -102,6 +121,19 @@ def render_trip(slug, t):
     w = P.append
     start, end = d_of(t["start"]), d_of(t["end"])
     nights = (end - start).days
+    AI = {}
+    for c in t.get("candidates", []):
+        a = ai_reco(c)
+        if a:
+            AI[c["name"]] = a
+
+    def ai_for(name):
+        if name in AI:
+            return AI[name]
+        for k, v in AI.items():
+            if k in name or name in k:
+                return v
+        return ""
     links = []
     for l in t.get("links", []):
         url = l.get("url") or gmap(l["query"])
@@ -116,7 +148,7 @@ def render_trip(slug, t):
 <p>{rich(t.get("intro", ""))}</p>
 <div class="facts">{"".join(f'<span>{e(k)} <b>{rich(v)}</b></span>' for k, v in t.get("facts", []))}</div>
 <div class="cta">{"".join(links)}</div>
-</div><div class="kenjo" aria-hidden="true"></div></header>''')
+</div><canvas class="petals" aria-hidden="true"></canvas><div class="kenjo" aria-hidden="true"></div></header>''')
     chips = [("simple", "간단 일정"), ("overview", "한눈에")]
     chips += [("detail", "날짜별 일정")]
     day_dates = {f"day{i}": d["date"] for i, d in enumerate(t["days"], 1)}
@@ -135,6 +167,19 @@ def render_trip(slug, t):
     w('</div></section>')
 
     # 2. 한눈에 보기
+    trav = t.get("travelers", [])
+    if trav:
+        cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")}}
+        w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
+        w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
+          '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
+          '<span class="ai">AI 추천</span>은 구글 평점·리뷰 수와 지도 메모를 보고 Claude가 고른 곳이에요.</p>'
+          '<div class="pp-who" role="group" aria-label="나는 누구">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-me="{e(x["name"])}">{e(x["name"])}</button>' for x in trav) + '</div>'
+          '<div class="pp-actions"><button type="button" class="btn primary" data-pk="start">픽 고르기</button>'
+          '<button type="button" class="btn" data-pk="save" hidden>저장</button><button type="button" class="btn" data-pk="cancel" hidden>취소</button>'
+          '<button type="button" class="btn" data-open="picks-all">모아보기</button></div>'
+          '<div class="pp-sum"></div></div></section>')
+        w(sheet("picks-all", "우리의 픽 모아보기", "둘 다 고른 곳부터 보여요", '<div class="pk-list"></div>'))
     w('<section id="overview"><h2><span class="num">2</span>한눈에 보기</h2><p class="lead">숙소, 이동, 날짜별 강도·복귀 계획이에요.</p><div class="stack"><div class="grid2">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
     stay_map = f'<a class="map" href="{gmap(t["stay_query"])}" target="_blank" rel="noopener">구글 지도</a>' if t.get("stay_query") else ""
@@ -197,7 +242,7 @@ def render_trip(slug, t):
             for n, p in enumerate(d["places"], 1):
                 place_fb = fb(t.get("short", "") + f" {md(d['date'])} " + p["name"])
                 did = f"pl-{i}-{n}"
-                w(f'<button type="button" class="pchip" data-open="{did}"><span class="nm">{e(p["name"])}</span><span class="cost">{rich(p.get("cost", ""))}</span></button>')
+                w(f'<div class="pitem"><button type="button" class="pchip" data-open="{did}"><span class="nm">{e(p["name"])}</span><span class="cost">{rich(p.get("cost", ""))}</span></button>{pick_bar(p["name"], ai_for(p["name"]))}</div>')
                 inner = (f'<dl class="kv"><dt>주소</dt><dd>{rich(p.get("address", ""))}</dd><dt>영업·휴무</dt><dd>{rich(p.get("hours", ""))}</dd><dt>추천 이유</dt><dd>{rich(p.get("why", ""))}</dd>'
                          + (f'<dt>팁</dt><dd>{rich(p["tip"])}</dd>' if p.get("tip") else "")
                          + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="btn primary" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도에서 보기</a>{place_fb}</div>')
@@ -226,7 +271,7 @@ def render_trip(slug, t):
             for c in sorted(items, key=lambda c: order[c["status"]]):
                 meta = " · ".join(x for x in [c.get("rating") and "★ " + c["rating"], c.get("category"), c.get("memo")] if x)
                 nm = f'<a href="{gmap(c["query"])}" target="_blank" rel="noopener">{e(c["name"])}</a>' if c.get("query") else e(c["name"])
-                rows.append(f'<div class="cand"><span class="nm">{nm}</span><span class="st {c["status"]}">{STATUS[c["status"]]}</span>'
+                rows.append(f'<div class="cand"><span class="nm">{nm}</span><span class="st {c["status"]}">{STATUS[c["status"]]}</span>{pick_bar(c["name"], AI.get(c["name"], ""))}'
                             + (f'<span class="meta">{e(meta)}</span>' if meta else "") + f'<span class="why">{rich(c.get("reason", ""))}</span></div>')
             chips.append(f'<button type="button" class="gchip" data-open="cg-{k}"><span class="nm">{e(g)}</span><small>{len(items)}곳 · 선정 {nsel}</small></button>')
             dlgs.append(sheet(f"cg-{k}", e(g), f"{len(items)}곳 중 선정 {nsel}", "".join(rows)))
@@ -266,9 +311,9 @@ def render_trip(slug, t):
               + "".join(f'<li><span class="box"></span><span>{rich(x)}</span></li>' for x in items) + '</ul></div>')
         w('</div></section>')
     w('</main>')
-    if PHONE:
-        w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 문자 창이 열려요.</p>'
-          f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}<span class="phone">{e(SITE.get("feedback_phone", ""))}</span></div></div></section>')
+    if FEEDBACK:
+        w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 내용이 적힌 문자 창이 열리고, 받는 사람은 연락처에서 고르면 돼요.</p>'
+          f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}</div></div></section>')
     w(f'<footer><div class="wrap">출처: {rich(t.get("source", ""))} <span class="chk">확인 필요</span> 표시는 아직 확정되지 않은 정보예요.</div></footer>')
     return page(t.get("short", t["title"]) + " 여행", "\n".join(P), 2, t.get("theme", "hakata"))
 

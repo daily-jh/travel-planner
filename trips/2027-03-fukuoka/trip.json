@@ -1,8 +1,18 @@
 {
  "title": "후쿠오카, *매화* 필 무렵",
  "short": "후쿠오카",
- "eyebrow": "FUK · 4泊5日",
+ "eyebrow": "FUK · 博多",
  "theme": "hakata",
+ "travelers": [
+  {
+   "name": "지훈",
+   "tone": "pri"
+  },
+  {
+   "name": "지윤",
+   "tone": "acc"
+  }
+ ],
  "start": "2027-02-27",
  "end": "2027-03-03",
  "timezone": "Asia/Tokyo",
