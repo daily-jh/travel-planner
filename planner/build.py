@@ -32,10 +32,16 @@ MODE_KO = {"transit": "대중교통", "driving": "차량", "walking": "도보"}
 TYPE_CLS = {"아침": "meal", "점심": "meal", "저녁": "meal", "밤": "cafe", "카페": "cafe",
             "이동": "move", "숙소": "stay", "활동": "act", "쇼핑": "act"}
 STATUS = {"sel": "선정", "alt": "대안", "off": "미배치", "exc": "배제"}
-FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
-         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Mono:wght@500;600'
-         '&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">')
+THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))
+
+
+def fonts(themes):
+    fams = sorted({THEMES.get(t, THEMES["hakata"])["font"] for t in themes})
+    q = "&".join("family=" + f.replace(" ", "+") for f in fams)
+    return ('<link rel="preconnect" href="https://fonts.googleapis.com">'
+            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+            f'<link href="https://fonts.googleapis.com/css2?{q}&family=IBM+Plex+Mono:wght@500;600'
+            '&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">')
 
 
 def e(s):
@@ -75,12 +81,19 @@ def md(s):
     return f"{d.month}/{d.day}({WEEK[d.weekday()]})"
 
 
-def page(title, body, depth):
+def sheet(did, title, sub, inner):
+    """팝업(아래에서 올라오는 시트). data-open 버튼으로 연다."""
+    return (f'<dialog class="sheet" id="{did}" aria-labelledby="{did}-t"><div class="sheet-h"><div><b id="{did}-t">{title}</b>'
+            + (f'<small>{sub}</small>' if sub else "") + '</div><button class="x" type="button" data-close aria-label="닫기">✕</button></div>'
+            f'<div class="sheet-b">{inner}</div></dialog>')
+
+
+def page(title, body, depth, theme="hakata", font_themes=None):
     up = "../" * depth
     return (f'<!doctype html>\n<html lang="ko">\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-            + (f'<meta name="feedback-phone" content="{e(PHONE)}">' if PHONE else "") + f'<title>{e(title)}</title>\n{FONTS}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
-            f'<body>\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
+            + (f'<meta name="feedback-phone" content="{e(PHONE)}">' if PHONE else "") + f'<title>{e(title)}</title>\n{fonts(font_themes or [theme])}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
+            f'<body class="theme-{e(theme)}">\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
 
 
 # ---------------------------------------------------------------- 여행 상세
@@ -105,7 +118,7 @@ def render_trip(slug, t):
 <div class="cta">{"".join(links)}</div>
 </div><div class="kenjo" aria-hidden="true"></div></header>''')
     chips = [("simple", "간단 일정"), ("overview", "한눈에")]
-    chips += [(f"day{i}", md(d["date"])) for i, d in enumerate(t["days"], 1)]
+    chips += [("detail", "날짜별 일정")]
     day_dates = {f"day{i}": d["date"] for i, d in enumerate(t["days"], 1)}
     chips += [("cands", "후보"), ("budget", "비용"), ("before", "출발 전")]
     w('<nav class="chips"><div class="wrap">' + "".join(f'<a href="#{a}"{f' data-date="{day_dates[a]}"' if a in day_dates else ""}>{e(b)}</a>' for a, b in chips) + '</div></nav><main class="wrap">')
@@ -144,19 +157,24 @@ def render_trip(slug, t):
                   + "</tbody></table></div>")
         w("</div>")
     if t.get("closures"):
-        w('<div class="card"><h3>방문 요일 휴무 점검</h3><div class="scrollx"><table class="plain"><thead><tr><th>장소</th><th>휴무</th><th>방문</th><th></th></tr></thead><tbody>')
+        rows = []
         for a, b, c, st in t["closures"]:
             mark = '<td class="ok">통과</td>' if st == "ok" else '<td><span class="chk">확인 필요</span></td>'
-            w(f'<tr><td>{e(a)}</td><td>{e(b)}</td><td class="n">{e(c)}</td>{mark}</tr>')
-        w("</tbody></table></div></div>")
+            rows.append(f'<tr><td>{e(a)}</td><td>{e(b)}</td><td class="n">{e(c)}</td>{mark}</tr>')
+        nchk = sum(1 for x in t["closures"] if x[3] != "ok")
+        w(f'<button type="button" class="gchip wide" data-open="closures"><span class="nm">방문 요일 휴무 점검</span><small>{len(t["closures"])}곳 · 확인 필요 {nchk}</small></button>')
+        w(sheet("closures", "방문 요일 휴무 점검", "", '<div class="scrollx"><table class="plain"><thead><tr><th>장소</th><th>휴무</th><th>방문</th><th></th></tr></thead><tbody>' + "".join(rows) + '</tbody></table></div>'))
     w("</div></section>")
 
     # 3. 날짜별 상세
-    w('<section id="detail"><h2><span class="num">3</span>날짜별 상세 일정</h2><p class="lead">≈ 표시는 대략적인 이동 시간이에요. 장소 이름을 누르면 주소·영업시간·팁이 열려요.</p>')
+    w('<section id="detail"><h2><span class="num">3</span>날짜별 상세 일정</h2><p class="lead">≈ 표시는 대략적인 이동 시간이에요. 날짜를 고르고, 장소를 누르면 주소·영업시간·팁이 팝업으로 열려요.</p>')
+    w('<div class="daytabs" role="tablist" aria-label="날짜 고르기">' + "".join(
+        f'<button type="button" role="tab" class="c-{e(d["color"])}" data-pane="day{i}" data-date="{d["date"]}"><b>{i}일차</b><small>{md(d["date"])}</small></button>'
+        for i, d in enumerate(t["days"], 1)) + '</div>')
     for i, d in enumerate(t["days"], 1):
         r = d["route"]
         stops = r["stops"]
-        w(f'<div id="day{i}" class="c-{e(d["color"])}" data-date="{d["date"]}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
+        w(f'<div id="day{i}" role="tabpanel" class="daypane c-{e(d["color"])}" data-date="{d["date"]}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
         if stops:
             day_fb = fb(t.get("short", "") + f" {i}일차 {md(d['date'])} 동선", "이 날 의견 보내기")
             w('<div class="card route"><h3>하루 동선</h3><ol>')
@@ -174,14 +192,17 @@ def render_trip(slug, t):
         if d.get("alternatives"):
             w('<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b> · {rich(a["text"])}</div>' for a in d["alternatives"]) + '</div>')
         if d.get("places"):
-            w('<div><div class="sub">장소 카드</div><div class="places">')
-            for p in d["places"]:
+            w('<div><div class="sub">장소 ' + str(len(d["places"])) + '곳 · 누르면 상세</div><div class="pchips">')
+            dlgs = []
+            for n, p in enumerate(d["places"], 1):
                 place_fb = fb(t.get("short", "") + f" {md(d['date'])} " + p["name"])
-                w(f'<details class="place"><summary><span class="nm">{e(p["name"])}<small>{e(p.get("local", ""))}</small></span><span class="cost">{rich(p.get("cost", ""))}</span></summary><div class="body"><dl class="kv">'
-                  f'<dt>주소</dt><dd>{rich(p.get("address", ""))}</dd><dt>영업·휴무</dt><dd>{rich(p.get("hours", ""))}</dd><dt>추천 이유</dt><dd>{rich(p.get("why", ""))}</dd>'
-                  + (f'<dt>팁</dt><dd>{rich(p["tip"])}</dd>' if p.get("tip") else "")
-                  + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="map" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도</a>{place_fb}</div></div></details>')
-            w('</div></div>')
+                did = f"pl-{i}-{n}"
+                w(f'<button type="button" class="pchip" data-open="{did}"><span class="nm">{e(p["name"])}</span><span class="cost">{rich(p.get("cost", ""))}</span></button>')
+                inner = (f'<dl class="kv"><dt>주소</dt><dd>{rich(p.get("address", ""))}</dd><dt>영업·휴무</dt><dd>{rich(p.get("hours", ""))}</dd><dt>추천 이유</dt><dd>{rich(p.get("why", ""))}</dd>'
+                         + (f'<dt>팁</dt><dd>{rich(p["tip"])}</dd>' if p.get("tip") else "")
+                         + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="btn primary" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도에서 보기</a>{place_fb}</div>')
+                dlgs.append(sheet(did, e(p["name"]), e(p.get("local", "")), inner))
+            w('</div></div>' + "".join(dlgs))
         w('</div></div>')
     w('</section>')
 
@@ -198,15 +219,18 @@ def render_trip(slug, t):
                 groups.append((c["group"], []))
             groups[-1][1].append(c)
         order = {"sel": 0, "alt": 1, "off": 2, "exc": 3}
-        for g, items in groups:
+        chips, dlgs = [], []
+        for k, (g, items) in enumerate(groups, 1):
             nsel = sum(1 for c in items if c["status"] == "sel")
-            w(f'<details class="grp"><summary>{e(g)} <span style="color:var(--muted);font-weight:400;font-size:13px">· {len(items)}곳 중 선정 {nsel}</span></summary><div class="list">')
+            rows = []
             for c in sorted(items, key=lambda c: order[c["status"]]):
                 meta = " · ".join(x for x in [c.get("rating") and "★ " + c["rating"], c.get("category"), c.get("memo")] if x)
                 nm = f'<a href="{gmap(c["query"])}" target="_blank" rel="noopener">{e(c["name"])}</a>' if c.get("query") else e(c["name"])
-                w(f'<div class="cand"><span class="nm">{nm}</span><span class="st {c["status"]}">{STATUS[c["status"]]}</span>'
-                  + (f'<span class="meta">{e(meta)}</span>' if meta else "") + f'<span class="why">{rich(c.get("reason", ""))}</span></div>')
-            w('</div></details>')
+                rows.append(f'<div class="cand"><span class="nm">{nm}</span><span class="st {c["status"]}">{STATUS[c["status"]]}</span>'
+                            + (f'<span class="meta">{e(meta)}</span>' if meta else "") + f'<span class="why">{rich(c.get("reason", ""))}</span></div>')
+            chips.append(f'<button type="button" class="gchip" data-open="cg-{k}"><span class="nm">{e(g)}</span><small>{len(items)}곳 · 선정 {nsel}</small></button>')
+            dlgs.append(sheet(f"cg-{k}", e(g), f"{len(items)}곳 중 선정 {nsel}", "".join(rows)))
+        w('<div class="gchips">' + "".join(chips) + '</div>' + "".join(dlgs))
         w('</section>')
 
     # 5. 비용
@@ -246,7 +270,7 @@ def render_trip(slug, t):
         w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 문자 창이 열려요.</p>'
           f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}<span class="phone">{e(SITE.get("feedback_phone", ""))}</span></div></div></section>')
     w(f'<footer><div class="wrap">출처: {rich(t.get("source", ""))} <span class="chk">확인 필요</span> 표시는 아직 확정되지 않은 정보예요.</div></footer>')
-    return page(t.get("short", t["title"]) + " 여행", "\n".join(P), 2)
+    return page(t.get("short", t["title"]) + " 여행", "\n".join(P), 2, t.get("theme", "hakata"))
 
 
 # ---------------------------------------------------------------- 캘린더
@@ -330,7 +354,7 @@ def render_home(trips):
         s, z = d_of(t["start"]), d_of(t["end"])
         n = (z - s).days
         color = t["days"][0]["color"] if t.get("days") else "hakata"
-        cards.append(f'<a class="trip c-{e(color)}" href="trips/{e(slug)}/"><span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
+        cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}" href="trips/{e(slug)}/"><span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
                      f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
     body = f'''<header class="hero"><div class="wrap">
@@ -348,7 +372,7 @@ def render_home(trips):
 </ol></div></section>
 </main>
 <footer><div class="wrap">각 여행의 '캘린더에 추가'를 아이폰에서 누르면 애플 캘린더에 일정이 들어가요.</div></footer>'''
-    return page(SITE_NAME, body, 0)
+    return page(SITE_NAME, body, 0, "hakata", [t.get("theme", "hakata") for _, t in trips] + ["hakata"])
 
 
 def main():

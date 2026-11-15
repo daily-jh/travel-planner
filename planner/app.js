@@ -32,7 +32,7 @@ document.querySelectorAll('.route').forEach(function(card){
 (function(){
   var t=new Date(), iso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   document.querySelectorAll('[data-date="'+iso+'"]').forEach(function(el){
-    el.classList.add(el.tagName==='A'?'is-today':'today');
+    el.classList.add(el.tagName==='A'||el.tagName==='BUTTON'?'is-today':'today');
   });
 })();
 
@@ -90,4 +90,34 @@ document.querySelectorAll('.route').forEach(function(card){
       location.href='sms:'+phone+(ios?'&':'?')+'body='+encodeURIComponent(body+'\n'+location.href.split('#')[0]);
     });
   });
+})();
+
+// 날짜 탭: 한 번에 하루만 보여서 스크롤을 줄인다 (오늘 → 주소의 #dayN → 1일차 순으로 첫 탭을 고름)
+(function(){
+  var sec=document.getElementById('detail'); if(!sec) return;
+  var tabs=[].slice.call(sec.querySelectorAll('.daytabs button')); if(!tabs.length) return;
+  sec.classList.add('tabs-on');
+  function show(id,scroll){
+    tabs.forEach(function(b){var on=b.dataset.pane===id; b.setAttribute('aria-selected',on); b.tabIndex=on?0:-1; var p=document.getElementById(b.dataset.pane); if(p) p.hidden=!on; if(on) b.scrollIntoView({block:'nearest',inline:'center'});});
+    if(scroll) sec.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  }
+  tabs.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.pane,false); history.replaceState(null,'','#'+b.dataset.pane);});});
+  document.querySelectorAll('nav.chips a[href^="#day"]').forEach(function(a){
+    a.addEventListener('click',function(ev){ev.preventDefault(); show(a.getAttribute('href').slice(1),true); history.replaceState(null,'',a.getAttribute('href'));});
+  });
+  var today=document.querySelector('.daytabs button.is-today');
+  var h=location.hash.slice(1);
+  show(/^day\d+$/.test(h)&&document.getElementById(h)?h:(today?today.dataset.pane:tabs[0].dataset.pane), /^day\d+$/.test(h));
+})();
+
+// 팝업 시트: data-open 버튼으로 열고, ✕·바깥 누르기·Esc로 닫는다
+(function(){
+  function close(d){ d.close(); document.body.classList.remove('sheet-open'); }
+  document.addEventListener('click',function(ev){
+    var o=ev.target.closest('[data-open]');
+    if(o){ var d=document.getElementById(o.dataset.open); if(d&&d.showModal){ var acc=o.closest('[class*="c-"]'); if(acc) d.style.setProperty('--accent',getComputedStyle(acc).getPropertyValue('--accent')); d.showModal(); document.body.classList.add('sheet-open'); } return; }
+    if(ev.target.closest('[data-close]')){ close(ev.target.closest('dialog')); return; }
+    if(ev.target.tagName==='DIALOG'&&ev.target.classList.contains('sheet')){ close(ev.target); }
+  });
+  document.querySelectorAll('dialog.sheet').forEach(function(d){ d.addEventListener('close',function(){document.body.classList.remove('sheet-open')}); });
 })();

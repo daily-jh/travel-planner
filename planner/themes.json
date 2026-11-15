@@ -1,0 +1,26 @@
+{
+ "hakata": {
+  "label": "하카타 남색·매화",
+  "font": "Do Hyeon"
+ },
+ "ocean": {
+  "label": "바다·섬",
+  "font": "Jua"
+ },
+ "forest": {
+  "label": "숲·온천",
+  "font": "Gowun Dodum"
+ },
+ "snow": {
+  "label": "겨울·설경",
+  "font": "Black Han Sans"
+ },
+ "citrus": {
+  "label": "열대·휴양",
+  "font": "Jua"
+ },
+ "temple": {
+  "label": "고도·사찰",
+  "font": "Gowun Batang"
+ }
+}
