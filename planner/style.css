@@ -192,3 +192,34 @@ a.trip .dday.past{background:var(--surface2);color:var(--muted)}
 .howto ol{margin:0;padding-left:20px;font-size:14px;display:grid;gap:6px}
 .howto code{font-family:var(--f-data);font-size:12.5px;background:var(--surface2);border-radius:4px;padding:0 4px}
 .back{display:inline-block;margin-bottom:6px;font-size:13px;text-decoration:none;color:var(--muted)}
+/* ---------- motion ---------- */
+/* 한 번의 등장: 하카타오리 띠가 베틀처럼 짜여 나오고, 제목이 그 위로 올라온다 */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes weave{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes pin{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent,var(--hakata)) 45%,transparent)}100%{box-shadow:0 0 0 8px transparent}}
+@keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.hero .eyebrow,.hero h1,.hero p,.hero .facts,.hero .cta,.trips>*{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.hero h1{animation-delay:.08s}.hero p{animation-delay:.16s}.hero .facts{animation-delay:.22s}.hero .cta{animation-delay:.28s}
+.trips>*:nth-child(2){animation-delay:.08s}.trips>*:nth-child(3){animation-delay:.16s}.trips>*:nth-child(n+4){animation-delay:.22s}
+.kenjo{animation:weave 1.1s cubic-bezier(.6,0,.2,1) .15s both}
+.hero h1 em{background:linear-gradient(transparent 62%,var(--ume-soft) 62%);padding:0 2px}
+.btn,a.trip,.route li a,nav.chips a{transition:transform .18s ease,background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}
+.btn:hover{transform:translateY(-1px)}
+a.trip:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(27,34,56,.10)}
+.route li a.on i{animation:pin 1.4s ease-out infinite}
+.mapbox iframe{transition:opacity .35s ease}
+.mapbox.loading iframe{opacity:.35}
+details.place[open] .body,details.grp[open] .list{animation:open .25s ease both}
+nav.chips a.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+nav.chips a.is-today{border-color:var(--ume);color:var(--ume);font-weight:700}
+nav.chips a.is-today::after{content:" 오늘";font-size:11px}
+[data-date].today .dayhead .t::after{content:"오늘";margin-left:8px;font-family:var(--f-body);font-size:12px;vertical-align:middle;background:var(--ume);color:var(--on-accent);border-radius:5px;padding:2px 7px}
+.totop{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:var(--hakata);color:var(--on-accent);text-decoration:none;font-weight:700;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:6}
+.totop.show{opacity:1;transform:none;pointer-events:auto}
+@media (prefers-reduced-motion: reduce){
+ *,*::before,*::after{animation:none!important;transition:none!important}
+}
+nav.chips .wrap{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav.chips .wrap::-webkit-scrollbar{display:none}
+nav.chips a{flex:none}
+.c-ume{--accent:var(--ume)} .c-hakata{--accent:var(--hakata)} .c-lantern{--accent:var(--lantern)} .c-tide{--accent:var(--tide)}

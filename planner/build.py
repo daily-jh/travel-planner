@@ -71,7 +71,7 @@ def page(title, body, depth):
     return (f'<!doctype html>\n<html lang="ko">\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
             f'<title>{e(title)}</title>\n{FONTS}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
-            f'<body>\n{body}\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
+            f'<body>\n{body}\n<a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
 
 
 # ---------------------------------------------------------------- 여행 상세
@@ -85,7 +85,7 @@ def render_trip(slug, t):
         url = l.get("url") or gmap(l["query"])
         links.append(f'<a class="btn{" primary" if l.get("primary") else ""}" href="{e(url)}" target="_blank" rel="noopener">{e(l["label"])}</a>')
     links.append('<a class="btn" href="calendar.ics">캘린더에 추가</a>')
-    title_html = e(t["title"])
+    title_html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", e(t["title"]))
     w(f'''<header class="hero"><div class="wrap">
 <a class="back" href="../../">← 여행 목록</a>
 <div class="eyebrow">{e(t.get("eyebrow", ""))} · {start:%Y.%m.%d} — {end:%m.%d} · {nights}박 {nights + 1}일</div>
@@ -96,8 +96,9 @@ def render_trip(slug, t):
 </div><div class="kenjo" aria-hidden="true"></div></header>''')
     chips = [("simple", "간단 일정"), ("overview", "한눈에")]
     chips += [(f"day{i}", md(d["date"])) for i, d in enumerate(t["days"], 1)]
+    day_dates = {f"day{i}": d["date"] for i, d in enumerate(t["days"], 1)}
     chips += [("cands", "후보"), ("budget", "비용"), ("before", "출발 전")]
-    w('<nav class="chips"><div class="wrap">' + "".join(f'<a href="#{a}">{e(b)}</a>' for a, b in chips) + '</div></nav><main class="wrap">')
+    w('<nav class="chips"><div class="wrap">' + "".join(f'<a href="#{a}"{f' data-date="{day_dates[a]}"' if a in day_dates else ""}>{e(b)}</a>' for a, b in chips) + '</div></nav><main class="wrap">')
 
     # 1. 간단 일정표
     w('<section id="simple"><h2><span class="num">1</span>간단 일정표</h2>'
@@ -145,7 +146,7 @@ def render_trip(slug, t):
     for i, d in enumerate(t["days"], 1):
         r = d["route"]
         stops = r["stops"]
-        w(f'<div id="day{i}" class="c-{e(d["color"])}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
+        w(f'<div id="day{i}" class="c-{e(d["color"])}" data-date="{d["date"]}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
         if stops:
             w('<div class="card route"><h3>하루 동선</h3><ol>')
             for n, s in enumerate(stops, 1):
@@ -315,7 +316,7 @@ def render_home(trips):
         n = (z - s).days
         color = t["days"][0]["color"] if t.get("days") else "hakata"
         cards.append(f'<a class="trip c-{e(color)}" href="trips/{e(slug)}/"><span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
-                     f'<span class="ttl">{e(t["title"])}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
+                     f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
     body = f'''<header class="hero"><div class="wrap">
 <div class="eyebrow">TRAVEL PLANNER</div>
