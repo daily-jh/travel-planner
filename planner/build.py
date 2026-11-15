@@ -193,21 +193,17 @@ def render_trip(slug, t):
 <div class="countdown" data-start="{t["start"]}" data-end="{t["end"]}" aria-live="off"><span class="cd-l">출발까지</span><div class="cd-tiles"><span><b data-u="d">--</b><small>일</small></span><span><b data-u="h">--</b><small>시간</small></span><span><b data-u="m">--</b><small>분</small></span></div></div>
 <div class="cta">{"".join(links)}</div>
 </div><canvas class="petals" aria-hidden="true"></canvas><div class="kenjo" aria-hidden="true"></div></header>''')
-    chips = [("tools", "여행 도구"), ("simple", "간단 일정"), ("overview", "한눈에")]
-    chips += [("detail", "날짜별 일정")]
-    day_dates = {f"day{i}": d["date"] for i, d in enumerate(t["days"], 1)}
-    chips += [("cands", "후보"), ("budget", "비용"), ("before", "출발 전")]
-    w('<nav class="chips"><div class="wrap">' + "".join(f'<a href="#{a}"{f' data-date="{day_dates[a]}"' if a in day_dates else ""}>{e(b)}</a>' for a, b in chips) + '</div></nav><main class="wrap">')
+    w('<main class="wrap">')
 
     # 1. 간단 일정표
-    w('<section id="simple"><h2><span class="num">1</span>간단 일정표</h2>'
-      '<p class="lead">하루 6칸(아침·오전·점심·오후·저녁·밤)으로 먼저 보는 일정이에요. 시각은 대략치예요.</p><div class="days">')
+    w('<section id="simple"><h2>한눈에 보는 일정</h2>'
+      '<p class="lead">날짜를 누르면 하루가 6칸으로 펼쳐져요. 시각은 대략치예요.</p><div class="days">')
     for i, d in enumerate(t["days"], 1):
-        w(f'<div class="day c-{e(d["color"])}"><div class="dh"><b>{i}일차 · {md(d["date"])}</b><small>{e(d["theme"])}</small></div><table class="simple"><tbody>')
+        w(f'<details class="day c-{e(d["color"])}" data-date="{d["date"]}"{" open" if i == 1 else ""}><summary class="dh"><b>{i}일차 · {md(d["date"])}</b><small>{e(d["theme"])}</small></summary><table class="simple"><tbody>')
         for r in d["simple"]:
             cls = "meal" if r["slot"] in ("아침", "점심", "저녁") else ""
             w(f'<tr class="{cls}"><td class="k">{e(r["slot"])}</td><td class="t">{e(r["time"])}</td><td>{rich(r["text"])}</td></tr>')
-        w('</tbody></table></div>')
+        w(f'</tbody></table><button type="button" class="day-go" data-goto="day{i}">{i}일차 자세히 보기</button></details>')
     w('</div></section>')
 
     # 2. 한눈에 보기
@@ -215,7 +211,7 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]]} for d in t["days"]],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", "")}
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
@@ -248,7 +244,8 @@ def render_trip(slug, t):
         ("t-pk", "", "✓", "출발 전 확인", '<small class="pk-mini">예약·확인 체크</small>'),
         ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급·영사콜센터</small>') if t.get("emergency") else None,
         ("t-taxi", "", "⛟", "택시 카드", '<small>기사님께 보여 주기</small>') if t.get("stay_ja") else None,
-        ("t-log", "tool-log", "✎", "여행 기록", '<small class="log-mini">다녀온 곳·한 줄 기록</small>'),
+        ("t-log", "tool-log", "✎", "여행 기록", '<small class="log-mini">다녀온 곳·사진·한 줄</small>'),
+        ("t-sync", "tool-sync", "⇄", "일행과 맞추기", '<small>픽·지출을 링크로 보내기</small>') if len(trav) > 1 else None,
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
     ]
     tl = []
@@ -265,7 +262,7 @@ def render_trip(slug, t):
             tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         else:
             tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
-    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><p class="lead">날씨, 환율, 회화, 짐 싸기, 함께 쓴 돈을 한곳에서 봐요.</p><div class="tools">' + "".join(tl) + '</div></section>')
+    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tools">' + "".join(tl) + '</div></section>')
     w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행 날짜는 출발 16일 전부터 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요. 자료: Open-Meteo</p>'))
     if cur:
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
@@ -293,15 +290,22 @@ def render_trip(slug, t):
             '<div class="exf-cat seg" role="group" aria-label="분류">' + "".join(f'<button type="button" data-cat="{c}" aria-pressed="{str(k == 0).lower()}">{c}</button>' for k, c in enumerate(cats)) + '</div>'
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
             '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
-            '<button class="btn primary" type="submit">추가</button></form><div class="exsum"></div><div class="excat"></div><ul class="exlist"></ul>'))
+            '<div class="exf-row"><button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button><button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
+    w(sheet("tool-sync", "일행과 맞추기", "서버 없이 링크 하나로 픽과 지출을 합쳐요",
+            '<ol class="steps"><li><b>내 기록 보내기</b><span>아래 버튼을 누르면 내 픽, 함께 쓴 돈, 출발 전 체크가 담긴 링크가 만들어져요. 카카오톡이나 문자로 보내요.</span></li>'
+            '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
+            '<li><b>서로 한 번씩</b><span>둘이 한 번씩 보내면 양쪽이 같아져요. 기록은 링크 안에만 담기고 어디에도 올라가지 않아요.</span></li></ol>'
+            '<div class="sync-me"></div><div class="row"><button type="button" class="btn primary" data-sync="send">내 기록 보내기</button></div>'))
+    w(sheet("sync-in", "기록을 받았어요", "", '<div class="sync-body"></div><div class="row"><button type="button" class="btn primary" data-sync="merge">내 기록과 합치기</button><button type="button" class="btn" data-close>나중에</button></div>'))
+    w('<dialog class="photoview" aria-label="사진 보기"><img alt=""><div class="pv-bar"><button type="button" data-pv="del">삭제</button><button type="button" data-pv="close">닫기</button></div></dialog>')
     if t.get("emergency"):
         w(sheet("tool-sos", "비상 연락", "누르면 전화가 걸려요", '<ul class="sos">' + "".join(
             (f'<li><a href="tel:{e(num.replace("-", ""))}"><span>{e(nm)}</span><b>{e(num)}</b></a></li>' if any(ch.isdigit() for ch in num) else f'<li><a href="{e(t.get("emergency_link", "#"))}" target="_blank" rel="noopener"><span>{e(nm)}</span><b>{e(num)} ↗</b></a></li>')
             for nm, num in t["emergency"]) + '</ul><p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>'))
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
-    w(sheet("tool-log", "여행 기록", "다녀온 곳과 한 줄 기록 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
+    w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
-    w('<section id="overview"><h2><span class="num">2</span>한눈에 보기</h2><p class="lead">숙소, 이동, 날짜별 강도·복귀 계획이에요.</p><div class="stack">')
+    w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
     plain1 = lambda x: re.sub(r"\*\*|\{확인 필요\}", "", x)
     ov_chips, ov_dlgs = [], []
@@ -320,11 +324,10 @@ def render_trip(slug, t):
     w('<div class="ovchips">' + "".join(ov_chips) + "</div>" + "".join(ov_dlgs))
     if t.get("pace"):
         p = t["pace"]
-        w('<div class="card"><h3>날짜별 강도·복귀 계획</h3><div class="scrollx"><table class="plain"><thead><tr>'
-          + "".join(f"<th>{e(c)}</th>" for c in p["columns"]) + "</tr></thead><tbody>")
+        w('<div class="card"><h3>날짜별 강도·복귀 계획</h3><ul class="pace">')
         for r in p["rows"]:
-            w("<tr>" + "".join(f'<td{" class=n" if j in (0, len(r) - 1) else ""}>{rich(c)}</td>' for j, c in enumerate(r)) + "</tr>")
-        w("</tbody></table></div></div>")
+            w(f'<li><b>{rich(r[0])}</b><span>{rich(r[1])}</span><small>{rich(" · ".join(r[2:-1]))}</small><em>{e(p["columns"][-1])} {rich(r[-1])}</em></li>')
+        w("</ul></div>")
     if t.get("closures"):
         rows = []
         for a, b, c, st in t["closures"]:
@@ -336,7 +339,7 @@ def render_trip(slug, t):
     w("</div></section>")
 
     # 3. 날짜별 상세
-    w('<section id="detail"><h2><span class="num">3</span>날짜별 상세 일정</h2><p class="lead">≈ 표시는 대략적인 이동 시간이에요. 날짜를 고르고, 시간표 줄이나 장소를 누르면 자세한 내용이 팝업으로 열려요.</p>')
+    w('<section id="detail"><h2>날짜별 일정</h2>')
     w('<div class="daytabs" role="tablist" aria-label="날짜 고르기">' + "".join(
         f'<button type="button" role="tab" class="c-{e(d["color"])}" data-pane="day{i}" data-date="{d["date"]}"><b>{i}일차</b><small>{md(d["date"])}</small></button>'
         for i, d in enumerate(t["days"], 1)) + '</div>')
@@ -372,11 +375,13 @@ def render_trip(slug, t):
             inner += '<div class="row">' + "".join(btns) + "</div>"
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
                       '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
-                      '<textarea rows="2" placeholder="한 줄 기록 (맛, 분위기, 다음에 또 올지)"></textarea></div>')
+                      '<textarea rows="2" placeholder="한 줄 기록 (맛, 분위기, 다음에 또 올지)"></textarea>'
+                      '<div class="jr-pics"></div><label class="jr-add">사진 추가<input type="file" accept="image/*" multiple hidden></label></div>')
             blk_dlgs.append(sheet(bid, rich(b["place"]), f'{i}일차 · {e(b["time"])} · {e(b["type"])}', inner))
         w('</tbody></table></div>' + "".join(blk_dlgs))
         if d.get("alternatives"):
-            w('<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b> · {rich(a["text"])}</div>' for a in d["alternatives"]) + '</div>')
+            w(f'<button type="button" class="gchip ov wide planb" data-open="alt-{i}"><span class="k">플랜 B</span><span class="nm">{e(" · ".join(a["when"] for a in d["alternatives"]))}</span><small>날씨나 컨디션이 안 좋을 때 바꿀 일정</small></button>')
+            w(sheet(f"alt-{i}", "플랜 B", f"{i}일차 · {md(d['date'])}", '<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b><p>{rich(a["text"])}</p></div>' for a in d["alternatives"]) + '</div>'))
         if d.get("places"):
             w('<div><div class="sub">장소 ' + str(len(d["places"])) + '곳 · 누르면 상세</div><div class="pchips">')
             dlgs = []
@@ -396,7 +401,7 @@ def render_trip(slug, t):
     cands = t.get("candidates", [])
     if cands:
         cnt = {k: sum(1 for c in cands if c["status"] == k) for k in STATUS}
-        w(f'<section id="cands"><h2><span class="num">4</span>후보 정리</h2><p class="lead">조사한 장소 {len(cands)}곳을 모두 올렸어요. '
+        w(f'<section id="cands"><h2>후보 장소</h2><p class="lead">조사한 장소 {len(cands)}곳이에요. '
           + " · ".join(f"{STATUS[k]} {cnt[k]}" for k in STATUS) + '. 미배치 장소는 영업시간·휴무를 아직 확인하지 않았어요.</p>'
           '<div class="legend">' + "".join(f'<span class="st {k}">{v}</span>' for k, v in STATUS.items()) + '</div>')
         groups = []
@@ -416,6 +421,7 @@ def render_trip(slug, t):
                             + (f'<span class="meta">{e(meta)}</span>' if meta else "") + f'<span class="why">{rich(c.get("reason", ""))}</span></div>')
             chips.append(f'<button type="button" class="gchip" data-open="cg-{k}"><span class="nm">{e(g)}</span><small>{len(items)}곳 · 선정 {nsel}</small></button>')
             dlgs.append(sheet(f"cg-{k}", e(g), f"{len(items)}곳 중 선정 {nsel}", "".join(rows)))
+        w('<label class="search"><input type="search" class="cand-q" placeholder="장소 찾기 (이름, 종류, 메모)" aria-label="장소 찾기" autocomplete="off"></label><div class="cand-res card" hidden></div>')
         w('<div class="gchips">' + "".join(chips) + '</div>' + "".join(dlgs))
         w('</section>')
 
@@ -425,7 +431,7 @@ def render_trip(slug, t):
         u = b.get("unit", "")
         M = max(r[3] for r in b["rows"])
         M = int(-(-M // 4000) * 4000) if M > 4000 else M
-        w(f'<section id="budget"><h2><span class="num">5</span>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>'
+        w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>'
           f'<div class="card" style="margin-bottom:14px"><h3>일차별 범위</h3><div class="bars">')
         for lab, _, a, z, _ in b["rows"]:
             l, wd = a / M * 100, (z - a) / M * 100
@@ -435,18 +441,16 @@ def render_trip(slug, t):
         ticks = [0, M / 3, M * 2 / 3, M]
         w('</div><div class="axis" aria-hidden="true"><span></span><span class="ticks">'
           + "".join(f'<span style="left:{k / M * 100:.1f}%">{int(k):,}</span>' for k in ticks) + '</span></div></div>')
-        w('<div class="card" style="padding:6px 12px"><div class="scrollx"><table class="plain" style="min-width:540px"><thead><tr><th>일차</th><th>구성</th><th>금액</th><th>원화 감</th></tr></thead><tbody>')
-        for lab, what, a, z, krw in b["rows"]:
-            w(f'<tr><td class="n">{e(lab)}</td><td>{rich(what)}</td><td class="n">{u}{a:,}~{z:,}</td><td class="n">{e(krw)}</td></tr>')
-        if b.get("total"):
-            lab, what, a, z, krw = b["total"]
-            w(f'<tr><td class="n"><b>{e(lab)}</b></td><td><b>{e(what)}</b></td><td class="n"><b>{u}{a:,}~{z:,}</b></td><td class="n"><b>{e(krw)}</b></td></tr>')
-        w(f'</tbody></table></div><p class="lead" style="margin:10px 0 4px">{rich(b.get("footnote", ""))}</p></div></section>')
+        w('<div class="card"><h3>날짜별 구성</h3><ul class="bud">')
+        for lab, what, a, z, krw in b["rows"] + ([b["total"]] if b.get("total") else []):
+            tot = b.get("total") and lab == b["total"][0]
+            w(f'<li{" class=tot" if tot else ""}><b>{e(lab)}</b><em>{u}{a:,}~{z:,}</em><span>{rich(what)}</span><small>{e(krw)}</small></li>')
+        w(f'</ul><p class="lead" style="margin:12px 0 0;font-size:13px">{rich(b.get("footnote", ""))}</p></div></section>')
 
     # 6. 출발 전 확인
     bf = t.get("before")
     if bf:
-        w(f'<section id="before"><h2><span class="num">6</span>출발 전 확인</h2><p class="lead">{rich(bf.get("note", ""))}</p><div class="grid2">')
+        w(f'<section id="before"><h2>출발 전 확인</h2><p class="lead">{rich(bf.get("note", ""))}</p><div class="grid2">')
         for title, items in bf["lists"]:
             w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo">'
               + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"><span class="box"></span><span>{rich(x)}</span></li>' for n, x in enumerate(items)) + '</ul></div>')
@@ -457,10 +461,10 @@ def render_trip(slug, t):
           f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}</div></div></section>')
     w(f'<footer><div class="wrap">출처: {rich(t.get("source", ""))} <span class="chk">확인 필요</span> 표시는 아직 확정되지 않은 정보예요.</div></footer>')
     names = " · ".join(x["name"] for x in t.get("travelers", []))
-    steps = [("날짜 탭", "위의 1일차~마지막 날 탭을 누르면 그날 동선, 지도, 시간표만 보여요."),
+    steps = [("아래 탭 4개", "홈은 지금 일정과 여행 도구, 일정은 날짜별 동선과 지도, 장소는 픽과 후보, 준비는 예약·비용·체크예요."),
              ("누르면 팝업", "시간표 한 줄, 장소, 숙소·예약 칩을 누르면 자세한 내용이 아래에서 올라와요. 바깥을 누르거나 ✕로 닫아요."),
              ("우리의 픽", "가고 싶은 곳에 하트를 눌러 저장하면 누가 고른 곳인지" + (f"({names})" if names else "") + " 장소마다 보여요. 나중에 '픽 수정'으로 바꿀 수 있어요."),
-             ("캘린더·공유", "'캘린더에 추가'는 아이폰 캘린더에 일정을 넣고, '일행에게 공유'는 이 페이지 링크를 보내요.")]
+             ("일행과 맞추기", "여행 도구의 '일행과 맞추기'에서 링크를 보내면 서로의 픽과 지출이 합쳐져요.")]
     w(sheet("welcome", "이렇게 보면 돼요", e(t.get("short", "")) + " 여행 페이지 사용법",
             '<div class="fan" aria-hidden="true">' + "".join(f'<div class="fc c-{e(d["color"])}" style="--i:{k - (min(len(t["days"]), 5) - 1) / 2}"><small>{k + 1}일차 · {md(d["date"])}</small><b>{e(d["theme"])}</b><span>{len(d["route"]["stops"])}곳</span></div>' for k, d in enumerate(t["days"][:5])) + '</div>'
             '<ol class="steps">' + "".join(f'<li><b>{e(a)}</b><span>{e(b)}</span></li>' for a, b in steps) + '</ol>'
@@ -468,7 +472,20 @@ def render_trip(slug, t):
     days_txt = " / ".join(d["theme"] for d in t["days"])
     og = {"title": t.get("short", t["title"]) + " 여행 · " + t["start"].replace("-", ".") + "~",
           "desc": f'{nights}박 {nights + 1}일 일정과 지도: {days_txt}', "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/"}
-    return page(t.get("short", t["title"]) + " 여행", "\n".join(P), 2, t.get("theme", "hakata"), og=og)
+    body = "\n".join(P)
+    views = {"simple": "home", "tools": "home", "detail": "plan", "picks": "places", "cands": "places",
+             "overview": "prep", "budget": "prep", "before": "prep", "feedback": "prep"}
+    for sid, v in views.items():
+        body = body.replace(f'<section id="{sid}"', f'<section data-view="{v}" id="{sid}"', 1)
+    body = body.replace('<header class="hero">', '<header class="hero" data-view="home">', 1)
+    icons = {"home": '<path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+             "plan": '<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
+             "places": '<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+             "prep": '<path d="M5 6.5h14M5 12h14M5 17.5h9"/><path d="m16.5 17.5 1.8 1.8 3-3.4"/>'}
+    body += ('<nav class="tabbar" aria-label="화면 바꾸기">' + "".join(
+        f'<button type="button" data-tab="{k}"><svg viewBox="0 0 24 24" aria-hidden="true">{icons[k]}</svg><span>{lab}</span></button>'
+        for k, lab in (("home", "홈"), ("plan", "일정"), ("places", "장소"), ("prep", "준비"))) + '</nav>')
+    return page(t.get("short", t["title"]) + " 여행", body, 2, t.get("theme", "hakata"), og=og)
 
 
 # ---------------------------------------------------------------- 캘린더
@@ -615,7 +632,14 @@ def main():
         print(f"{slug}: {len(t['days'])}일, 캘린더 {n}건")
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(render_home(trips))
     open(os.path.join(OUT, ".nojekyll"), "w").close()
-    shutil.copy(os.path.join(here, "sw.js"), os.path.join(OUT, "sw.js"))
+    import hashlib
+    pre = ["./", "assets/style.css", "assets/app.js", "assets/favicon.svg", "assets/manifest.webmanifest"] + [f"trips/{slug}/" for slug, _ in trips]
+    h = hashlib.sha1()
+    for f in pre:
+        fp = os.path.join(OUT, f, "index.html") if f.endswith("/") else os.path.join(OUT, f)
+        h.update(open(fp, "rb").read())
+    sw = open(os.path.join(here, "sw.js"), encoding="utf-8").read().replace("__VER__", h.hexdigest()[:10]).replace("__PRE__", json.dumps(pre))
+    open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 
 
 if __name__ == "__main__":
