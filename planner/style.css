@@ -225,3 +225,10 @@ nav.chips a{flex:none}
 .c-ume{--accent:var(--ume)} .c-hakata{--accent:var(--hakata)} .c-lantern{--accent:var(--lantern)} .c-tide{--accent:var(--tide)}
 button.btn{font:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:10px;padding:10px 14px;font-size:14px;z-index:7;max-width:calc(100% - 32px);box-shadow:var(--shadow);animation:rise .25s ease both}
+button.fb{font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;border:1px solid var(--ume);color:var(--ume);background:var(--surface);border-radius:8px;padding:5px 10px;transition:background-color .18s ease,color .18s ease}
+button.fb:hover{background:var(--ume);color:var(--on-accent)}
+.route .row button.fb{margin-top:0}
+.fbcard .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fbcard button.fb{margin-top:0}
+.phone{font-family:var(--f-data);font-size:14px;user-select:all}
+details.place .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}

@@ -18,6 +18,15 @@ from urllib.parse import quote
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "_site")
 SITE_NAME = "여행 플래너"
+SITE = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "site.json"), encoding="utf-8"))
+PHONE = re.sub(r"[^0-9+]", "", SITE.get("feedback_phone", ""))
+
+
+def fb(subject, label="의견 보내기"):
+    """일행이 누르면 계획한 사람 번호로 문자 창이 열리는 버튼. 번호가 없으면 아무것도 안 그린다."""
+    if not PHONE:
+        return ""
+    return f'<button class="fb" type="button" data-subject="{e(subject)}">{e(label)}</button>'
 WEEK = "월화수목금토일"
 MODE_KO = {"transit": "대중교통", "driving": "차량", "walking": "도보"}
 TYPE_CLS = {"아침": "meal", "점심": "meal", "저녁": "meal", "밤": "cafe", "카페": "cafe",
@@ -70,7 +79,7 @@ def page(title, body, depth):
     up = "../" * depth
     return (f'<!doctype html>\n<html lang="ko">\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-            f'<title>{e(title)}</title>\n{FONTS}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
+            + (f'<meta name="feedback-phone" content="{e(PHONE)}">' if PHONE else "") + f'<title>{e(title)}</title>\n{FONTS}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
             f'<body>\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
 
 
@@ -149,11 +158,12 @@ def render_trip(slug, t):
         stops = r["stops"]
         w(f'<div id="day{i}" class="c-{e(d["color"])}" data-date="{d["date"]}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
         if stops:
+            day_fb = fb(t.get("short", "") + f" {i}일차 {md(d['date'])} 동선", "이 날 의견 보내기")
             w('<div class="card route"><h3>하루 동선</h3><ol>')
             for n, s in enumerate(stops, 1):
                 w(f'<li><a href="{gmap(s["query"])}" target="_blank" rel="noopener" data-q="{e(s["query"])}" data-label="{e(s["label"])}"{" class=on" if n == 1 else ""}><i>{n}</i>{e(s["label"])}</a></li>')
             w(f'</ol><div class="row"><a class="btn primary" href="{dirurl(r["mode"], stops)}" target="_blank" rel="noopener">구글 지도에서 경로 보기 ({MODE_KO.get(r["mode"], r["mode"])})</a>'
-              '<span class="hint">번호를 누르면 아래 지도가 그 장소로 바뀌어요. 경로 버튼은 구글 지도에서 전체 동선을 열어요.</span></div>'
+              '' + day_fb + '<span class="hint">번호를 누르면 아래 지도가 그 장소로 바뀌어요. 경로 버튼은 구글 지도에서 전체 동선을 열어요.</span></div>'
               f'<div class="mapbox"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{i}일차 지도" src="{embed(stops[0]["query"])}"></iframe>'
               f'<div class="mapcap">지도: <b>{e(stops[0]["label"])}</b></div></div></div>')
         w('<div class="card" style="padding:6px 12px"><table class="blocks"><thead><tr><th>시간</th><th>구분</th><th>장소</th><th>내용</th><th>이동·소요</th><th>비고</th></tr></thead><tbody>')
@@ -166,10 +176,11 @@ def render_trip(slug, t):
         if d.get("places"):
             w('<div><div class="sub">장소 카드</div><div class="places">')
             for p in d["places"]:
+                place_fb = fb(t.get("short", "") + f" {md(d['date'])} " + p["name"])
                 w(f'<details class="place"><summary><span class="nm">{e(p["name"])}<small>{e(p.get("local", ""))}</small></span><span class="cost">{rich(p.get("cost", ""))}</span></summary><div class="body"><dl class="kv">'
                   f'<dt>주소</dt><dd>{rich(p.get("address", ""))}</dd><dt>영업·휴무</dt><dd>{rich(p.get("hours", ""))}</dd><dt>추천 이유</dt><dd>{rich(p.get("why", ""))}</dd>'
                   + (f'<dt>팁</dt><dd>{rich(p["tip"])}</dd>' if p.get("tip") else "")
-                  + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><a class="map" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도</a></div></details>')
+                  + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="map" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도</a>{place_fb}</div></div></details>')
             w('</div></div>')
         w('</div></div>')
     w('</section>')
@@ -231,6 +242,9 @@ def render_trip(slug, t):
               + "".join(f'<li><span class="box"></span><span>{rich(x)}</span></li>' for x in items) + '</ul></div>')
         w('</div></section>')
     w('</main>')
+    if PHONE:
+        w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 문자 창이 열려요.</p>'
+          f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}<span class="phone">{e(SITE.get("feedback_phone", ""))}</span></div></div></section>')
     w(f'<footer><div class="wrap">출처: {rich(t.get("source", ""))} <span class="chk">확인 필요</span> 표시는 아직 확정되지 않은 정보예요.</div></footer>')
     return page(t.get("short", t["title"]) + " 여행", "\n".join(P), 2)
 

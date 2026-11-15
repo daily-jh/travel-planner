@@ -79,3 +79,15 @@ document.querySelectorAll('.route').forEach(function(card){
     });
   });
 })();
+
+// 의견 보내기: 계획한 사람 번호로 문자 창을 연다 (번호는 화면에도 보여서 직접 보낼 수도 있음)
+(function(){
+  var m=document.querySelector('meta[name="feedback-phone"]'); if(!m) return;
+  var phone=m.content, ios=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  document.querySelectorAll('button.fb').forEach(function(b){
+    b.addEventListener('click',function(){
+      var body='['+b.dataset.subject+'] 의견: ';
+      location.href='sms:'+phone+(ios?'&':'?')+'body='+encodeURIComponent(body+'\n'+location.href.split('#')[0]);
+    });
+  });
+})();
