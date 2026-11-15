@@ -14,7 +14,9 @@
 
 1. `trips/2027-03-fukuoka/trip.json`을 복사해 `trips/<연도-월-도시>/trip.json`을 만들어요.
 2. 날짜, `route.stops`(이름 + 구글 지도 검색어), `blocks`(시간표)를 채워요. 확정되지 않은 정보는 `{확인 필요}`라고 쓰면 배지로 표시돼요.
-3. `main`에 올리면 1~2분 뒤 사이트에 반영돼요.
+3. `"theme"`에 여행지 분위기에 맞는 테마를 적어요: `hakata`(남색·매화), `ocean`(바다·섬), `forest`(숲·온천), `snow`(겨울·설경), `citrus`(열대·휴양), `temple`(고도·사찰).
+4. 의견 문자를 받을 번호는 `planner/site.json`의 `feedback_phone`에 적어요. 비워 두면 의견 버튼이 안 보여요.
+5. `main`에 올리면 1~2분 뒤 사이트에 반영돼요.
 
 로컬에서 보기: `python planner/build.py` 후 `_site/index.html`을 열어요.
 
