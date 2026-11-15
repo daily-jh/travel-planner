@@ -5,9 +5,12 @@ document.querySelectorAll('.route').forEach(function(card){
   var box=card.querySelector('.mapbox'), frame=card.querySelector('iframe'), cap=card.querySelector('.mapcap b');
   if(!frame) return;
   frame.addEventListener('load',function(){box.classList.remove('loading')});
+  var lb=box.querySelector('.map-load');
+  if(lb) lb.addEventListener('click',function(){ box.classList.remove('idle'); box.classList.add('loading'); frame.src=frame.dataset.src; lb.remove(); });
   card.querySelectorAll('li a[data-q]').forEach(function(a){
     a.addEventListener('click',function(ev){
       if(ev.metaKey||ev.ctrlKey||ev.shiftKey) return;
+      if(box.classList.contains('idle')) return; // 지도를 아직 안 불러왔으면 구글 지도 앱으로 연다
       ev.preventDefault();
       box.classList.add('loading');
       frame.src='https://maps.google.com/maps?q='+encodeURIComponent(a.dataset.q)+'&z=15&hl=ko&output=embed';
@@ -545,12 +548,14 @@ document.querySelectorAll('.route').forEach(function(card){
       if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요</span></div>'; }
       nc.innerHTML=h; nc.hidden=false; return;
     }
-    if(di<0){ nc.hidden=true; return; }
+    if(di<0){ nc.hidden=true; document.dispatchEvent(new CustomEvent('tp-now',{detail:{di:-1}})); return; }
+    // 현지에서 건너뛴 줄·대안으로 바꾼 줄 (이 휴대폰에 저장, planner/live.js)
+    var PL=LS.get('tp-plan-'+slug,{s:{},w:{}}), bk=function(i){return 'blk-'+(di+1)+'-'+(i+1)}, sk=function(i){return !!(PL.s||{})[bk(i)]}, sw=function(i){return (PL.w||{})[bk(i)]};
     var bl=C.days[di].blocks, ci=-1;
     bl.forEach(function(b,i){ var t=tm(b.time); if(t!==null&&t<=mins) ci=i; });
-    var nx=bl.slice(ci+1).findIndex(function(b){return tm(b.time)!==null}); nx=nx<0?-1:ci+1+nx;
-    var row=function(i,lab,d){ if(i<0) return ''; var b=C.days[d].blocks[i];
-      return '<button type="button" class="nc-row'+(lab==='지금'?' cur':'')+'" data-open="blk-'+(d+1)+'-'+(i+1)+'"><small>'+lab+' · '+esc(b.time)+'</small><b>'+esc(b.place)+'</b><span>'+esc(b.what)+'</span></button>'; };
+    var nx=-1; for(var k=ci+1;k<bl.length;k++){ if(tm(bl[k].time)!==null&&!sk(k)){ nx=k; break; } }
+    var row=function(i,lab,d){ if(i<0) return ''; var b=C.days[d].blocks[i], w=d===di&&sw(i), al=b.alert;
+      return '<button type="button" class="nc-row'+(lab==='지금'?' cur':'')+(d===di&&sk(i)?' skipped':'')+'" data-open="blk-'+(d+1)+'-'+(i+1)+'"><small>'+lab+' · '+esc(b.time)+(d===di&&sk(i)?' · 건너뜀':'')+'</small><b>'+esc(w||b.place)+(w?' <i class="swp">바꿈</i>':'')+'</b><span>'+(w?esc(b.place)+' 대신':esc(b.what))+'</span>'+(al&&!w&&lab==='다음'?'<em class="nc-al">'+esc(al.by)+' 전 도착 · '+esc(al.text.replace(/\{확인 필요\}/g,''))+'</em>':'')+'</button>'; };
     var left=nx>=0?tm(bl[nx].time)-mins:null;
     h='<div class="nc-h"><span class="live"></span>여행 '+(di+1)+'일차 · 지금'+(left!==null&&left>0?'<em>다음까지 '+hm(left)+'</em>':'')+'</div>';
     var rs=bl.filter(function(b){return b.fl.indexOf('rsv')>=0&&tm(b.time)>=mins-30}), cs=bl.filter(function(b){return b.fl.indexOf('cash')>=0&&tm(b.time)>=mins-30});
@@ -561,16 +566,20 @@ document.querySelectorAll('.route').forEach(function(card){
       +(bg?chip(sp>bg[1]?'warn':'','오늘 '+sym+fmt(sp)+' / 예산 '+sym+fmt(bg[0])+'~'+fmt(bg[1]),'tool-ex'):'')+'</div>';
     var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준</span></div>'; }
     h+=row(ci,'지금',di)+row(nx,'다음',di)+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
+    var nb=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
+    if(nb&&C.near&&C.near.length) h+='<button type="button" class="nc-near" data-open="tool-near" data-area="'+esc(nb.area||'')+'"><b>줄이 길거나 문을 닫았나요?</b><span>'+(nb.area?esc(nb.area)+' 근처 ':'')+'지금 열었을 만한 대안 보기 ›</span></button>';
     if(mins>=18*60&&C.days[di+1]){ var tb=C.days[di+1].blocks, fi=tb.findIndex(function(b){return tm(b.time)!==null}), tr=tb.filter(function(b){return b.fl.indexOf('rsv')>=0});
       h+='<div class="nc-tmr"><small>내일 브리핑</small>'+(fi>=0?'<b>'+esc(tb[fi].time.split(/[–-]/)[0])+' '+esc(tb[fi].place)+'</b>':'')+(tr.length?'<span>예약: '+tr.map(function(b){return esc(b.time.split(/[–-]/)[0])+' '+esc(b.place)}).join(', ')+'</span>':'')+'</div>'; }
     nc.innerHTML=h; nc.hidden=false;
     document.querySelectorAll('tr.now').forEach(function(tr){tr.classList.remove('now')});
     var cur_tr=ci>=0&&document.querySelector('tr[data-open="blk-'+(di+1)+'-'+(ci+1)+'"]'); if(cur_tr) cur_tr.classList.add('now');
-    var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
-    if(go&&tgt&&tgt.place){ var dest=tgt.place.split('→').pop().trim()+' '+((C.geo||{}).city||'');
+    var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null), tgw=nx>=0?sw(nx):(ci>=0?sw(ci):'');
+    if(go&&tgt&&tgt.place){ var dest=(tgw||tgt.place.split('→').pop().trim())+' '+((C.geo||{}).city||'');
       go.href=C.map==='naver'?'https://map.naver.com/p/search/'+encodeURIComponent(dest):'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
-      var m=go.querySelector('.go-mini'); if(m) m.textContent=tgt.place.split('→').pop().trim(); }
+      var m=go.querySelector('.go-mini'); if(m) m.textContent=tgw||tgt.place.split('→').pop().trim(); }
+    document.dispatchEvent(new CustomEvent('tp-now',{detail:{di:di,ci:ci,nx:nx,mins:mins,skip:sk,swap:sw}}));
   }
+  document.addEventListener('tp-plan',nowMode);
   nowMode(); setInterval(nowMode,60000);
 
   // 여행 기록: 다녀온 곳 체크, 별점, 한 줄 메모
