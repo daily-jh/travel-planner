@@ -913,7 +913,7 @@ dialog.sheet .alt p{margin:4px 0 0;font-size:15px}
 .shop-art svg{width:72px;height:72px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.12))}
 .shop-art.has-photo{padding:0;border:none;overflow:hidden;cursor:zoom-in;background:#fff;box-shadow:inset 0 0 0 1px var(--sep)}
 .shop-art.has-photo img{width:100%;height:100%;object-fit:cover;display:block}
-.shop-local{margin:2px 0 4px;font-size:var(--fs-cap);color:var(--label2)}.shop-local span{display:inline-block;font-weight:700;color:#fff;background:var(--pri);border-radius:var(--r-pill);padding:1px 8px;margin-right:4px}
+.shop-local{margin:2px 0 4px;font-size:var(--fs-cap);color:var(--label2)}.shop-local span{display:inline-block;font-weight:700;color:var(--on-accent);background:var(--pri);border-radius:var(--r-pill);padding:1px 8px;margin-right:4px}
 .shop-credit{margin:4px 0 0;font-size:11px;color:var(--label3);overflow-wrap:anywhere}.shop-credit a{color:inherit}
 .shop-zoom{border:none;padding:0;background:transparent;max-width:min(92vw,560px);max-height:90vh;margin:auto}
 .shop-zoom::backdrop{background:rgba(0,0,0,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
@@ -1012,3 +1012,23 @@ dialog.sheet .sheet-b{overscroll-behavior:contain}
 }
 /* 쇼핑 출처·사진 저작자 표기: 연회색(1.7:1) → 보조 글자색, 최소 12px */
 .shop-src,.shop-credit,.shop-credit a{color:var(--label2);font-size:12px}
+
+/* 여행 목록: 랜드마크 사진 카드 (trip.json의 landmark) */
+a.trip.lm{position:relative;padding:0;gap:0;overflow:hidden;isolation:isolate}
+a.trip.lm .lm-ph{position:relative;display:block;aspect-ratio:4/3;overflow:hidden;background:var(--pri)}
+@media (min-width:700px){a.trip.lm .lm-ph{aspect-ratio:16/10}}
+a.trip.lm .lm-ph img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
+a.trip.lm .lm-ph::after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 45%,rgba(0,0,0,.72) 100%)}
+a.trip.lm:hover .lm-ph img{transform:scale(1.04)}
+a.trip.lm .lm-top{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;z-index:1}
+a.trip.lm .lm-top .dday{margin:0;background:rgba(255,255,255,.9);color:#1c1c1e}
+a.trip.lm .lm-name{font-size:12px;font-weight:600;color:#fff;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:999px;padding:3px 10px}
+a.trip.lm .lm-txt{position:absolute;left:18px;right:18px;bottom:16px;z-index:1;display:grid;gap:2px;color:#fff;aspect-ratio:auto}
+a.trip.lm .lm-txt .ttl{position:static;color:#fff;width:auto;height:auto;overflow:visible;clip-path:none;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2;text-shadow:0 1px 12px rgba(0,0,0,.35)}
+a.trip.lm .lm-txt .when{color:rgba(255,255,255,.9);font-size:13px;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+a.trip.lm .intro{margin:14px 18px 6px}
+a.trip.lm .lm-credit{margin:0 18px 14px;font-size:12px;color:var(--label2)}
+.lm-credits{margin-top:10px;font-size:12px}
+.lm-credits summary{cursor:pointer}
+.lm-credits ul{margin:6px 0;padding-left:18px}
+@media (prefers-reduced-motion: reduce){a.trip.lm .lm-ph img{transition:none}}

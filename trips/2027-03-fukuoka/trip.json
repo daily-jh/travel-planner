@@ -3,6 +3,15 @@
  "short": "후쿠오카",
  "eyebrow": "FUK · 博多",
  "theme": "hakata",
+ "landmark": {
+  "name": "후쿠오카 타워",
+  "image": "landmark.webp",
+  "focus": "50% 30%",
+  "credit": "Hirho",
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:View_of_Fukuoka_Tower_from_Seaside_Momochi_Seaside_Park_area_around_902-1_Momochihama-2-ch%C5%8Dme_Sawara-ku_Fukuoka_City_20221213.jpg"
+ },
  "travelers": [
   {
    "name": "지훈",
