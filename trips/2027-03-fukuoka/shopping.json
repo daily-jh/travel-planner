@@ -1,0 +1,811 @@
+{
+ "checked": "2026-11-15 조사",
+ "notes": [
+  "**면세가 바뀌었어요 (2026-11-01부터)**: 가게에서는 세금 포함 가격으로 먼저 내고, 출국할 때 공항 세관 확인을 받은 뒤 소비세를 돌려받아요. 같은 날 같은 가게에서 세금 빼고 ¥5,000 이상이어야 해요. 여권을 꼭 챙겨요.",
+  "**한국에 못 가져오는 것**: 이브(EVE) 진통제는 2025년 4월부터 반입 금지예요. 곤약젤리(컵·파우치), 멜라토닌, 데이퀼·나이퀼도 막힐 수 있어요. 고기가 든 가공식품은 검역 대상이라 신고해요.",
+  "**귀국 면세 한도**: 1인 $800, 술은 2병·2L·$400 이하, 향수 100mL 이하예요.",
+  "**액체는 위탁 수하물로**: 멘타이코, 유즈코쇼, 타레, 술처럼 100mL가 넘는 액체·젤은 기내에 못 들고 타요. 멘타이코는 보냉 포장을 받아요."
+ ],
+ "items": [
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "하카타 토리몬",
+   "ja": "博多通りもん",
+   "brand": "明月堂",
+   "size": "6개입",
+   "price_yen": 1000,
+   "price_note": "세금 포함, 2026-07 JAF Mate",
+   "where": "하카타역·후쿠오카공항·텐진 백화점 기념품 코너",
+   "why": "후쿠오카 기념품 판매 1위 우유맛 백앙금 만주",
+   "look": "흰색 바탕에 붉은색·금색 포인트의 가로형 종이상자, 낱개는 흰 개별포장의 동그랗고 납작한 황금빛 만주",
+   "url": "https://jafmate.jp/drive/must-buy-souvenir_20260722.html",
+   "source_date": "2026-07",
+   "shape": "box",
+   "colors": [
+    "#ffffff",
+    "#c8102e",
+    "#c9a24a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "후쿠야 멘타이코(레귤러)",
+   "ja": "味の明太子 レギュラー",
+   "brand": "ふくや",
+   "size": "200g",
+   "price_yen": 2322,
+   "price_note": "세금 포함 공식가(무착색 200g은 2,400엔)",
+   "where": "후쿠야 나카스 본점·하카타역·공항",
+   "why": "후쿠오카 원조 명란젓, 밥도둑 대표",
+   "look": "얕은 직사각 트레이에 붉은 명란 두 줄, 흰색·빨강 종이 슬리브 포장",
+   "url": "https://www.fukuya.com/product/item1808/",
+   "source_date": "2026-05",
+   "shape": "pack",
+   "colors": [
+    "#ffffff",
+    "#d62e2e",
+    "#e86a5a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "후쿠야 멘타이코(무착색)",
+   "ja": "味の明太子 どっから無着色",
+   "brand": "ふくや",
+   "size": "290g",
+   "price_yen": 3400,
+   "price_note": "세금 포함, 2026-05-20 가격 변경",
+   "where": "후쿠야 직영점·하카타역",
+   "why": "색소 없는 명란, 선물용 인기",
+   "look": "흰 상자에 연한 핑크빛 명란 사진, 일본풍 붓글씨 타이틀",
+   "url": "https://www.fukuya.com/product/item1816/",
+   "source_date": "2026-05",
+   "shape": "pack",
+   "colors": [
+    "#ffffff",
+    "#f2b8b5",
+    "#8a6d5a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "히요코 만주",
+   "ja": "名菓ひよ子",
+   "brand": "ひよ子本舗吉野堂",
+   "size": "10개입",
+   "price_yen": 1998,
+   "price_note": "세금 포함, 오이타공항 숍. 5개입 686~837엔",
+   "where": "하카타역·공항·백화점",
+   "why": "병아리 모양 귀여운 하얀앙금 만주",
+   "look": "노란 병아리 일러스트가 있는 흰·노랑 상자, 낱개는 갈색으로 구운 병아리 모양 만주",
+   "url": "https://www.oita-tabito.jp/SHOP/4906983019373.html",
+   "source_date": "2026",
+   "shape": "box",
+   "colors": [
+    "#ffffff",
+    "#f7d548",
+    "#b86b2a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "하카타노히토",
+   "ja": "博多の女",
+   "brand": "二鶴堂",
+   "size": "10개입",
+   "price_yen": 648,
+   "price_note": "세금 포함 공식몰, 6개 389엔/20개 1,296엔",
+   "where": "하카타역·공항",
+   "why": "팥양갱을 바움쿠헨으로 감싼 가성비 기념품",
+   "look": "분홍·보라 계열의 여인 일러스트 상자, 낱개는 갈색 나이테 무늬의 작은 원통형 과자",
+   "url": "https://www.nikakudou.co.jp/onlineshop/",
+   "source_date": "2026",
+   "shape": "box",
+   "colors": [
+    "#f3d5e4",
+    "#8d6bb0",
+    "#b07a4a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "하카타 부라부라",
+   "ja": "博多ぶらぶら",
+   "brand": "博多菓匠 左衛門",
+   "size": "6개입",
+   "price_yen": 972,
+   "price_note": "세금 포함, じゃらん 기사",
+   "where": "하카타역·공항",
+   "why": "쫀득한 떡을 팥앙금으로 감싼 화과자",
+   "look": "검정·빨강 일본풍 상자, 낱개는 어두운 팥색의 둥근 화과자",
+   "url": "https://www.jalan.net/news/article/95620/",
+   "source_date": "2026",
+   "shape": "box",
+   "colors": [
+    "#1f1f1f",
+    "#b3261e",
+    "#6b3a3a"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "치로리안",
+   "ja": "チロリアン",
+   "brand": "千鳥屋",
+   "size": "5개입 내외",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 600~800엔",
+   "where": "하카타역·공항",
+   "why": "크림 든 롤 쿠키, 오래된 후쿠오카 명과",
+   "look": "알프스풍 빨강·초록 체크무늬 원통형 캔이나 상자, 낱개는 가늘고 긴 롤 쿠키",
+   "url": "https://www.chidoriya.co.jp/",
+   "source_date": "2026-11 미검증",
+   "shape": "tin",
+   "colors": [
+    "#c62f2f",
+    "#2f7d4a",
+    "#f2efe6"
+   ]
+  },
+  {
+   "cat": "후쿠오카 한정 기념품",
+   "ko": "멘베이",
+   "ja": "めんべい",
+   "brand": "山口油屋福太郎",
+   "size": "2매×8봉 내외",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 500~800엔",
+   "where": "하카타역·공항·편의점 일부",
+   "why": "명란 맛 바삭한 센베이, 맥주 안주",
+   "look": "빨간 바탕에 하얀 글씨 상자, 낱개는 납작한 원형 센베이에 붉은 점",
+   "url": "https://www.fukutaro.co.jp/",
+   "source_date": "2026-11 미검증",
+   "shape": "box",
+   "colors": [
+    "#d42a2a",
+    "#ffffff",
+    "#f5c542"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "가야노야 다시팩",
+   "ja": "茅乃舎だし",
+   "brand": "久原本家 茅乃舎",
+   "size": "8g×30봉",
+   "price_yen": 2268,
+   "price_note": "세금 포함 공식몰",
+   "where": "가야노야 매장(하카타역 아뮤·이와타야 등)",
+   "why": "후쿠오카 브랜드 국물용 다시팩, 선물 1순위",
+   "look": "베이지색 크라프트 종이 파우치에 검정 붓글씨 라벨, 사각 티백 모양 다시팩",
+   "url": "https://www.kubara.jp/kayanoya/dashi/kayanoyadashi/570000/",
+   "source_date": "2026",
+   "shape": "bag",
+   "colors": [
+    "#c9a77c",
+    "#2a2a2a",
+    "#efe2cc"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "이치란 라멘 치지레멘",
+   "ja": "一蘭ラーメン ちぢれ麺",
+   "brand": "一蘭",
+   "size": "5식입",
+   "price_yen": 2150,
+   "price_note": "세금 포함 공식 스토어(선드럭 2,130엔 후기)",
+   "where": "이치란 매장·드러그스토어·돈키호테",
+   "why": "후쿠오카 원조 돈코츠 라멘을 집에서",
+   "look": "검정 상자에 빨간 포인트, 정사각에 가까운 박스",
+   "url": "https://www.ichiranstore.com/shop/g/g9201118/",
+   "source_date": "2026",
+   "shape": "box",
+   "colors": [
+    "#1b1b1b",
+    "#c8102e",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "우마캇짱",
+   "ja": "うまかっちゃん",
+   "brand": "ハウス食品",
+   "size": "5개입 봉지",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 400~550엔",
+   "where": "슈퍼(하로데이·이온·로피아)",
+   "why": "규슈 한정 국민 돈코츠 봉지라면",
+   "look": "주황·노랑 바탕에 라멘 그릇 사진이 있는 봉지 5개 묶음",
+   "url": "https://housefoods.jp/products/special/umakachan/",
+   "source_date": "2026-11 미검증",
+   "shape": "pack",
+   "colors": [
+    "#f39a1e",
+    "#f7d548",
+    "#b8452a"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "마루타이 봉라멘",
+   "ja": "マルタイラーメン",
+   "brand": "マルタイ",
+   "size": "2인분",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 150~250엔",
+   "where": "슈퍼·드러그스토어",
+   "why": "후쿠오카 기업의 가늘고 긴 막대형 면, 가볍고 저렴",
+   "look": "가늘고 긴 직사각 봉지, 노랑·빨강 배색에 라멘 사진",
+   "url": "https://www.marutai.co.jp/",
+   "source_date": "2026-11 미검증",
+   "shape": "pack",
+   "colors": [
+    "#f5d33f",
+    "#d42a2a",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "유즈코쇼",
+   "ja": "柚子胡椒",
+   "brand": "여러 브랜드(川津食品 등)",
+   "size": "튜브 또는 병 약 40~60g",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 250~600엔",
+   "where": "슈퍼·기념품점",
+   "why": "규슈 명물 유자 고추 양념, 고기·전골에",
+   "look": "초록색 페이스트가 보이는 작은 유리병 또는 튜브, 노랑·초록 라벨",
+   "url": "https://www.tripstore.kr/blog/japan-souvenir-mart-shopping-list",
+   "source_date": "2026-11 미검증",
+   "shape": "jar",
+   "colors": [
+    "#7aa83b",
+    "#f2d64b",
+    "#2e5d2a"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "에바라 야키니쿠 타레",
+   "ja": "黄金の味",
+   "brand": "エバラ食品",
+   "size": "약 210~360g 병",
+   "price_yen": 250,
+   "price_note": "약 250엔대(블로그)",
+   "where": "슈퍼",
+   "why": "고기 양념 끝판왕, 한국보다 저렴",
+   "look": "황금색 라벨의 둥근 플라스틱 병, 사과 일러스트",
+   "url": "https://www.tripstore.kr/blog/japan-souvenir-mart-shopping-list",
+   "source_date": "2026",
+   "shape": "bottle",
+   "colors": [
+    "#5a2a1a",
+    "#d9b44a",
+    "#c0392b"
+   ]
+  },
+  {
+   "cat": "마트 식품·조미료",
+   "ko": "로피아 티라미수",
+   "ja": "ティラミス",
+   "brand": "LOPIA(로피아)",
+   "size": "대형 트레이",
+   "price_yen": null,
+   "price_note": "가격 확인 불가(매장·시기마다 다름)",
+   "where": "로피아 후쿠오카 매장",
+   "why": "대용량 가성비 디저트로 SNS 화제",
+   "look": "얕은 직사각 플라스틱 트레이에 코코아 가루를 뿌린 티라미수",
+   "url": "https://lopia.jp/",
+   "source_date": "2026-11 미검증",
+   "shape": "sheet",
+   "colors": [
+    "#e9e3d8",
+    "#6b4a35",
+    "#f5efe6"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "세븐 금 함박스테이크",
+   "ja": "金のハンバーグ",
+   "brand": "セブン‐イレブン",
+   "size": "1인분 파우치",
+   "price_yen": 429,
+   "price_note": "세금 포함, 출처에 따라 473~498엔",
+   "where": "세븐일레븐",
+   "why": "전자레인지 데우기만으로 호텔급 함박",
+   "look": "검정 바탕에 금색 띠가 있는 납작한 사각 파우치",
+   "url": "https://www.sej.co.jp/products/a/item/105453/",
+   "source_date": "2026-02",
+   "shape": "pack",
+   "colors": [
+    "#1c1c1c",
+    "#c9a24a",
+    "#7a4a2a"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "세븐 금 비프스튜",
+   "ja": "金のビーフシチュー",
+   "brand": "セブン‐イレブン",
+   "size": "1인분",
+   "price_yen": 496,
+   "price_note": "세금 포함(블로그)",
+   "where": "세븐일레븐",
+   "why": "진한 데미글라스 스튜, 야식용",
+   "look": "검정·금색 파우치에 갈색 스튜 사진",
+   "url": "https://www.sej.co.jp/products/a/item/101910/",
+   "source_date": "2026",
+   "shape": "pack",
+   "colors": [
+    "#1c1c1c",
+    "#c9a24a",
+    "#8a3b22"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "세븐 달걀 샌드위치",
+   "ja": "たまごサンド",
+   "brand": "セブン‐イレブン",
+   "size": "1팩",
+   "price_yen": 270,
+   "price_note": "260~280엔대(블로그)",
+   "where": "세븐일레븐",
+   "why": "한국인 일본 편의점 1순위 샌드",
+   "look": "삼각 단면이 보이는 투명 필름 포장, 노란 달걀 속",
+   "url": "https://loop.day/magazine/japan-convenience-store-food-guide-2026",
+   "source_date": "2026",
+   "shape": "onigiri",
+   "colors": [
+    "#f4e7c5",
+    "#f6d24a",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "파미치키",
+   "ja": "ファミチキ",
+   "brand": "ファミリーマート",
+   "size": "1개",
+   "price_yen": 220,
+   "price_note": "블로그 기준",
+   "where": "패밀리마트 계산대",
+   "why": "육즙 많은 순살 치킨",
+   "look": "노랑·초록 종이 봉투에 든 납작한 황금색 치킨 패티",
+   "url": "https://loop.day/magazine/japan-convenience-store-food-guide-2026",
+   "source_date": "2026",
+   "shape": "bag",
+   "colors": [
+    "#f6d24a",
+    "#2f9a5a",
+    "#d9932f"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "가라아게군",
+   "ja": "からあげクン",
+   "brand": "ローソン",
+   "size": "5개",
+   "price_yen": 238,
+   "price_note": "약 238엔(블로그)",
+   "where": "로손 계산대",
+   "why": "로손 대표 한입 치킨",
+   "look": "빨강·노랑 직사각 종이 상자에 닭 캐릭터, 둥근 가라아게 5알",
+   "url": "https://loop.day/magazine/japan-convenience-store-food-guide-2026",
+   "source_date": "2026",
+   "shape": "box",
+   "colors": [
+    "#d42a2a",
+    "#f6d24a",
+    "#d9932f"
+   ]
+  },
+  {
+   "cat": "편의점 먹거리",
+   "ko": "로손 프리미엄 롤케이크",
+   "ja": "プレミアムロールケーキ",
+   "brand": "ローソン Uchi Café",
+   "size": "1개",
+   "price_yen": null,
+   "price_note": "롤케이크류 200~260엔대(블로그)",
+   "where": "로손",
+   "why": "생크림 가득 롤케이크",
+   "look": "투명 원형 용기에 흰 크림이 보이는 짧은 롤",
+   "url": "https://www.lawson.co.jp/",
+   "source_date": "2026",
+   "shape": "cup",
+   "colors": [
+    "#eaf1fb",
+    "#ffffff",
+    "#2a6fc9"
+   ]
+  },
+  {
+   "cat": "과자·디저트",
+   "ko": "자가리코",
+   "ja": "じゃがりこ",
+   "brand": "カルビー",
+   "size": "컵 1개",
+   "price_yen": 130,
+   "price_note": "오픈 가격: 슈퍼 100~130엔대, 편의점 약 200엔",
+   "where": "슈퍼·드러그스토어·편의점",
+   "why": "스틱 감자과자, 규슈 한정 맛도 있음",
+   "look": "원통형 종이컵에 위쪽 필름 뚜껑, 노랑·초록 배색",
+   "url": "https://www.pricey.jp/web/articles/1975",
+   "source_date": "2026-09",
+   "shape": "cup",
+   "colors": [
+    "#f6d24a",
+    "#3a9a4a",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "과자·디저트",
+   "ko": "블랙썬더",
+   "ja": "ブラックサンダー",
+   "brand": "有楽製菓",
+   "size": "1개",
+   "price_yen": 40,
+   "price_note": "40엔 안팎(블로그)",
+   "where": "편의점·돈키호테·슈퍼",
+   "why": "싸고 맛있는 초코바, 나눠주기 좋음",
+   "look": "검정 바탕에 노란 번개 무늬의 작은 직사각 봉지",
+   "url": "https://www.tripstore.kr/blog/japan-souvenir-mart-shopping-list",
+   "source_date": "2026",
+   "shape": "stick",
+   "colors": [
+    "#1c1c1c",
+    "#f6d24a",
+    "#f6d24a"
+   ]
+  },
+  {
+   "cat": "과자·디저트",
+   "ko": "킷캣(지역·한정 맛)",
+   "ja": "キットカット",
+   "brand": "ネスレ日本",
+   "size": "미니 10~12매 봉지",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 400~700엔",
+   "where": "돈키호테·슈퍼·공항",
+   "why": "말차 등 일본 한정 맛",
+   "look": "빨간 봉지(말차 맛은 초록), 막대 초콜릿 사진",
+   "url": "https://nestle.jp/brand/kit/",
+   "source_date": "2026-11 미검증",
+   "shape": "bag",
+   "colors": [
+    "#d42a2a",
+    "#ffffff",
+    "#7aa83b"
+   ]
+  },
+  {
+   "cat": "과자·디저트",
+   "ko": "시로이코이비토",
+   "ja": "白い恋人",
+   "brand": "石屋製菓",
+   "size": "화이트 12매",
+   "price_yen": 1144,
+   "price_note": "세금 포함, 2026-04-01 개정 공식 PDF",
+   "where": "후쿠오카공항·돈키호테",
+   "why": "화이트초코 쿠키 선물 정석(홋카이도산)",
+   "look": "흰색과 하늘색 상자에 눈 덮인 산 그림",
+   "url": "https://www.ishiya.co.jp/news/mtfiles/2026_price_1.pdf",
+   "source_date": "2026-04",
+   "shape": "box",
+   "colors": [
+    "#ffffff",
+    "#9cc7e8",
+    "#2a5a8a"
+   ]
+  },
+  {
+   "cat": "드러그스토어(의약품)",
+   "ko": "사론파스",
+   "ja": "サロンパス",
+   "brand": "久光製薬",
+   "size": "40매",
+   "price_yen": 748,
+   "price_note": "2026-08 인상 후 희망가 680엔(세금 별도)을 세금 포함으로 환산",
+   "where": "드러그스토어(선드럭·마츠키요·코코카라)",
+   "why": "국민 파스",
+   "look": "흰 바탕에 파랑·빨강 띠가 있는 납작한 상자",
+   "url": "https://www.saga-s.co.jp/articles/-/1729925",
+   "source_date": "2026-08",
+   "shape": "box",
+   "colors": [
+    "#ffffff",
+    "#2a5ac9",
+    "#d42a2a"
+   ]
+  },
+  {
+   "cat": "드러그스토어(의약품)",
+   "ko": "로이히츠보코 동전파스",
+   "ja": "ロイヒつぼ膏",
+   "brand": "ニチバン",
+   "size": "156매",
+   "price_yen": 1100,
+   "price_note": "매장가 1,000~1,200엔(세금 포함), 희망가 1,320엔(세금 별도)",
+   "where": "드러그스토어",
+   "why": "어깨·허리 결림에 붙이는 동전 크기 온열 파스",
+   "look": "빨간 상자 안에 동그란 살구색 동전 크기 패치 시트",
+   "url": "https://www.pricey.jp/web/articles/2550",
+   "source_date": "2026",
+   "shape": "sheet",
+   "colors": [
+    "#d42a2a",
+    "#f2c9a8",
+    "#e6a37a"
+   ]
+  },
+  {
+   "cat": "드러그스토어(의약품)",
+   "ko": "캬베진 코와α",
+   "ja": "キャベジンコーワα",
+   "brand": "興和",
+   "size": "300정",
+   "price_yen": 2394,
+   "price_note": "아마존가, 통판 최저 약 1,854엔",
+   "where": "드러그스토어",
+   "why": "양배추 성분 위장약, 부모님 선물",
+   "look": "초록색 병에 양배추 그림, 흰 상자",
+   "url": "https://www.pricey.jp/web/articles/2443",
+   "source_date": "2026",
+   "shape": "bottle",
+   "colors": [
+    "#2f8a3a",
+    "#ffffff",
+    "#9ac85a"
+   ]
+  },
+  {
+   "cat": "드러그스토어(의약품)",
+   "ko": "오타이산",
+   "ja": "太田胃散",
+   "brand": "太田胃散",
+   "size": "분포S 18포 등",
+   "price_yen": 842,
+   "price_note": "2026 기사 희망가. 공식은 분포 타입 2025-09 생산 종료라고 공지(충돌)",
+   "where": "드러그스토어",
+   "why": "과식·속쓰림 위장약",
+   "look": "은색 원형 캔(가루약) 또는 흰·파랑 상자",
+   "url": "https://ohta-isan.co.jp/product/medicine/ohtaisanb/",
+   "source_date": "2026",
+   "shape": "tin",
+   "colors": [
+    "#c9ccd2",
+    "#2a4a9a",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "드러그스토어(생활)",
+   "ko": "큐소쿠지칸",
+   "ja": "休足時間",
+   "brand": "ライオン",
+   "size": "18매",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 600~900엔",
+   "where": "드러그스토어·돈키호테",
+   "why": "발바닥 쿨링시트, 여행 피로 회복",
+   "look": "연보라 상자에 발 모양 일러스트",
+   "url": "https://www.lion.co.jp/ja/products/",
+   "source_date": "2026-11 미검증",
+   "shape": "box",
+   "colors": [
+    "#c9b6e4",
+    "#ffffff",
+    "#7a5aa8"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "메라노CC 미용액",
+   "ja": "メラノCC 薬用しみ集中対策美容液",
+   "brand": "ロート製薬",
+   "size": "20ml",
+   "price_yen": 1210,
+   "price_note": "세금 포함(LIPS)",
+   "where": "드러그스토어",
+   "why": "비타민C 기미 세럼 스테디셀러",
+   "look": "노란 바탕에 주황 포인트의 작은 튜브형 용기",
+   "url": "https://lipscosme.com/products/260420",
+   "source_date": "2026",
+   "shape": "tube",
+   "colors": [
+    "#f6d24a",
+    "#f39a1e",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "메라노CC UV 유액",
+   "ja": "メラノCC ディープデイケアUV乳液",
+   "brand": "ロート製薬",
+   "size": "50g",
+   "price_yen": 1353,
+   "price_note": "세금 포함, 1,210~1,353엔",
+   "where": "드러그스토어",
+   "why": "미백+자외선 차단 데일리 유액",
+   "look": "노랑·흰색 펌프 없는 튜브",
+   "url": "https://lipscosme.com/products/548084",
+   "source_date": "2026",
+   "shape": "tube",
+   "colors": [
+    "#ffffff",
+    "#f6d24a",
+    "#f39a1e"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "비오레 UV 아쿠아리치",
+   "ja": "ビオレUV アクアリッチ ウォータリーエッセンス",
+   "brand": "花王",
+   "size": "약 70g",
+   "price_yen": 1078,
+   "price_note": "968~1,078엔(판매처마다 다름)",
+   "where": "드러그스토어",
+   "why": "가볍고 산뜻한 선크림",
+   "look": "파란색 납작한 튜브에 물방울 그래픽",
+   "url": "https://lipscosme.com/posts/6001604",
+   "source_date": "2026",
+   "shape": "tube",
+   "colors": [
+    "#2a7ad9",
+    "#9ad0f5",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "하다라보 시로쥰 프리미엄",
+   "ja": "肌ラボ 白潤プレミアム 薬用浸透美白乳液",
+   "brand": "ロート製薬",
+   "size": "140ml 내외",
+   "price_yen": 990,
+   "price_note": "LIPS 게시물",
+   "where": "드러그스토어",
+   "why": "히알루론산 보습·미백 기초",
+   "look": "흰 병에 파랑·흰색 라벨의 원통형 보틀",
+   "url": "https://lipscosme.com/posts/6001604",
+   "source_date": "2026",
+   "shape": "bottle",
+   "colors": [
+    "#ffffff",
+    "#2a5ac9",
+    "#9ab8e8"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "루루룬 하이드라 EX 마스크",
+   "ja": "ルルルン ハイドラEX マスク",
+   "brand": "ルルルン",
+   "size": "28매 내외",
+   "price_yen": 700,
+   "price_note": "텐진 선드럭 후기",
+   "where": "드러그스토어",
+   "why": "대용량 데일리 시트마스크",
+   "look": "세로형 지퍼 파우치, 파스텔 블루에 귀여운 얼굴 캐릭터",
+   "url": "https://www.trvlogue.com/ko/fukuoka-tenjin-sundrug-shopping",
+   "source_date": "2026",
+   "shape": "bag",
+   "colors": [
+    "#a9d4f0",
+    "#ffffff",
+    "#f2a8b8"
+   ]
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "피노 헤어마스크",
+   "ja": "フィーノ プレミアムタッチ 浸透美容液ヘアマスク",
+   "brand": "ファイントゥデイ",
+   "size": "230g",
+   "price_yen": 598,
+   "price_note": "텐진 선드럭 후기",
+   "where": "드러그스토어",
+   "why": "가성비 극강 헤어팩",
+   "look": "분홍·금색 원형 단지(자) 용기",
+   "url": "https://www.trvlogue.com/ko/fukuoka-tenjin-sundrug-shopping",
+   "source_date": "2026",
+   "shape": "jar",
+   "colors": [
+    "#f2b8c8",
+    "#c9a24a",
+    "#ffffff"
+   ]
+  },
+  {
+   "cat": "주류·음료",
+   "ko": "산토리 가쿠빈",
+   "ja": "角瓶",
+   "brand": "サントリー",
+   "size": "700ml",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 2,000~2,300엔. 한국 면세 2병·2L·400달러",
+   "where": "슈퍼·돈키호테·리커숍",
+   "why": "하이볼용 국민 위스키",
+   "look": "거북 등껍질 무늬의 각진 호박색 유리병, 노란 라벨",
+   "url": "https://www.suntory.co.jp/whisky/kakubin/",
+   "source_date": "2026-11 미검증",
+   "shape": "bottle",
+   "colors": [
+    "#c9862a",
+    "#f6d24a",
+    "#3a2a1a"
+   ]
+  },
+  {
+   "cat": "주류·음료",
+   "ko": "호로요이",
+   "ja": "ほろよい",
+   "brand": "サントリー",
+   "size": "350ml 캔",
+   "price_yen": null,
+   "price_note": "미검증 참고 범위 약 150~180엔(현지 음용 추천)",
+   "where": "편의점·슈퍼",
+   "why": "도수 3%의 과일 츄하이",
+   "look": "파스텔 단색 캔(맛별 색상)에 과일 일러스트",
+   "url": "https://www.suntory.co.jp/rtd/horoyoi/",
+   "source_date": "2026-11 미검증",
+   "shape": "can",
+   "colors": [
+    "#f6c3d0",
+    "#ffffff",
+    "#c9ccd2"
+   ]
+  },
+  {
+   "cat": "생활·잡화",
+   "ko": "다이소·세리아 미니 소스통",
+   "ja": "ミニソースボトル",
+   "brand": "Seria/DAISO",
+   "size": "소형",
+   "price_yen": 110,
+   "price_note": "110엔(블로그)",
+   "where": "다이소·세리아",
+   "why": "도시락·캠핑용 귀여운 소분 용기",
+   "look": "물고기·병 모양의 작은 투명 플라스틱 용기에 컬러 뚜껑",
+   "url": "https://www.tripstore.kr/blog/japan-souvenir-mart-shopping-list",
+   "source_date": "2026",
+   "shape": "bottle",
+   "colors": [
+    "#e8f2f8",
+    "#f2a8b8",
+    "#2a9ad9"
+   ]
+  },
+  {
+   "cat": "생활·잡화",
+   "ko": "무인양품 발수 PE 파우치 등",
+   "ja": "無印良品 ポーチ類",
+   "brand": "無印良品",
+   "size": "다양",
+   "price_yen": null,
+   "price_note": "가격 확인 불가",
+   "where": "무인양품 텐진 다이묘·하카타 매장",
+   "why": "한국보다 싸고 한정품이 있음",
+   "look": "반투명 흰색 사각 파우치, 무지 디자인",
+   "url": "https://www.muji.com/jp/ja/store",
+   "source_date": "2026-11 미검증",
+   "shape": "bag",
+   "colors": [
+    "#f2f2f0",
+    "#e0e0dc",
+    "#b8b8b0"
+   ]
+  }
+ ]
+}

@@ -68,3 +68,23 @@ create policy "remove" on picks for delete using (true);
 - **면세 목록**: 함께 쓴 돈에서 '면세로 샀어요'를 켜고 추가하면 면세 구매만 따로 모아 보여요.
 - **플랜 B**: 날짜의 `alternatives`가 팝업으로 열려요. 출발 16일 전부터 비 올 확률이 50% 이상인 날은 날씨와 지금 카드에 '플랜 B'가 떠요. 미리 보기: `?now=2027-03-01T19:30&rain=70`.
 - **오프라인**: 사이트를 한 번 열면 모든 여행 페이지를 미리 저장해요.
+
+## 내려받기·연동 (준비 탭 맨 아래)
+
+- **엑셀 일정표** `itinerary.xlsx`: 요약·일정·장소·후보·예상 비용·정산·준비물·출발 전 확인 시트. 정산 시트에 쓴 돈을 적으면 1인당·정산 금액이 계산돼요. `planner/export.py`가 만들어요(openpyxl).
+- **PDF 여행 책자** `booklet.pdf`: A5 크기, 날짜별 일정과 구글 지도 경로 QR, 회화, 택시 카드. `booklet.html`을 `planner/tools/render-pdf.js`가 PDF로 저장해요. 책자 화면에서 바로 인쇄해도 돼요.
+- **구글 캘린더 구독**: `calendar.ics`를 구글 캘린더에 구독으로 넣어요.
+- **구글 시트**: 새 시트 A1에 `=IMPORTDATA("…/schedule.csv")`를 넣으면 일정이 들어오고 사이트가 바뀌면 따라 바뀌어요.
+- **내 지출 CSV**: 함께 쓴 돈 기록을 CSV로 내려받아요.
+
+엑셀·PDF는 GitHub Actions에서 만들어요. 실패해도 사이트 배포는 계속돼요.
+
+## 여행 리포트·앨범 카드·쇼핑 리스트
+
+- **여행 리포트**: 이 휴대폰의 함께 쓴 돈, 픽, 여행 기록으로 날짜별 지출(예상 범위와 비교), 분류별·낸 사람별 지출, 픽 나눔, 다녀온 곳을 차트로 보여 줘요.
+- **앨범 카드**: 여행 기록에 넣은 사진으로 피드(4:5)·스토리(9:16)·포토북 표지(정사각) 카드를 그려 저장·공유해요. 사진은 휴대폰 밖으로 나가지 않아요.
+- **쇼핑 리스트**: `trips/<폴더>/shopping.json`이 있으면 `trips/<폴더>/shopping/` 페이지가 생겨요. 상품마다 `cat, ko, ja, brand, size, price_yen, price_note, where, why, look, url, shape, colors`. 그림은 `shape`(box·bag·bottle·can·tube·jar·pack·stick·cup·onigiri·sheet·tin)와 `colors` 3개로 단순하게 그려요.
+
+## 디자인 시스템
+
+테마 색은 `planner/themes.json` 한 곳에만 있고, 규칙은 `planner/DESIGN.md`, 모습은 사이트의 `/design/` 페이지에서 봐요.

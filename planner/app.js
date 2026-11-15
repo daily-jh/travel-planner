@@ -641,3 +641,199 @@ document.querySelectorAll('.route').forEach(function(card){
   var sw=m.href.replace(/assets\/manifest\.webmanifest$/,'sw.js');
   window.addEventListener('load',function(){ navigator.serviceWorker.register(sw).catch(function(){}); });
 })();
+
+// ---------------------------------------------------------------- 내려받기·연동: 수식 복사, 내 지출 CSV
+(function(){
+  var say=function(m){var t=document.querySelector('.toast'); if(!t) return; t.textContent=m; t.hidden=false; clearTimeout(say.t); say.t=setTimeout(function(){t.hidden=true},3600);};
+  document.addEventListener('click',function(ev){
+    var c=ev.target.closest('[data-copy]');
+    if(c){ var txt=c.dataset.copy, then=c.dataset.then, win=then?window.open('about:blank','_blank'):null;
+      var done=function(){ say('수식을 복사했어요. 새 시트의 A1 칸에 붙여 넣으세요.'); if(win){ try{ win.opener=null; win.location.href=then; }catch(e){} } };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,function(){ prompt('아래 수식을 복사하세요',txt); });
+      else { prompt('아래 수식을 복사하세요',txt); }
+      return; }
+    var a=ev.target.closest('[data-act="ex-csv"]'); if(!a) return;
+    var cfg=document.getElementById('trip-cfg'); if(!cfg) return; var C=JSON.parse(cfg.textContent), ex=[];
+    try{ ex=JSON.parse(localStorage.getItem('tp-exp-'+C.trip)||'[]'); }catch(e){}
+    if(!ex.length){ say('아직 함께 쓴 돈 기록이 없어요. 여행 도구의 \'함께 쓴 돈\'에서 적어 보세요.'); return; }
+    var q=function(v){ v=String(v==null?'':v); if(/^[=+\-@\t\r]/.test(v)) v="'"+v; return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+    var sym=(C.currency&&C.currency.symbol)||'';
+    var rows=[['날짜','내용','분류','낸 사람','금액('+sym+')','면세']].concat(ex.map(function(x){ return [x.date,x.what,x.cat||'기타',x.who,x.amt,x.tf?'면세':'']; }));
+    var blob=new Blob(['﻿'+rows.map(function(r){return r.map(q).join(',')}).join('\r\n')],{type:'text/csv;charset=utf-8'});
+    var u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=C.trip+'-지출.csv'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000);
+    say('지출 '+ex.length+'건을 CSV로 저장했어요. 엑셀 일정표의 정산 시트에 붙여 넣어도 돼요.');
+  });
+})();
+
+// ---------------------------------------------------------------- 여행 리포트: 이 휴대폰의 지출·픽·기록으로 차트를 그린다
+(function(){
+  var box=document.querySelector('.rep'), cfgEl=document.getElementById('trip-cfg'); if(!box||!cfgEl) return;
+  var C=JSON.parse(cfgEl.textContent), slug=C.trip, sym=(C.currency&&C.currency.symbol)||'₩', rate=((C.currency||{}).fallback_krw_per_100||0)/100;
+  var names=(C.travelers||[]).map(function(x){return x.name});
+  var get=function(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } };
+  var fmt=function(n){ return Math.round(n).toLocaleString('ko-KR'); };
+  var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); };
+  var md=function(ds){ var p=ds.split('-'); return (+p[1])+'/'+(+p[2]); };
+  var NS='http://www.w3.org/2000/svg';
+  function tipOn(viz){ var tip=viz.querySelector('.tip');
+    viz.addEventListener('pointerover',function(ev){ var h=ev.target.closest('[data-tip]'); if(!h) return; var r=viz.getBoundingClientRect(), b=h.getBoundingClientRect();
+      tip.textContent=''; h.dataset.tip.split('|').forEach(function(t,i){ if(i) tip.appendChild(document.createElement('br')); tip.appendChild(document.createTextNode(t)); }); tip.style.left=Math.min(Math.max(b.left-r.left+b.width/2,70),r.width-70)+'px'; tip.style.top=(b.top-r.top)+'px'; tip.classList.add('on'); });
+    viz.addEventListener('pointerout',function(ev){ if(ev.target.closest('[data-tip]')) tip.classList.remove('on'); }); }
+  // 세로 막대 + 예상 범위(회색 띠). 1인 기준
+  function dayChart(rows){
+    var W=340,H=170,L=34,B=22,T=10, n=rows.length, max=1;
+    rows.forEach(function(r){ max=Math.max(max,r.v,r.hi||0); });
+    var step=Math.pow(10,Math.floor(Math.log10(max))), top=Math.ceil(max/step)*step; if(top/step<3) { step/=2; top=Math.ceil(max/step)*step; }
+    var y=function(v){ return T+(H-T-B)*(1-v/top); }, bw=(W-L)/n, s='';
+    for(var g=0; g<=top+1e-9; g+=step){ s+='<line class="grid" x1="'+L+'" x2="'+W+'" y1="'+y(g)+'" y2="'+y(g)+'"/><text x="'+(L-6)+'" y="'+(y(g)+4)+'" text-anchor="end">'+(g>=1000?(g/1000)+'k':g)+'</text>'; }
+    rows.forEach(function(r,i){ var cx=L+bw*i+bw/2, w=Math.min(26,bw*.46);
+      if(r.hi) s+='<rect x="'+(cx-w*.9)+'" y="'+y(r.hi)+'" width="'+(w*1.8)+'" height="'+Math.max(2,y(r.lo)-y(r.hi))+'" rx="4" fill="var(--fill)" stroke="var(--label3)" stroke-dasharray="3 2"/>';
+      if(r.v>0) s+='<path d="M'+(cx-w/2)+','+y(0)+'V'+(y(r.v)+4)+'q0,-4 4,-4h'+(w-8)+'q4,0 4,4V'+y(0)+'z" fill="var(--viz-1)"/>';
+      s+='<text x="'+cx+'" y="'+(H-6)+'" text-anchor="middle">'+r.label+'</text>';
+      s+='<rect class="hit" x="'+(L+bw*i)+'" y="0" width="'+bw+'" height="'+(H-B)+'" data-tip="'+esc(r.label)+'|실제 1인 '+sym+fmt(r.v)+(r.hi?'|예상 '+sym+fmt(r.lo)+'~'+fmt(r.hi):'')+'"/>'; });
+    return '<div class="viz"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="날짜별 1인 지출과 예상 범위">'+s+'</svg><div class="tip"></div></div>'
+      +'<div class="viz-leg"><span><i style="background:var(--viz-1)"></i>실제 지출 (1인)</span><span><i class="rng"></i>예상 범위</span></div>';
+  }
+  // 가로 막대 (한 가지 색, 값은 막대 끝에)
+  function hbars(rows,unit){
+    var W=340,rh=28,L=78,max=1; rows.forEach(function(r){max=Math.max(max,r.v)}); var H=rows.length*rh, s='';
+    rows.forEach(function(r,i){ var w=r.v>0?Math.max(8,(W-L-70)*r.v/max):0, yy=i*rh+6;
+      s+='<text class="lab" x="0" y="'+(yy+12)+'">'+esc(r.label)+'</text>'+(w?'<path d="M'+L+','+yy+'h'+(w-4)+'q4,0 4,4v8q0,4 -4,4h-'+(w-4)+'z" fill="'+(r.c||'var(--viz-1)')+'"/>':'')
+        +'<text x="'+(L+w+6)+'" y="'+(yy+12)+'">'+unit+fmt(r.v)+'</text><rect class="hit" x="0" y="'+(i*rh)+'" width="'+W+'" height="'+rh+'" data-tip="'+esc(r.label)+' '+unit+fmt(r.v)+(r.sub?'|'+esc(r.sub):'')+'"/>'; });
+    return '<div class="viz"><svg viewBox="0 0 '+W+' '+H+'" role="img">'+s+'</svg><div class="tip"></div></div>';
+  }
+  // 100% 가로 띠 (3칸까지, 칸 사이 2px 틈)
+  function stack(parts){
+    var tot=0; parts.forEach(function(p){tot+=p.v}); if(!tot) return '';
+    var W=340,x=0,s='';
+    parts.forEach(function(p){ if(!p.v) return; var w=(W-2*(parts.length-1))*p.v/tot;
+      s+='<rect x="'+x+'" y="0" width="'+Math.max(w,2)+'" height="22" rx="4" fill="'+p.c+'" data-tip="'+esc(p.label)+' '+p.v+'곳"/>'; x+=w+2; });
+    return '<div class="viz"><svg viewBox="0 0 '+W+' 22" role="img" aria-label="픽 나눔">'+s+'</svg><div class="tip"></div></div>'
+      +'<div class="viz-leg">'+parts.map(function(p){return '<span><i style="background:'+p.c+'"></i>'+esc(p.label)+' '+p.v+'곳</span>'}).join('')+'</div>';
+  }
+  function render(){
+    var ex=get('tp-exp-'+slug,[]), picks=get('tp-picks-'+slug,{}), jr=get('tp-log-'+slug,{d:{},s:{},m:{}});
+    var tot=0, byDay={}, byCat={}, paid={}; names.forEach(function(n){paid[n]=0});
+    ex.forEach(function(x){ tot+=x.amt; byDay[x.date]=(byDay[x.date]||0)+x.amt; byCat[x.cat||'기타']=(byCat[x.cat||'기타']||0)+x.amt; paid[x.who]=(paid[x.who]||0)+x.amt; });
+    var per=names.length?tot/names.length:tot;
+    var visited=Object.keys(jr.d||{}).filter(function(k){return jr.d[k]}), stars=Object.keys(jr.s||{}).map(function(k){return jr.s[k]}).filter(Boolean);
+    var avg=stars.length?stars.reduce(function(a,b){return a+b},0)/stars.length:0, nblk=0; (C.days||[]).forEach(function(d){nblk+=d.blocks.length});
+    var both=0, solo={}; names.forEach(function(n){solo[n]=0});
+    Object.keys(picks).forEach(function(p){ var w=picks[p]||[]; if(w.length>1) both++; else if(w.length===1) solo[w[0]]=(solo[w[0]]||0)+1; });
+    var npick=Object.keys(picks).filter(function(p){return (picks[p]||[]).length}).length;
+    var aiHit=0; document.querySelectorAll('.pickbar[data-pick]').forEach(function(b){ if(b.querySelector('.ai')&&(picks[b.dataset.pick]||[]).length) aiHit++; });
+    var h='<div class="rep-tiles">'
+      +'<div class="rep-tile"><small>함께 쓴 돈</small><b>'+sym+fmt(tot)+'</b><span>'+(rate&&tot?'₩'+fmt(tot*rate):ex.length+'건')+'</span></div>'
+      +'<div class="rep-tile"><small>1인당</small><b>'+sym+fmt(per)+'</b><span>'+(rate&&per?'₩'+fmt(per*rate):names.length+'명 기준')+'</span></div>'
+      +'<div class="rep-tile"><small>다녀온 곳</small><b>'+visited.length+'<span> / '+nblk+'</span></b><span>'+(avg?'평균 ★'+avg.toFixed(1):'별점 없음')+'</span></div>'
+      +'<div class="rep-tile"><small>우리의 픽</small><b>'+npick+'곳</b><span>둘 다 '+both+' · AI 추천과 겹침 '+aiHit+'</span></div></div>';
+    // 날짜별
+    var rows=(C.days||[]).map(function(d,i){ var k=md(d.date), b=(C.budget||[])[i]||[]; return {label:k, v:(byDay[k]||0)/(names.length||1), lo:b[0]||0, hi:b[1]||0}; });
+    h+='<div><h4>날짜별 1인 지출</h4><p class="cap">회색 띠는 계획한 1인 식비·입장료 범위예요. 막대를 누르면 금액이 보여요.</p>'+dayChart(rows)+'</div>';
+    var cats=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a]});
+    h+='<div><h4>어디에 썼나</h4>'+(cats.length?hbars(cats.map(function(c){return {label:c,v:byCat[c],sub:Math.round(byCat[c]/tot*100)+'%'}}),sym):'<p class="empty">함께 쓴 돈을 기록하면 분류별로 보여요.</p>')+'</div>';
+    if(names.length>1&&tot) h+='<div><h4>누가 냈나</h4>'+hbars(names.map(function(n,i){return {label:n,v:paid[n]||0,c:i?'var(--viz-2)':'var(--viz-1)'}}),sym)+'</div>';
+    var tones=['var(--viz-3)','var(--viz-1)','var(--viz-2)'];
+    var parts=[{label:'둘 다',v:both,c:tones[0]}].concat(names.slice(0,2).map(function(n,i){return {label:n+'만',v:solo[n]||0,c:tones[i+1]}}));
+    h+='<div><h4>픽 나눔</h4>'+(npick?stack(parts):'<p class="empty">장소 탭에서 하트를 누르면 누가 고른 곳인지 나뉘어 보여요.</p>')+'</div>';
+    var dv=(C.days||[]).map(function(d,i){ var n=0; d.blocks.forEach(function(_,j){ if(jr.d['blk-'+(i+1)+'-'+(j+1)]) n++; }); return {label:(i+1)+'일차 '+md(d.date), v:n, sub:d.blocks.length+'줄 중'}; });
+    h+='<div><h4>날짜별 다녀온 곳</h4>'+(visited.length?hbars(dv,''):'<p class="empty">시간표 한 줄을 누르고 \'다녀왔어요\'를 누르면 쌓여요.</p>')+'</div>';
+    h+='<details><summary>표로 보기</summary><table><thead><tr><th>날짜</th><th>1인 실제</th><th>1인 예상</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+r.label+'</td><td class="n">'+sym+fmt(r.v)+'</td><td class="n">'+(r.hi?sym+fmt(r.lo)+'~'+fmt(r.hi):'-')+'</td></tr>'}).join('')+'</tbody></table></details>';
+    box.innerHTML=h; box.querySelectorAll('.viz').forEach(tipOn);
+  }
+  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-rep"]')) render(); });
+  if(location.hash==='#report') render();
+})();
+
+// ---------------------------------------------------------------- 앨범 카드: 여행 기록 사진으로 SNS·포토북 카드를 그린다 (사진은 휴대폰 밖으로 나가지 않음)
+(function(){
+  var root=document.querySelector('.alb'), cfgEl=document.getElementById('trip-cfg'); if(!root||!cfgEl) return;
+  var C=JSON.parse(cfgEl.textContent), slug=C.trip, cv=root.querySelector('canvas'), ctx=cv.getContext('2d'), sel=root.querySelector('select'), note=root.querySelector('.alb-note');
+  var FMT={post:[1080,1350],story:[1080,1920],cover:[1500,1500]}, fmt='post', photos=[], imgs={}, seed=0;
+  var title=(document.querySelector('.hero h1')||{}).textContent||'', short=document.title.replace(/ 여행$/,'');
+  var FONT='-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable","Noto Sans KR",sans-serif';
+  var md=function(ds){ var p=ds.split('-'), w='일월화수목금토'[new Date(ds+'T12:00:00').getDay()]; return (+p[1])+'.'+(+p[2])+' '+w; };
+  sel.innerHTML='<option value="all">여행 전체</option>'+(C.days||[]).map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'일차 · '+md(d.date)+'</option>'}).join('');
+  function load(){ return new Promise(function(ok){ if(!window.indexedDB) return ok([]); var r=indexedDB.open('tp-photos',1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore('p',{keyPath:'id'}); };
+    r.onsuccess=function(){ try{ var q=r.result.transaction('p','readonly').objectStore('p').getAll(); q.onsuccess=function(){ ok((q.result||[]).filter(function(p){return p.trip===slug})); }; q.onerror=function(){ok([])}; }catch(e){ ok([]); } };
+    r.onerror=function(){ok([])}; }); }
+  function img(p){ if(imgs[p.id]) return imgs[p.id]; return imgs[p.id]=new Promise(function(ok){ var i=new Image(); i.onload=function(){ok(i)}; i.onerror=function(){ok(null)}; i.src=URL.createObjectURL(p.blob); }); }
+  function cover(i,x,y,w,h,r){ ctx.save(); ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.clip(); var k=Math.max(w/i.width,h/i.height), iw=i.width*k, ih=i.height*k; ctx.drawImage(i,x+(w-iw)/2,y+(h-ih)/2,iw,ih); ctx.restore(); }
+  function css(v){ return getComputedStyle(document.body).getPropertyValue(v).trim(); }
+  var gen=0;
+  function draw(){
+    var my=++gen;
+    var wh=FMT[fmt], W=wh[0], H=wh[1];
+    var day=sel.value, jr={d:{},s:{}}; try{ jr=JSON.parse(localStorage.getItem('tp-log-'+slug)||'{"d":{},"s":{}}'); }catch(e){}
+    var ps=photos.filter(function(p){ return day==='all'||p.blk.indexOf('blk-'+day+'-')===0; });
+    if(ps.length>1){ var s=seed; ps=ps.slice().sort(function(a,b){ return ((a.t*9301+s*49297)%233280)-((b.t*9301+s*49297)%233280); }); }
+    return Promise.all(ps.slice(0,Math.min(ps.length,fmt==='story'?5:4)).map(img)).then(function(is0){ if(my!==gen) return; cv.width=W; cv.height=H;
+    var pri=css('--pri')||'#24346b', acc=css('--acc')||'#c13d69';
+    if(matchMedia('(prefers-color-scheme: dark)').matches){ pri='#24346b'; } // 카드 색은 늘 짙은 쪽
+    var g=ctx.createLinearGradient(0,0,W*.4,H); g.addColorStop(0,pri); g.addColorStop(1,'#0b0f1c'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    var rg=ctx.createRadialGradient(W*.9,H*.05,0,W*.9,H*.05,W*.7); rg.addColorStop(0,acc+'88'); rg.addColorStop(1,'transparent'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+    var P=Math.round(W*.07), y=P, d=day==='all'?null:C.days[+day-1];
+    ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='600 '+Math.round(W*.028)+'px '+FONT; ctx.textBaseline='top';
+    ctx.fillText((d?day+'일차 · '+md(d.date):C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.')).toUpperCase(),P,y); y+=W*.05;
+    ctx.fillStyle='#fff'; ctx.font='800 '+Math.round(W*(fmt==='cover'?.085:.075))+'px '+FONT;
+    var head=d?(document.querySelector('[data-pane="day'+day+'"]')?(document.getElementById('day'+day).querySelector('.dayhead .t')||{}).textContent.replace(/^.*?\)\s*/,''):short):title;
+    wrap(head||short,P,y,W-2*P,W*.088).forEach(function(l){ ctx.fillText(l.t,P,l.y); y=l.y+W*.088; }); y+=W*.025;
+    var areaH=H-y-P-W*(fmt==='story'?.36:.2), n=Math.min(ps.length,fmt==='story'?5:4), gap=Math.round(W*.014);
+    return Promise.resolve(is0).then(function(is){ is=is.filter(Boolean);
+      if(!is.length){ ctx.fillStyle='rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(P,y,W-2*P,areaH,W*.03); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='500 '+Math.round(W*.03)+'px '+FONT; ctx.fillText('여행 기록에 사진을 넣으면 여기에 담겨요',P+W*.04,y+areaH/2-W*.02); }
+      else layout(is,P,y,W-2*P,areaH,gap,W*.03);
+      y+=areaH+W*.04;
+      // 다녀온 곳 목록
+      var list=[]; (C.days||[]).forEach(function(dd,i){ if(d&&dd!==d) return; dd.blocks.forEach(function(b,j){ var id='blk-'+(i+1)+'-'+(j+1); if(jr.d&&jr.d[id]&&b.place&&b.place!=='미정') list.push([b.place,(jr.s||{})[id]||0]); }); });
+      if(!list.length) (d?d.blocks:[]).forEach(function(b){ if(/식사|아침|점심|저녁|활동|카페/.test(b.type)&&list.length<6) list.push([b.place,0]); });
+      ctx.font='600 '+Math.round(W*.03)+'px '+FONT; ctx.fillStyle='#fff';
+      var line=list.slice(0,fmt==='story'?8:5).map(function(x){return x[0]+(x[1]?' '+'★'.repeat(x[1]):'')});
+      wrap(line.join('  ·  '),P,y,W-2*P,W*.044).slice(0,fmt==='story'?6:3).forEach(function(l){ ctx.fillText(l.t,P,l.y); });
+      ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='600 '+Math.round(W*.024)+'px '+FONT; ctx.textBaseline='bottom'; ctx.fillText('여행 플래너 · '+short,P,H-P*.7);
+      note.textContent=photos.length?'사진 '+photos.length+'장 중 '+Math.min(is.length,n)+'장을 담았어요. \'사진 섞기\'로 바꿀 수 있어요.':'아직 사진이 없어요. 시간표 한 줄을 눌러 \'사진 추가\'로 넣으면 카드에 담겨요.';
+    });
+  }); }
+  function layout(is,x,y,w,h,g,r){
+    if(is.length===1) return cover(is[0],x,y,w,h,r);
+    if(is.length===2){ var hw=(w-g)/2; cover(is[0],x,y,hw,h,r); cover(is[1],x+hw+g,y,hw,h,r); return; }
+    var big=h*.62; cover(is[0],x,y,w,big,r); var rest=is.slice(1), cw=(w-g*(rest.length-1))/rest.length;
+    rest.forEach(function(i,k){ cover(i,x+k*(cw+g),y+big+g,cw,h-big-g,r); });
+  }
+  function wrap(text,x,y,maxW,lh){ var out=[], cur=''; String(text).split('').forEach(function(ch){ if(ctx.measureText(cur+ch).width>maxW&&cur){ out.push({t:cur,y:y}); y+=lh; cur=ch.trim()?ch:''; } else cur+=ch; }); if(cur) out.push({t:cur,y:y}); return out; }
+  function blob(){ return new Promise(function(ok){ cv.toBlob(ok,'image/jpeg',.92); }); }
+  var name=function(){ return slug+'-'+(sel.value==='all'?'전체':sel.value+'일차')+'-'+fmt+'.jpg'; };
+  root.addEventListener('click',function(ev){
+    var f=ev.target.closest('[data-fmt]'); if(f){ fmt=f.dataset.fmt; root.querySelectorAll('[data-fmt]').forEach(function(b){b.setAttribute('aria-pressed',b===f)}); draw(); return; }
+    var a=ev.target.closest('[data-alb]'); if(!a) return;
+    if(a.dataset.alb==='shuffle'){ seed++; draw(); return; }
+    blob().then(function(b){ if(!b) return; var file=new File([b],name(),{type:'image/jpeg'});
+      if(a.dataset.alb==='share'&&navigator.canShare&&navigator.canShare({files:[file]})) return navigator.share({files:[file],title:short+' 여행'}).catch(function(){});
+      var u=URL.createObjectURL(b), l=document.createElement('a'); l.href=u; l.download=name(); document.body.appendChild(l); l.click(); l.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000); });
+  });
+  sel.addEventListener('change',draw);
+  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-alb"]')) load().then(function(p){ photos=p; draw(); }); });
+})();
+
+// ---------------------------------------------------------------- 쇼핑 리스트: 분류 걸러 보기, 담기·합계 (이 휴대폰에 저장)
+(function(){
+  var cfgEl=document.getElementById('shop-cfg'); if(!cfgEl) return;
+  var C=JSON.parse(cfgEl.textContent), K='tp-shop-'+C.trip, mine={};
+  try{ mine=JSON.parse(localStorage.getItem(K)||'{}'); }catch(e){}
+  var cards=[].slice.call(document.querySelectorAll('.shop')), f='all';
+  var fmt=function(n){ return Math.round(n).toLocaleString('ko-KR'); };
+  function paint(){ var n=0, y=0;
+    cards.forEach(function(c){ var on=!!mine[c.dataset.id], b=c.querySelector('.shop-add'); b.setAttribute('aria-pressed',on); b.textContent=on?'담았어요 ✓':'담기';
+      if(on){ n++; y+=+c.dataset.yen||0; } c.hidden=!(f==='all'||(f==='mine'?on:c.dataset.cat===f)); });
+    document.querySelector('.ss-n').textContent=n+'개'; document.querySelector('.ss-y').textContent='¥'+fmt(y);
+    document.querySelector('.ss-w').textContent=C.rate&&y?'≈ ₩'+fmt(y*C.rate):''; }
+  document.addEventListener('click',function(ev){
+    var b=ev.target.closest('[data-f]'); if(b){ f=b.dataset.f; document.querySelectorAll('[data-f]').forEach(function(x){x.setAttribute('aria-pressed',x===b)}); paint(); return; }
+    var a=ev.target.closest('.shop-add'); if(a){ var id=a.closest('.shop').dataset.id; if(mine[id]) delete mine[id]; else mine[id]=1; try{localStorage.setItem(K,JSON.stringify(mine))}catch(e){} paint(); return; }
+    var big=document.querySelector('.bigshow'), s=ev.target.closest('[data-big]');
+    if(s&&big){ big.querySelector('b').textContent=s.dataset.big; big.querySelector('small').textContent=s.dataset.bigko+' 있나요? · これはありますか?'; big.showModal(); return; }
+    if(big&&big.open&&ev.target.closest('.bigshow')) big.close();
+  });
+  paint();
+})();
