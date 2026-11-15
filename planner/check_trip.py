@@ -129,7 +129,7 @@ def check(folder):
             for dd in want:
                 if (dd.month, dd.day) == (int(m.group(1)), int(m.group(2))) and WD[dd.weekday()] != m.group(3):
                     err.append(f"closures '{c[0]}' 방문일 {c[2]} 의 요일이 틀려요 (실제 {WD[dd.weekday()]})")
-            if c[3] == "ok" and m.group(3) in c[1].replace("요일", ""):
+            if c[3] == "ok" and m.group(3) in closed_days(c[1] if "휴무" in c[1] else c[1] + " 휴무"):
                 err.append(f"closures '{c[0]}' 은 {c[1]} 휴무인데 {c[2]} 에 가요")
     for c in t.get("candidates", []):
         if c.get("status") not in STATUS:
