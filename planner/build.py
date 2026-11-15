@@ -36,12 +36,9 @@ THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 def fonts(themes):
-    fams = sorted({THEMES.get(t, THEMES["hakata"])["font"] for t in themes})
-    q = "&".join("family=" + f.replace(" ", "+") for f in fams)
-    return ('<link rel="preconnect" href="https://fonts.googleapis.com">'
-            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-            f'<link href="https://fonts.googleapis.com/css2?{q}&family=Gaegu:wght@400;700&family=IBM+Plex+Mono:wght@500;600'
-            '&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">')
+    """애플 기기는 시스템 글꼴(SF·Apple SD Gothic Neo), 그 밖의 기기는 비슷한 Pretendard."""
+    return ('<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>'
+            '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">')
 
 
 def e(s):
@@ -466,6 +463,11 @@ def render_home(trips):
         cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}{" has-cover" if has_og else ""}" href="trips/{e(slug)}/">{cover}<span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
                      f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
+    howto_sheet = sheet("howto", "새 여행 추가하기", "3단계", '''<ol>
+<li><code>trips/2027-03-fukuoka/trip.json</code>을 복사해서 <code>trips/연도-월-도시/trip.json</code>을 만들어요.</li>
+<li>날짜, 동선(<code>route.stops</code>의 이름과 구글 지도 검색어), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
+<li>GitHub에 올리면 1~2분 뒤 이 목록과 캘린더 파일이 자동으로 바뀌어요.</li>
+</ol>''')
     body = f'''<header class="hero"><div class="wrap">
 <div class="topbar">{brand("")}</div>
 <div class="eyebrow">TRAVEL PLANNER</div>
@@ -475,12 +477,9 @@ def render_home(trips):
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 <section><h2>여행 {len(trips)}개</h2><p class="lead">가까운 여행부터 보여요.</p><div class="trips">{"".join(cards)}</div></section>
-<section class="howto"><h2>새 여행 추가하기</h2><div class="card"><ol>
-<li><code>trips/2027-03-fukuoka/trip.json</code>을 복사해서 <code>trips/연도-월-도시/trip.json</code>을 만들어요.</li>
-<li>날짜, 동선(<code>route.stops</code>의 이름과 구글 지도 검색어), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
-<li>GitHub에 올리면 1~2분 뒤 이 목록과 캘린더 파일이 자동으로 바뀌어요.</li>
-</ol></div></section>
+<section class="howto"><button type="button" class="gchip ov wide" data-open="howto"><span class="k">관리자용</span><span class="nm">새 여행 추가하는 방법</span><small>여행 파일을 하나 만들면 이 목록과 캘린더가 자동으로 바뀌어요</small></button></section>
 </main>
+{howto_sheet}
 <footer><div class="wrap">각 여행의 '캘린더에 추가'를 아이폰에서 누르면 애플 캘린더에 일정이 들어가요.</div></footer>'''
     og = {"title": SITE_NAME, "desc": "우리 여행의 동선, 지도, 예약, 비용을 한곳에서 봐요.", "image": "assets/og-home.png", "path": ""}
     return page(SITE_NAME, body, 0, "hakata", [t.get("theme", "hakata") for _, t in trips] + ["hakata"], og=og)
