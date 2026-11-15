@@ -5,6 +5,7 @@ const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const BRAND = path.join(ROOT, 'planner/brand');
 const mark = fs.readFileSync(path.join(BRAND, 'mark.svg'), 'utf8');
+const icon = fs.readFileSync(path.join(BRAND, 'icon.svg'), 'utf8');
 const themes = JSON.parse(fs.readFileSync(path.join(ROOT, 'planner/themes.json'), 'utf8'));
 const css = fs.readFileSync(path.join(ROOT, 'planner/style.css'), 'utf8');
 const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Gowun+Batang:wght@700&family=Black+Han+Sans&family=Gaegu:wght@700&family=IBM+Plex+Mono:wght@500&family=Noto+Sans+KR:wght@400;700&display=block">';
@@ -14,27 +15,36 @@ const ymd = s => s.replace(/-/g, '.');
 function og({ theme, eyebrow, title, when, days }) {
   const t = esc(title).replace(/\*(.+?)\*/g, '<em>$1</em>');
   return `<!doctype html><meta charset="utf-8">${FONTS}<style>${css}
-  html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:var(--paper)}
-  .og{position:relative;width:1200px;height:630px;box-sizing:border-box;padding:72px 80px;display:flex;flex-direction:column;
-    background:radial-gradient(900px 500px at 105% -10%,var(--acc-soft),transparent 60%),radial-gradient(700px 500px at -10% 120%,var(--pri-soft),transparent 60%),var(--paper)}
-  .og:after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--band)}
-  .brand{display:flex;align-items:center;gap:16px;font-family:"Do Hyeon";font-size:34px;color:var(--pri)}
-  .brand svg{width:60px;height:60px}
-  .eb{margin-top:auto;font-family:"IBM Plex Mono";font-size:26px;letter-spacing:.14em;color:var(--muted)}
-  h1{font-family:var(--f-display);font-weight:400;font-size:104px;line-height:1.05;margin:14px 0 22px;color:var(--pri);letter-spacing:-.01em}
-  h1 em{font-style:normal;color:var(--acc);background:linear-gradient(transparent 64%,var(--acc-soft) 64%)}
-  .days{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
-  .days span{font:700 24px "Noto Sans KR";padding:10px 18px;border-radius:999px;background:var(--surface);border:2px solid var(--line);color:var(--ink)}
-  .days span b{color:var(--acc);margin-right:8px}
-  .hand{position:absolute;right:84px;top:76px;font:700 34px "Gaegu";color:var(--acc);transform:rotate(-4deg)}
+  html,body{margin:0;width:1200px;height:630px;overflow:hidden}
+  .og{position:relative;width:1200px;height:630px;box-sizing:border-box;padding:64px 76px;display:flex;flex-direction:column;overflow:hidden;color:#fff;
+    background:radial-gradient(700px 520px at 92% 8%,color-mix(in srgb,var(--acc) 38%,transparent),transparent 65%),linear-gradient(160deg,color-mix(in srgb,var(--pri) 88%,#fff),var(--pri) 45%,color-mix(in srgb,var(--pri) 70%,#000))}
+  .og:after{content:"";position:absolute;left:0;right:0;bottom:0;height:18px;background:var(--band);filter:brightness(2.2) saturate(.8);opacity:.7}
+  .brand{display:flex;align-items:center;gap:16px;font-family:"Do Hyeon";font-size:32px;color:#fff;position:relative}
+  .brand svg{width:58px;height:58px;border-radius:15px;box-shadow:0 6px 18px rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.18)}
+  .eb{margin-top:auto;font-family:"IBM Plex Mono";font-size:25px;letter-spacing:.16em;color:rgba(255,255,255,.72);position:relative}
+  h1{font-family:var(--f-display);font-weight:400;font-size:128px;line-height:1.02;margin:10px 0 26px;letter-spacing:-.015em;position:relative;max-width:900px;text-wrap:balance}
+  h1 em{font-style:normal;color:color-mix(in srgb,var(--acc) 45%,#fff)}
+  .meta{display:flex;align-items:center;gap:18px;position:relative;font:700 27px "Noto Sans KR"}
+  .meta .pill{padding:10px 20px;border-radius:999px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.28);font-family:"IBM Plex Mono";font-weight:500;font-size:24px}
+  .meta .hand{font:700 36px "Gaegu";color:color-mix(in srgb,var(--acc) 40%,#fff);transform:rotate(-3deg)}
+  svg.deco{position:absolute;right:20px;top:10px;width:560px;height:560px}
+  .p{position:absolute;border-radius:60% 0 60% 0;background:color-mix(in srgb,var(--acc) 50%,#fff);opacity:.55}
   </style><body class="theme-${theme}"><div class="og">
-  <div class="brand">${mark}여행 플래너</div><div class="hand">${esc(when.hand || '')}</div>
+  <svg class="deco" viewBox="0 0 560 560" aria-hidden="true">
+    <path d="M210 440 C 300 450 250 330 330 330 S 430 360 440 230" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0.1 30"/>
+    <circle cx="210" cy="440" r="16" fill="rgba(255,255,255,.7)"/>
+    <g transform="translate(440 120)"><path d="M0 -10a72 72 0 0 1 72 72c0 55-72 118-72 118s-72-63-72-118a72 72 0 0 1 72-72z" transform="translate(0 -10)" fill="color-mix(in srgb,var(--acc) 75%,#fff)" opacity=".95"/><circle cx="0" cy="52" r="26" fill="var(--pri)"/></g>
+  </svg>
+  <i class="p" style="width:26px;height:26px;left:610px;top:90px;transform:rotate(20deg)"></i>
+  <i class="p" style="width:18px;height:18px;left:700px;top:430px;transform:rotate(-30deg)"></i>
+  <i class="p" style="width:22px;height:22px;left:1090px;top:470px;transform:rotate(60deg)"></i>
+  <i class="p" style="width:14px;height:14px;left:540px;top:260px"></i>
+  <div class="brand">${icon}여행 플래너</div>
   <div class="eb">${esc(eyebrow)}</div><h1>${t}</h1>
-  <div class="days">${days.map((d, i) => `<span><b>${i + 1}</b>${esc(d)}</span>`).join('')}</div>
-  <div class="eb" style="margin-top:0;font-size:24px">${esc(when.text)}</div></div>`;
+  <div class="meta"><span class="pill">${esc(when.text)}</span>${when.hand ? `<span class="hand">${esc(when.hand)}</span>` : ''}</div></div>`;
 }
 
-const iconHTML = (size, pad) => `<!doctype html><style>html,body{margin:0;background:#24346b}svg{display:block;width:${size}px;height:${size}px}</style>${pad ? mark.replace('rx="16"', 'rx="0"') : mark}`;
+const iconHTML = (size, pad) => `<!doctype html><style>html,body{margin:0;background:#24346b}svg{display:block;width:${size}px;height:${size}px}</style>${pad ? icon.replace('rx="16"', 'rx="0"') : icon}`;
 
 (async () => {
   const b = await chromium.launch();

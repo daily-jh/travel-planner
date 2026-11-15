@@ -371,8 +371,9 @@ def render_trip(slug, t):
              ("우리의 픽", "가고 싶은 곳에 하트를 눌러 저장하면 누가 고른 곳인지" + (f"({names})" if names else "") + " 장소마다 보여요. 나중에 '픽 수정'으로 바꿀 수 있어요."),
              ("캘린더·공유", "'캘린더에 추가'는 아이폰 캘린더에 일정을 넣고, '일행에게 공유'는 이 페이지 링크를 보내요.")]
     w(sheet("welcome", "이렇게 보면 돼요", e(t.get("short", "")) + " 여행 페이지 사용법",
+            '<img class="wl-cover" src="og.png" alt="" width="1200" height="630">'
             '<ol class="steps">' + "".join(f'<li><b>{e(a)}</b><span>{e(b)}</span></li>' for a, b in steps) + '</ol>'
-            '<div class="row"><button type="button" class="btn primary" data-close autofocus>시작하기</button></div>').replace('<dialog class="sheet"', f'<dialog class="sheet welcome" data-auto="tp-welcome-{e(slug)}"', 1))
+            '<div class="row"><button type="button" class="btn primary" data-close>시작하기</button></div>').replace('<dialog class="sheet"', f'<dialog class="sheet welcome" data-auto="tp-welcome-{e(slug)}"', 1))
     days_txt = " / ".join(d["theme"] for d in t["days"])
     og = {"title": t.get("short", t["title"]) + " 여행 · " + t["start"].replace("-", ".") + "~",
           "desc": f'{nights}박 {nights + 1}일 일정과 지도: {days_txt}', "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/"}
@@ -460,7 +461,9 @@ def render_home(trips):
         s, z = d_of(t["start"]), d_of(t["end"])
         n = (z - s).days
         color = t["days"][0]["color"] if t.get("days") else "hakata"
-        cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}" href="trips/{e(slug)}/"><span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
+        has_og = os.path.isfile(os.path.join(ROOT, "trips", slug, "og.png"))
+        cover = f'<img class="cover" src="trips/{e(slug)}/og.png" alt="" width="1200" height="630" loading="lazy">' if has_og else ""
+        cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}{" has-cover" if has_og else ""}" href="trips/{e(slug)}/">{cover}<span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
                      f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
     body = f'''<header class="hero"><div class="wrap">

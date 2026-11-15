@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a52aa"/><stop offset=".55" stop-color="#26387a"/><stop offset="1" stop-color="#18224a"/></linearGradient>
+    <linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7ea3"/><stop offset="1" stop-color="#d63f6c"/></linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#0b1230" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <path d="M0 16A16 16 0 0 1 16 0h32a16 16 0 0 1 16 16v8C46 30 18 30 0 22z" fill="url(#gl)"/>
+  <circle cx="10" cy="14" r="1.1" fill="#fff" opacity=".5"/><circle cx="22" cy="9" r=".8" fill="#fff" opacity=".4"/><circle cx="55" cy="44" r="1" fill="#fff" opacity=".35"/>
+  <path d="M15 49 C 24 49 20 36 30 37 S 39 40 42 33" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-dasharray="0.1 6.6" filter="url(#sh)"/>
+  <circle cx="15" cy="49" r="4.6" fill="#ffffff" filter="url(#sh)"/>
+  <g filter="url(#sh)"><path d="M44 8a10 10 0 0 1 10 10c0 7.6-10 16-10 16s-10-8.4-10-16a10 10 0 0 1 10-10z" fill="url(#pin)"/>
+  <circle cx="44" cy="18" r="3.6" fill="#ffffff"/></g>
+  <rect x=".5" y=".5" width="63" height="63" rx="15.5" fill="none" stroke="#fff" stroke-opacity=".12"/>
+</svg>

@@ -376,3 +376,17 @@ dialog.sheet .sheet-b>*{animation:rise .35s .05s cubic-bezier(.2,.7,.2,1) both}
  @view-transition{navigation:none}
  .brand .route,.brand svg path[fill="#e0557f"],.steps li,dialog.sheet .sheet-b>*{animation:none;stroke-dashoffset:0}
 }
+/* 참고 사이트 반영: 갤러리형 표지 카드, 표지 이미지가 있는 안내 팝업 */
+.wl-cover{display:block;width:calc(100% + 32px);max-width:none;height:auto;margin:-16px -16px 16px;aspect-ratio:1200/630;object-fit:cover}
+dialog.sheet.welcome .sheet-b{padding-top:16px}
+a.trip.has-cover{padding:0;overflow:hidden;border-top-width:1px;gap:0}
+a.trip.has-cover>:not(.cover){margin-left:18px;margin-right:18px}
+a.trip.has-cover .dday{margin-top:16px;margin-bottom:6px}
+a.trip.has-cover .intro{margin:6px 18px 18px}
+a.trip .cover{display:block;width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+a.trip.has-cover:hover .cover{transform:scale(1.03)}
+.trips{grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+@media (prefers-reduced-motion: reduce){a.trip .cover{transition:none}}
+dialog.sheet .x:focus:not(:focus-visible){outline:none}
+a.trip.has-cover .ttl{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+a.trip.has-cover{position:relative}
