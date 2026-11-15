@@ -183,6 +183,15 @@ def check(folder):
         err.append(f"{{채우기}} 가 {len(left)}군데 남았어요: " + ", ".join(left[:8]) + (" …" if len(left) > 8 else ""))
     if not os.path.isfile(os.path.join(folder, "og.png")):
         warn.append(f"og.png(링크 썸네일)가 없어요. node planner/tools/render-assets.js {slug} 로 만들어요")
+    lm = t.get("landmark")
+    if not lm:
+        warn.append("landmark(첫 화면 카드 배경 사진)가 없어요. 없으면 og.png 썸네일로 보여요 (TRIP_FORMAT.md '랜드마크 사진')")
+    else:
+        if not os.path.isfile(os.path.join(folder, lm.get("image", ""))):
+            err.append(f"landmark.image '{lm.get('image')}' 파일이 폴더에 없어요")
+        for k in ("name", "credit", "license", "source"):
+            if not lm.get(k):
+                err.append(f"landmark.{k} 가 비었어요 (사진 출처 표기는 라이선스 조건이에요)")
     return err, warn, {"days": len(t["days"]), "timed": timed, "chk": chk,
                        "cands": len(t.get("candidates", [])), "places": sum(len(d.get("places", [])) for d in t["days"])}
 

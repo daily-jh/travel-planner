@@ -685,16 +685,34 @@ def render_ics(slug, t):
 
 # ---------------------------------------------------------------- 여행 목록
 def render_home(trips):
-    cards = []
+    cards, credits = [], []
     for slug, t in sorted(trips, key=lambda x: x[1]["start"], reverse=True):
         s, z = d_of(t["start"]), d_of(t["end"])
         n = (z - s).days
         color = t["days"][0]["color"] if t.get("days") else "hakata"
+        lm = t.get("landmark") or {}
+        if lm.get("image") and os.path.isfile(os.path.join(ROOT, "trips", slug, lm["image"])):
+            # 랜드마크 사진 카드: 사진이 배경, 그 위에 제목·날짜 (사진 출처는 카드 아래와 맨 아래 목록에)
+            pos = f' style="object-position:{e(lm["focus"])}"' if lm.get("focus") else ""
+            credit = " · ".join(x for x in (lm.get("credit"), lm.get("license")) if x)
+            cards.append(f'<a class="trip lm theme-{e(t.get("theme", "hakata"))} c-{e(color)}" href="trips/{e(slug)}/">'
+                         f'<span class="lm-ph"><img src="trips/{e(slug)}/{e(lm["image"])}" alt="{e(lm.get("name", ""))}"{pos} loading="lazy" decoding="async">'
+                         f'<span class="lm-top"><span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
+                         + (f'<span class="lm-name">{e(lm["name"])}</span>' if lm.get("name") else "") + '</span>'
+                         f'<span class="lm-txt"><span class="ttl">{e(t["title"].replace("*", ""))}</span>'
+                         f'<span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span></span></span>'
+                         f'<span class="intro">{e(t.get("intro", ""))}</span>'
+                         + (f'<span class="lm-credit">사진 {e(credit)}</span>' if credit else "") + '</a>')
+            if lm.get("source"):
+                credits.append(f'<li>{e(lm.get("name", t["title"]))}: <a href="{e(lm["source"])}" rel="noopener" target="_blank">{e(lm.get("credit", "출처"))}</a>'
+                               + (f', <a href="{e(lm["license_url"])}" rel="noopener license" target="_blank">{e(lm.get("license", ""))}</a>' if lm.get("license_url") else f', {e(lm.get("license", ""))}') + '</li>')
+            continue
         has_og = os.path.isfile(os.path.join(ROOT, "trips", slug, "og.png"))
         cover = f'<img class="cover" src="trips/{e(slug)}/og.png" alt="" width="1200" height="630" loading="lazy">' if has_og else ""
         cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}{" has-cover" if has_og else ""}" href="trips/{e(slug)}/">{cover}<span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
                      f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
+    credits_html = ('<details class="lm-credits"><summary>사진 출처</summary><ul>' + "".join(credits) + '</ul><p>위키미디어 커먼즈 사진을 크기만 줄여 썼어요. 각 라이선스를 따라요.</p></details>') if credits else ""
     howto_sheet = sheet("howto", "새 여행 추가하기", "3단계", '''<ol>
 <li><code>trips/2027-03-fukuoka/trip.json</code>을 복사해서 <code>trips/연도-월-도시/trip.json</code>을 만들어요.</li>
 <li>날짜, 동선(<code>route.stops</code>의 이름과 지도 검색어. 해외는 구글, 국내는 네이버 지도), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
@@ -712,7 +730,7 @@ def render_home(trips):
 <section class="howto"><button type="button" class="gchip ov wide" data-open="howto"><span class="k">관리자용</span><span class="nm">새 여행 추가하는 방법</span><small>여행 파일을 하나 만들면 이 목록과 캘린더가 자동으로 바뀌어요</small></button></section>
 </main>
 {howto_sheet}
-<footer><div class="wrap">각 여행의 '캘린더에 추가'를 아이폰에서 누르면 애플 캘린더에 일정이 들어가요.</div></footer>'''
+<footer><div class="wrap">각 여행의 '캘린더에 추가'를 아이폰에서 누르면 애플 캘린더에 일정이 들어가요.{credits_html}</div></footer>'''
     og = {"title": SITE_NAME, "desc": "우리 여행의 동선, 지도, 예약, 비용을 한곳에서 봐요.", "image": "assets/og-home.png", "path": ""}
     return page(SITE_NAME, body, 0, "hakata", [t.get("theme", "hakata") for _, t in trips] + ["hakata"], og=og)
 
@@ -746,6 +764,9 @@ def main():
         open(os.path.join(od, "index.html"), "w", encoding="utf-8").write(render_trip(slug, t))
         if os.path.isfile(os.path.join(tdir, slug, "og.png")):
             shutil.copy(os.path.join(tdir, slug, "og.png"), os.path.join(od, "og.png"))
+        lmi = (t.get("landmark") or {}).get("image")
+        if lmi and os.path.isfile(os.path.join(tdir, slug, lmi)):
+            shutil.copy(os.path.join(tdir, slug, lmi), os.path.join(od, os.path.basename(lmi)))
         ics, n = render_ics(slug, t)
         open(os.path.join(od, "calendar.ics"), "w", encoding="utf-8", newline="").write(ics)
         extra_pre += extras.write_trip_files(od, slug, t)
