@@ -33,7 +33,8 @@
     "credit": "火国男児",
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Torimon(1).JPG"
-   }
+   },
+   "id": "s0"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -53,7 +54,8 @@
     "#ffffff",
     "#d62e2e",
     "#e86a5a"
-   ]
+   ],
+   "id": "s1"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -73,7 +75,8 @@
     "#ffffff",
     "#f2b8b5",
     "#8a6d5a"
-   ]
+   ],
+   "id": "s2"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -101,7 +104,8 @@
     "credit": "毒島みるく",
     "license": "CC0",
     "source": "https://commons.wikimedia.org/wiki/File:Hiyoko_-_front_and_side.jpg"
-   }
+   },
+   "id": "s3"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -121,7 +125,8 @@
     "#f3d5e4",
     "#8d6bb0",
     "#b07a4a"
-   ]
+   ],
+   "id": "s4"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -141,7 +146,8 @@
     "#1f1f1f",
     "#b3261e",
     "#6b3a3a"
-   ]
+   ],
+   "id": "s5"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -169,7 +175,8 @@
     "credit": "毒島みるく",
     "license": "CC0",
     "source": "https://commons.wikimedia.org/wiki/File:Tirolian_of_Chidoriya.jpg"
-   }
+   },
+   "id": "s6"
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -197,7 +204,118 @@
     "credit": "Nissy-KITAQ",
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Menbei.JPG"
-   }
+   },
+   "id": "s7"
+  },
+  {
+   "cat": "후쿠오카 현지인 단골",
+   "ko": "맨해튼",
+   "ja": "マンハッタン",
+   "brand": "リョーユーパン",
+   "size": "1개",
+   "price_yen": 122,
+   "price_note": "약 122엔(규슈워커, 희망소매가 세금 빼고 113엔)",
+   "where": "후쿠오카 슈퍼(서니·하로데이)·편의점 빵 코너",
+   "why": "후쿠오카 사람들이 어릴 때부터 먹는 초코 코팅 도넛 빵, 오래 둬도 돼요",
+   "look": "파란색 봉지에 'Manhattan' 글자, 안에 초코로 덮인 동그란 링 도넛",
+   "url": "https://www.walkerplus.com/article/92882/",
+   "source_date": "2026-11 조사",
+   "shape": "bag",
+   "colors": [
+    "#1f4fa3",
+    "#5a3a22",
+    "#ffffff"
+   ],
+   "local": "후쿠오카 지역 블로그·현지 기념품 기사에서 '현지 슈퍼 단골'로 꼽힘",
+   "id": "n1"
+  },
+  {
+   "cat": "후쿠오카 현지인 단골",
+   "ko": "블랙몽블랑",
+   "ja": "ブラックモンブラン",
+   "brand": "竹下製菓",
+   "size": "아이스 1개",
+   "price_yen": null,
+   "price_note": "편의점·슈퍼 아이스 코너, 100엔대",
+   "where": "후쿠오카 편의점·슈퍼 아이스 냉동고",
+   "why": "규슈 사람들의 국민 아이스, 바닐라에 초코와 쿠키 크런치. 녹아서 못 가져오니 현지에서 먹어요",
+   "look": "검정 바탕에 산 그림과 'BLACK MONBLAN' 글자의 막대 아이스 봉지",
+   "url": "https://www.takeshita-seika.jp/",
+   "source_date": "2026-11 조사",
+   "shape": "stick",
+   "colors": [
+    "#1a1a1a",
+    "#7a4a2a",
+    "#f2e6c8"
+   ],
+   "local": "규슈 한정 판매, 지역 기사에서 '규슈 소울 아이스'로 소개",
+   "id": "n2"
+  },
+  {
+   "cat": "후쿠오카 현지인 단골",
+   "ko": "니와카 센베이",
+   "ja": "二〇加煎餅",
+   "brand": "東雲堂",
+   "size": "소 16장(낱개 포장)",
+   "price_yen": 648,
+   "price_note": "워커플러스 기사 기준",
+   "where": "하카타역·공항·백화점 기념품 코너",
+   "why": "1906년부터 만든 하카타 전통 가면 모양 달걀 센베이, 현지인 선물 단골",
+   "look": "하카타 니와카 가면(눈만 가린 반쪽 가면) 모양의 갈색 센베이, 노랑·빨강 상자",
+   "url": "https://www.walkerplus.com/article/117496/",
+   "source_date": "2026-11 조사",
+   "shape": "box",
+   "colors": [
+    "#f2c230",
+    "#c8102e",
+    "#8a5a2b"
+   ],
+   "local": "하카타 기념품 설문 11위, 현지 기념품 기사 단골",
+   "id": "n3"
+  },
+  {
+   "cat": "후쿠오카 현지인 단골",
+   "ko": "양배추 우마타레",
+   "ja": "キャベツのうまたれ",
+   "brand": "久原醤油",
+   "size": "280g",
+   "price_yen": 292,
+   "price_note": "요도바시 기준(2023 JAF Mate 291엔)",
+   "where": "후쿠오카 슈퍼 조미료 코너",
+   "why": "생양배추에 뿌리기만 하면 되는 후쿠오카 야키토리집 스타일 소스",
+   "look": "초록 양배추 그림이 있는 투명 병, 갈색 소스",
+   "url": "https://www.yodobashi.com/maker/0000040314/",
+   "source_date": "2026-11 조사",
+   "shape": "bottle",
+   "colors": [
+    "#4c9a3a",
+    "#6b3b1f",
+    "#ffffff"
+   ],
+   "local": "후쿠오카 현지 슈퍼 추천 글에 반복 등장",
+   "id": "n4"
+  },
+  {
+   "cat": "후쿠오카 현지인 단골",
+   "ko": "우메가에모치",
+   "ja": "梅ヶ枝餅",
+   "brand": "다자이후 참배길 가게들",
+   "size": "1개",
+   "price_yen": 130,
+   "price_note": "가게마다 130~150엔",
+   "where": "다자이후 텐만구 참배길(2일차 버스투어 때)",
+   "why": "다자이후에 가면 현지인도 꼭 사 먹는 갓 구운 팥떡, 당일에 먹어요",
+   "look": "매화 무늬가 찍힌 납작하고 동그란 노릇한 떡",
+   "url": "https://www.crossroadfukuoka.jp/spot/10492",
+   "source_date": "2026-11 조사",
+   "shape": "onigiri",
+   "colors": [
+    "#e8c58a",
+    "#b07a3a",
+    "#ffffff"
+   ],
+   "local": "후쿠오카 공식 관광 사이트 소개, 참배길 명물",
+   "id": "n5"
   },
   {
    "cat": "마트 식품·조미료",
@@ -217,7 +335,8 @@
     "#c9a77c",
     "#2a2a2a",
     "#efe2cc"
-   ]
+   ],
+   "id": "s8"
   },
   {
    "cat": "마트 식품·조미료",
@@ -237,7 +356,8 @@
     "#1b1b1b",
     "#c8102e",
     "#ffffff"
-   ]
+   ],
+   "id": "s9"
   },
   {
    "cat": "마트 식품·조미료",
@@ -257,7 +377,8 @@
     "#f39a1e",
     "#f7d548",
     "#b8452a"
-   ]
+   ],
+   "id": "s10"
   },
   {
    "cat": "마트 식품·조미료",
@@ -286,7 +407,8 @@
     "license": "CC BY 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:%E3%83%9E%E3%83%AB%E3%82%BF%E3%82%A4%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3_%E3%82%AB%E3%83%83%E3%83%97%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3_001.jpg",
     "note": "같은 브랜드 컵라면 사진, 봉지 제품은 포장이 달라요"
-   }
+   },
+   "id": "s11"
   },
   {
    "cat": "마트 식품·조미료",
@@ -315,7 +437,8 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Yuzukosyou.jpg",
     "note": "브랜드는 다를 수 있어요"
-   }
+   },
+   "id": "s12"
   },
   {
    "cat": "마트 식품·조미료",
@@ -335,7 +458,8 @@
     "#5a2a1a",
     "#d9b44a",
     "#c0392b"
-   ]
+   ],
+   "id": "s13"
   },
   {
    "cat": "마트 식품·조미료",
@@ -355,7 +479,96 @@
     "#e9e3d8",
     "#6b4a35",
     "#f5efe6"
-   ]
+   ],
+   "id": "s14"
+  },
+  {
+   "cat": "일본인 장바구니 단골",
+   "ko": "삿포로 이치방 시오라멘",
+   "ja": "サッポロ一番 塩らーめん",
+   "brand": "サンヨー食品",
+   "size": "5개입",
+   "price_yen": 537,
+   "price_note": "마츠키요 온라인 2026-07",
+   "where": "슈퍼·드러그스토어",
+   "why": "일본인이 반복 구매하는 봉지라면 1위 시리즈(2026 조사)",
+   "look": "흰 바탕에 빨강 '사포로 이치방' 글자, 라멘 그릇 사진의 5개 묶음",
+   "url": "https://nlab.itmedia.co.jp/research/articles/3940184/",
+   "source_date": "2026",
+   "shape": "pack",
+   "colors": [
+    "#ffffff",
+    "#d7262e",
+    "#f2c230"
+   ],
+   "local": "네토라보 2026 '반복 구매 봉지라면' 1위",
+   "id": "n6"
+  },
+  {
+   "cat": "일본인 장바구니 단골",
+   "ko": "마루짱 세이멘",
+   "ja": "マルちゃん正麺 醤油味",
+   "brand": "東洋水産",
+   "size": "5개입",
+   "price_yen": null,
+   "price_note": "슈퍼 기준 500엔 안팎(가게마다 달라요)",
+   "where": "슈퍼·드러그스토어",
+   "why": "생면 같은 면발로 반복 구매 2위 봉지라면",
+   "look": "검정·빨강 바탕에 '正麺' 큰 글자의 봉지 5개 묶음",
+   "url": "https://nlab.itmedia.co.jp/research/articles/3940184/",
+   "source_date": "2026",
+   "shape": "pack",
+   "colors": [
+    "#1a1a1a",
+    "#c8102e",
+    "#f2e6c8"
+   ],
+   "local": "네토라보 2026 '반복 구매 봉지라면' 2위",
+   "id": "n7"
+  },
+  {
+   "cat": "일본인 장바구니 단골",
+   "ko": "가메다 가키노타네",
+   "ja": "亀田の柿の種",
+   "brand": "亀田製菓",
+   "size": "6봉(180g)",
+   "price_yen": 267,
+   "price_note": "마츠키요 온라인 2026-07",
+   "where": "슈퍼·편의점·드러그스토어",
+   "why": "맥주 안주 하면 떠올리는 일본 국민 과자, 매운 쌀과자+땅콩",
+   "look": "주황 바탕에 감씨 모양 과자와 땅콩 사진, 작은 봉지 6개 든 큰 봉지",
+   "url": "https://www.matsukiyococokara-online.com/store/catalog/product/view/id/4901313205167",
+   "source_date": "2026-07",
+   "shape": "bag",
+   "colors": [
+    "#f08a1c",
+    "#8a3b12",
+    "#f7e7c4"
+   ],
+   "local": "일본 가정 상비 과자, 현지 슈퍼 매대 고정 상품",
+   "id": "n8"
+  },
+  {
+   "cat": "일본인 장바구니 단골",
+   "ko": "알포트 미니 초콜릿",
+   "ja": "アルフォート ミニチョコレート",
+   "brand": "ブルボン",
+   "size": "12개입",
+   "price_yen": null,
+   "price_note": "오픈 가격, 슈퍼에서 200엔 안팎",
+   "where": "슈퍼·편의점·돈키호테",
+   "why": "범선 그림 초콜릿 비스킷, 일본인 간식 스테디셀러",
+   "look": "파란 상자에 범선이 새겨진 네모난 초콜릿 비스킷",
+   "url": "https://www.bourbon.co.jp/alfort/",
+   "source_date": "2026-11 조사",
+   "shape": "box",
+   "colors": [
+    "#1b3f8f",
+    "#5a3a22",
+    "#f2e6c8"
+   ],
+   "local": "2026년에도 신제품이 나오는 장수 인기 상품",
+   "id": "n9"
   },
   {
    "cat": "편의점 먹거리",
@@ -375,7 +588,8 @@
     "#1c1c1c",
     "#c9a24a",
     "#7a4a2a"
-   ]
+   ],
+   "id": "s15"
   },
   {
    "cat": "편의점 먹거리",
@@ -395,7 +609,8 @@
     "#1c1c1c",
     "#c9a24a",
     "#8a3b22"
-   ]
+   ],
+   "id": "s16"
   },
   {
    "cat": "편의점 먹거리",
@@ -424,7 +639,8 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:%E5%8D%8A%E9%A1%8D%E3%81%AE%E3%81%9F%E3%81%BE%E3%81%94%E3%82%B5%E3%83%B3%E3%83%89_20251205.jpg",
     "note": "다른 가게 제품 사진이에요"
-   }
+   },
+   "id": "s17"
   },
   {
    "cat": "편의점 먹거리",
@@ -452,7 +668,8 @@
     "credit": "毒島みるく",
     "license": "CC0",
     "source": "https://commons.wikimedia.org/wiki/File:Famichiki_of_FamilyMart.jpg"
-   }
+   },
+   "id": "s18"
   },
   {
    "cat": "편의점 먹거리",
@@ -481,7 +698,8 @@
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Karaagekun_Red.jpg",
     "note": "레드 맛"
-   }
+   },
+   "id": "s19"
   },
   {
    "cat": "편의점 먹거리",
@@ -509,7 +727,8 @@
     "credit": "Popbeans",
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:%E3%83%97%E3%83%AC%E3%83%9F%E3%82%A2%E3%83%A0%E3%83%AD%E3%83%BC%E3%83%AB%E3%82%B1%E3%83%BC%E3%82%AD.jpg"
-   }
+   },
+   "id": "s20"
   },
   {
    "cat": "과자·디저트",
@@ -538,7 +757,8 @@
     "license": "CC0",
     "source": "https://commons.wikimedia.org/wiki/File:Calbee_Jagarico_Salad.jpg",
     "note": "샐러드 맛"
-   }
+   },
+   "id": "s21"
   },
   {
    "cat": "과자·디저트",
@@ -566,7 +786,8 @@
     "credit": "Boneyard90",
     "license": "CC BY 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Black_Thunder_(8).JPG"
-   }
+   },
+   "id": "s22"
   },
   {
    "cat": "과자·디저트",
@@ -595,7 +816,8 @@
     "license": "CC BY-SA 4.0",
     "source": "https://commons.wikimedia.org/wiki/File:Japanese_kit_Kat_varieties.jpg",
     "note": "매장 진열 모습"
-   }
+   },
+   "id": "s23"
   },
   {
    "cat": "과자·디저트",
@@ -623,7 +845,8 @@
     "credit": "François Nguyen",
     "license": "CC BY 2.0",
     "source": "https://commons.wikimedia.org/wiki/File:Shiroi_Koibito_(2).jpg"
-   }
+   },
+   "id": "s24"
   },
   {
    "cat": "드러그스토어(의약품)",
@@ -643,7 +866,8 @@
     "#ffffff",
     "#2a5ac9",
     "#d42a2a"
-   ]
+   ],
+   "id": "s25"
   },
   {
    "cat": "드러그스토어(의약품)",
@@ -663,7 +887,8 @@
     "#d42a2a",
     "#f2c9a8",
     "#e6a37a"
-   ]
+   ],
+   "id": "s26"
   },
   {
    "cat": "드러그스토어(의약품)",
@@ -683,7 +908,8 @@
     "#2f8a3a",
     "#ffffff",
     "#9ac85a"
-   ]
+   ],
+   "id": "s27"
   },
   {
    "cat": "드러그스토어(의약품)",
@@ -711,7 +937,8 @@
     "credit": "ジダネ",
     "license": "Public domain",
     "source": "https://commons.wikimedia.org/wiki/File:Ota_medicinal_powder_for_the_stomach.JPG"
-   }
+   },
+   "id": "s28"
   },
   {
    "cat": "드러그스토어(생활)",
@@ -731,7 +958,8 @@
     "#c9b6e4",
     "#ffffff",
     "#7a5aa8"
-   ]
+   ],
+   "id": "s29"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -751,7 +979,8 @@
     "#f6d24a",
     "#f39a1e",
     "#ffffff"
-   ]
+   ],
+   "id": "s30"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -771,7 +1000,8 @@
     "#ffffff",
     "#f6d24a",
     "#f39a1e"
-   ]
+   ],
+   "id": "s31"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -791,7 +1021,8 @@
     "#2a7ad9",
     "#9ad0f5",
     "#ffffff"
-   ]
+   ],
+   "id": "s32"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -811,7 +1042,8 @@
     "#ffffff",
     "#2a5ac9",
     "#9ab8e8"
-   ]
+   ],
+   "id": "s33"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -831,7 +1063,8 @@
     "#a9d4f0",
     "#ffffff",
     "#f2a8b8"
-   ]
+   ],
+   "id": "s34"
   },
   {
    "cat": "드러그스토어(화장품)",
@@ -851,7 +1084,52 @@
     "#f2b8c8",
     "#c9a24a",
     "#ffffff"
-   ]
+   ],
+   "id": "s35"
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "스킨아쿠아 슈퍼 모이스처 젤",
+   "ja": "スキンアクア スーパーモイスチャージェル",
+   "brand": "ロート製薬",
+   "size": "110g",
+   "price_yen": 712,
+   "price_note": "마츠키요 온라인 기준",
+   "where": "드러그스토어(마츠키요·선드럭)",
+   "why": "일본 사람들이 여름 필수템으로 꼽는 촉촉한 선크림, 가격도 착해요",
+   "look": "하늘색 튜브에 'SKIN AQUA' 글자",
+   "url": "https://www.matsukiyococokara-online.com/store/catalog/product/view/id/4987241190850",
+   "source_date": "2026-11 조사",
+   "shape": "tube",
+   "colors": [
+    "#7cc6e8",
+    "#ffffff",
+    "#1f6fa8"
+   ],
+   "local": "일본인 친구 추천 기사·드러그스토어 판매 상위",
+   "id": "n10"
+  },
+  {
+   "cat": "드러그스토어(화장품)",
+   "ko": "하다라보 고쿠쥰 히알루론 로션",
+   "ja": "肌ラボ 極潤ヒアルロン液",
+   "brand": "ロート製薬",
+   "size": "170ml",
+   "price_yen": 902,
+   "price_note": "마츠키요 온라인(리필 781엔)",
+   "where": "드러그스토어",
+   "why": "일본에서 가장 흔한 보습 화장수, 한국보다 싸요",
+   "look": "흰 병에 파란 글자 '極潤', 리필은 파우치",
+   "url": "https://www.matsukiyococokara-online.com/store/catalog/product/view/id/4987241155712",
+   "source_date": "2026-11 조사",
+   "shape": "bottle",
+   "colors": [
+    "#ffffff",
+    "#1f5fbf",
+    "#e8f0fa"
+   ],
+   "local": "일본 드러그스토어 스테디셀러",
+   "id": "n11"
   },
   {
    "cat": "주류·음료",
@@ -879,7 +1157,8 @@
     "credit": "Kuha455405",
     "license": "CC BY-SA 3.0",
     "source": "https://commons.wikimedia.org/wiki/File:Suntory_Kakubin.jpg"
-   }
+   },
+   "id": "s36"
   },
   {
    "cat": "주류·음료",
@@ -899,7 +1178,8 @@
     "#f6c3d0",
     "#ffffff",
     "#c9ccd2"
-   ]
+   ],
+   "id": "s37"
   },
   {
    "cat": "생활·잡화",
@@ -919,7 +1199,8 @@
     "#e8f2f8",
     "#f2a8b8",
     "#2a9ad9"
-   ]
+   ],
+   "id": "s38"
   },
   {
    "cat": "생활·잡화",
@@ -939,7 +1220,8 @@
     "#f2f2f0",
     "#e0e0dc",
     "#b8b8b0"
-   ]
+   ],
+   "id": "s39"
   }
  ]
 }

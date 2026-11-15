@@ -364,10 +364,10 @@ def shopping_page(slug, t, data):
     for n, it in enumerate(items):
         won = f'₩{round(it["price_yen"] * rate / 100) * 100:,}' if rate and it.get("price_yen") else ""
         price = f'¥{it["price_yen"]:,}' if it.get("price_yen") else "참고가"
-        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="s{n}" data-yen="{it.get("price_yen") or 0}">
+        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="{e(it.get("id") or f"s{n}")}" data-yen="{it.get("price_yen") or 0}">
 {shop_art(slug, it)}
 <div class="shop-b"><small class="shop-cat">{e(it["cat"])}{(" · " + e(it["brand"])) if it.get("brand") else ""}</small><h3>{e(it["ko"])}</h3>
-<p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>
+<p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>{f'<p class="shop-local"><span>현지인 픽</span> {e(it["local"])}</p>' if it.get("local") else ""}
 <div class="shop-price"><b>{price}</b><span>{won}</span><em>{e(it.get("size", ""))}</em></div>
 <p class="shop-src">{e(it.get("price_note") or "")}</p>
 <p class="shop-why">{e(it.get("why", ""))}</p>
@@ -381,7 +381,7 @@ def shopping_page(slug, t, data):
 <div class="topbar">{B.brand("../../../")}<a class="back" href="../">{e(t.get("short", ""))} 여행</a></div>
 <div class="eyebrow">SHOPPING LIST · {e(t.get("short", ""))}·일본</div>
 <h1>꼭 사 올 <em>쇼핑 리스트</em></h1>
-<p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 사진으로 정리했어요. 사진을 누르면 크게 보여요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
+<p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 사진으로 정리했어요. 일본 현지인이 실제로 자주 사는 것은 “현지인 픽”으로 표시했어요. 사진을 누르면 크게 보여요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 <section class="shop-sum card" aria-live="polite"><div><small>담은 것</small><b class="ss-n">0개</b></div><div><small>합계</small><b class="ss-y">¥0</b><span class="ss-w"></span></div><div class="ss-tf"><small>면세 (2026-11 바뀜)</small><span>세금 포함으로 내고 출국할 때 돌려받아요 · 같은 가게 하루 ¥5,000 이상(세금 제외)</span></div></section>
