@@ -3413,5 +3413,26 @@
    "공식 사이트에서 연락처 확인"
   ]
  ],
- "emergency_link": "https://overseas.mofa.go.kr/jp-fukuoka-ko/index.do"
+ "emergency_link": "https://overseas.mofa.go.kr/jp-fukuoka-ko/index.do",
+ "stay_ja": "西鉄ホテル クルーム博多",
+ "flights": [
+  {
+   "date": "2027-02-27",
+   "dep": "10:10",
+   "from": "인천",
+   "to": "후쿠오카",
+   "no": "TW0203",
+   "airline": "트리니티항공",
+   "dep_tz": "Asia/Seoul"
+  },
+  {
+   "date": "2027-03-03",
+   "dep": "15:20",
+   "from": "후쿠오카",
+   "to": "인천",
+   "no": "ZE0648",
+   "airline": "이스타항공",
+   "dep_tz": "Asia/Tokyo"
+  }
+ ]
 }

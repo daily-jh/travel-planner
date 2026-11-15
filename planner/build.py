@@ -97,6 +97,19 @@ def pick_bar(key, ai):
             + '<span class="who"></span><span class="pk-edit"></span></span>')
 
 
+def flags(b):
+    """시간표 한 줄에서 여행자가 미리 알아야 할 표시: 예약·현금·줄서기."""
+    x = plain(b.get("note", "")) + " " + plain(b.get("what", ""))
+    f = []
+    if "예약" in x and "예약 불가" not in x and "면세" not in x:
+        f.append(("rsv", "예약"))
+    if "현금" in x or "카드 불가" in x:
+        f.append(("cash", "현금"))
+    if "줄서기" in x or "대기" in x:
+        f.append(("line", "줄서기"))
+    return f
+
+
 def sheet(did, title, sub, inner):
     """팝업(아래에서 올라오는 시트). data-open 버튼으로 연다."""
     return (f'<dialog class="sheet" id="{did}" aria-labelledby="{did}-t"><div class="sheet-h"><div><b id="{did}-t">{title}</b>'
@@ -202,7 +215,9 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"])} for b in d["blocks"]]} for d in t["days"]]}
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]]} for d in t["days"]],
+               "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
+               "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", "")}
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -232,6 +247,8 @@ def render_trip(slug, t):
         ("t-go", "", "➚", "다음 장소 길찾기", '<small class="go-mini">구글 지도로 열기</small>'),
         ("t-pk", "", "✓", "출발 전 확인", '<small class="pk-mini">예약·확인 체크</small>'),
         ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급·영사콜센터</small>') if t.get("emergency") else None,
+        ("t-taxi", "", "⛟", "택시 카드", '<small>기사님께 보여 주기</small>') if t.get("stay_ja") else None,
+        ("t-log", "tool-log", "✎", "여행 기록", '<small class="log-mini">다녀온 곳·한 줄 기록</small>'),
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
     ]
     tl = []
@@ -239,6 +256,9 @@ def render_trip(slug, t):
         if not x:
             continue
         cls, did, ic, name, sub = x
+        if cls == "t-taxi":
+            tl.append(f'<button type="button" class="tool {cls}" data-big="{e(t["stay_ja"])}までお願いします" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
+            continue
         if cls == "t-pk":
             tl.append(f'<a class="tool {cls}" href="#before"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         elif cls == "t-go":
@@ -259,7 +279,6 @@ def render_trip(slug, t):
             f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(ko)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button><button type="button" class="big" data-big="{e(j)}" data-bigko="{e(ko)}" aria-label="크게 보여주기">⤢</button></li>'
             for ko, j, r in c["items"]) + '</ul>' for k, c in enumerate(ph))
         w(sheet("tool-ph", "일본어 회화", "누르면 소리로 들려요 · ⤢ 누르면 크게 보여 줘요", tabs + lists))
-        w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     if pk:
         inner = ('<div class="bag-top"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" pathLength="100"/></svg><b class="bag-pct">0%</b></div>'
                  '<div class="bag-filter seg" role="group"><button type="button" data-bf="all" aria-pressed="true">전체</button><button type="button" data-bf="기내" aria-pressed="false">기내</button><button type="button" data-bf="위탁" aria-pressed="false">위탁</button><button type="button" data-bf="left" aria-pressed="false">남은 것</button></div></div>'
@@ -279,6 +298,8 @@ def render_trip(slug, t):
         w(sheet("tool-sos", "비상 연락", "누르면 전화가 걸려요", '<ul class="sos">' + "".join(
             (f'<li><a href="tel:{e(num.replace("-", ""))}"><span>{e(nm)}</span><b>{e(num)}</b></a></li>' if any(ch.isdigit() for ch in num) else f'<li><a href="{e(t.get("emergency_link", "#"))}" target="_blank" rel="noopener"><span>{e(nm)}</span><b>{e(num)} ↗</b></a></li>')
             for nm, num in t["emergency"]) + '</ul><p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>'))
+    w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
+    w(sheet("tool-log", "여행 기록", "다녀온 곳과 한 줄 기록 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2><span class="num">2</span>한눈에 보기</h2><p class="lead">숙소, 이동, 날짜별 강도·복귀 계획이에요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -340,7 +361,7 @@ def render_trip(slug, t):
             pname = plain(b["place"])
             pid = next((v for k, v in pl_ids.items() if k in pname or (pname and pname.split()[0] in k)), "")
             w(f'<tr class="tap" data-open="{bid}" tabindex="0"><td class="time">{e(b["time"])}</td><td class="cat"><span class="tag {TYPE_CLS.get(b["type"], "act")}">{e(b["type"])}</span></td>'
-              f'<td class="place">{rich(b["place"])}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
+              f'<td class="place">{rich(b["place"])}{"".join(f"<span class=\'fl {k}\'>{v}</span>" for k, v in flags(b))}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
             rows = [("할 일", b["what"]), ("이동·소요", b["move"]), ("메모", b["note"])]
             inner = '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{rich(v)}</dd>" for k, v in rows if plain(v) not in ("", "-")) + "</dl>"
             btns = []
@@ -349,6 +370,9 @@ def render_trip(slug, t):
             if pname and pname not in ("미정", "-"):
                 btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">구글 지도</a>')
             inner += '<div class="row">' + "".join(btns) + "</div>"
+            inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
+                      '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
+                      '<textarea rows="2" placeholder="한 줄 기록 (맛, 분위기, 다음에 또 올지)"></textarea></div>')
             blk_dlgs.append(sheet(bid, rich(b["place"]), f'{i}일차 · {e(b["time"])} · {e(b["type"])}', inner))
         w('</tbody></table></div>' + "".join(blk_dlgs))
         if d.get("alternatives"):
@@ -472,7 +496,7 @@ def render_ics(slug, t):
     tz = t.get("timezone", "Asia/Seoul")
     ev = []
 
-    def add(day, st, en, summary, loc, desc, url):
+    def add(day, st, en, summary, loc, desc, url, alarm=0):
         s = dt.datetime.combine(day, st)
         z = dt.datetime.combine(day, en)
         if z <= s:
@@ -487,11 +511,13 @@ def render_ics(slug, t):
             L.append("DESCRIPTION:" + ics_escape(desc))
         if url:
             L.append("URL:" + url)
+        if alarm:
+            L += ["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + ics_escape(summary), f"TRIGGER:-PT{alarm}M", "END:VALARM"]
         ev.extend(L + ["END:VEVENT"])
 
     tm = lambda x: dt.time(*map(int, x.split(":")))
     for x in t.get("calendar_extra", []):
-        add(d_of(x["date"]), tm(x["start"]), tm(x["end"]), x["title"], x.get("location"), x.get("description"), gmap(x["location"]) if x.get("location") else None)
+        add(d_of(x["date"]), tm(x["start"]), tm(x["end"]), x["title"], x.get("location"), x.get("description"), gmap(x["location"]) if x.get("location") else None, x.get("alarm", 60))
     skip = t.get("calendar_skip", {})
     for d in t["days"]:
         day = d_of(d["date"])
@@ -510,7 +536,9 @@ def render_ics(slug, t):
                                           "이동: " + plain(b["move"]) if plain(b["move"]) not in ("", "-") else "",
                                           "메모: " + plain(b["note"]) if plain(b["note"]) else ""] if x)
             loc = q or (place if place != "미정" else "")
-            add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None)
+            fl = [k for k, _ in flags(b)]
+            alarm = 180 if re.search(r"[A-Z]{2}\d{3,4}", b["what"]) else (60 if "rsv" in fl else 0)
+            add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None, alarm)
     cal = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//travel-planner//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
            "X-WR-CALNAME:" + ics_escape(t.get("short", t["title"]) + " 여행"), "X-WR-TIMEZONE:" + tz]
     off = {"Asia/Tokyo": ("+0900", "JST"), "Asia/Seoul": ("+0900", "KST")}.get(tz)

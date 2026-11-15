@@ -707,3 +707,41 @@ ul.bag .del{border:none;background:none;color:var(--label3);cursor:pointer;paddi
 .sos a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px;text-decoration:none;color:var(--ink)}
 .sos b{color:#ff3b30;font-size:17px;font-variant-numeric:tabular-nums}
 .phr[hidden]{display:none}
+/* ---------------------------------------------------------------- 여행자 시점 v3: 브리핑, 표시, 기록, 택시 카드 */
+.t-taxi .ti{background:linear-gradient(160deg,#ffd60a,#1c1c1e)} .t-log .ti{background:linear-gradient(160deg,#ff9f0a,#ff375f)}
+.live.off{background:#34c759;animation:none}
+.bcs{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px 8px}
+.bc{font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 10px;background:var(--fill);color:var(--ink)}
+.bc[data-open]{cursor:pointer}
+.bc.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
+.bc.cash{background:color-mix(in srgb,#ff9f0a 18%,transparent);color:#c26b00}
+.bc.warn{background:color-mix(in srgb,#ff3b30 14%,transparent);color:#ff3b30}
+.bc.ok{background:color-mix(in srgb,#34c759 16%,transparent);color:#248a3d}
+.nc-row.static{cursor:default}
+.nc-row.cur{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.nc-row:first-of-type{background:var(--fill)}
+.nc-row.cur:first-of-type{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.nc-row.fl{background:color-mix(in srgb,#0a84ff 10%,transparent)}
+.nc-tmr{margin:4px 0 2px;padding:10px 12px;border-radius:14px;border:1px dashed var(--sep);display:grid;gap:2px}
+.nc-tmr small{font-size:12px;font-weight:600;color:var(--label2)} .nc-tmr b{font-size:15px} .nc-tmr span{font-size:13px;color:var(--label2)}
+.fl{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;vertical-align:2px}
+.fl.rsv{background:color-mix(in srgb,#0a84ff 14%,transparent);color:#0a84ff}
+.fl.cash{background:color-mix(in srgb,#ff9f0a 18%,transparent);color:#c26b00}
+.fl.line{background:var(--fill);color:var(--label2)}
+.blocks tr.tap td.place .fl+.fl{margin-left:3px}
+tr.visited td.place{color:var(--label2)}
+tr.visited td.time::after{content:" ✓";color:#34c759;font-weight:800}
+@media (max-width:640px){tr.visited::before{background:#34c759!important;box-shadow:0 0 0 2px #34c759!important}}
+.jr{margin-top:16px;padding-top:14px;border-top:.5px solid var(--sep);display:grid;gap:10px}
+.jr-done{justify-self:start;font:inherit;font-weight:700;cursor:pointer;border:none;border-radius:12px;padding:9px 14px;background:var(--fill);color:var(--ink)}
+.jr-done[aria-pressed="true"]{background:#34c759;color:#fff}
+.jr-stars{display:flex;gap:2px}
+.jr-stars button{font-size:26px;line-height:1;border:none;background:none;cursor:pointer;color:var(--label3);padding:2px;transition:transform .15s var(--ease),color .15s}
+.jr-stars button.on{color:#ffcc00}
+.jr-stars button:active{transform:scale(1.25)}
+.jr textarea{font:inherit;font-size:15px;border:none;border-radius:12px;background:var(--fill);color:var(--ink);padding:10px 12px;resize:vertical;outline:none}
+.log h4{font-size:13px;color:var(--label2);margin:14px 0 6px}.log h4:first-child{margin-top:0}
+.logl{list-style:none;margin:0;padding:0;background:var(--fill);border-radius:14px;overflow:hidden}
+.logl li{padding:11px 12px;border-top:.5px solid var(--sep);cursor:pointer}.logl li:first-child{border-top:none}
+.logl b{font-size:15px}.logl .st5{margin-left:8px;color:#ffcc00;font-size:13px}.logl .st5 i{font-style:normal;color:var(--label3)}
+.logl p{margin:2px 0 0;font-size:14px;color:var(--label2)}

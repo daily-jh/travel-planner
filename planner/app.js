@@ -418,7 +418,7 @@ document.querySelectorAll('.route').forEach(function(card){
       var d=ev.target.closest('[data-bdel]'); if(d){ var it=bag.mine.splice(+d.dataset.bdel,1)[0]; if(it) delete bag.c['m-'+it.id]; LS.set(BK,bag); renderBag(); return; }
       var f=ev.target.closest('[data-bf]'); if(f){ bf=f.dataset.bf; bagRoot.querySelectorAll('[data-bf]').forEach(function(x){x.setAttribute('aria-pressed',x===f)}); renderBag(); return; }
       if(ev.target.closest('.bag-reset')){ bag.c={}; LS.set(BK,bag); renderBag(); return; }
-      var li=ev.target.closest('li[data-bag]'); if(li){ bag.c[li.dataset.bag]=!bag.c[li.dataset.bag]; LS.set(BK,bag); renderBag(); } });
+      var li=ev.target.closest('li[data-bag]'); if(li){ bag.c[li.dataset.bag]=!bag.c[li.dataset.bag]; LS.set(BK,bag); renderBag(); nowMode(); } });
     bagRoot.addEventListener('keydown',function(ev){ var li=ev.target.closest('li[data-bag]'); if(li&&(ev.key===' '||ev.key==='Enter')){ ev.preventDefault(); li.click(); } });
     bagRoot.querySelector('.bag-add').addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(ev.target);
       bag.mine.push({id:Date.now().toString(36),it:String(f.get('it')).slice(0,40),wh:f.get('wh')}); LS.set(BK,bag); ev.target.reset(); renderBag(); });
@@ -429,29 +429,79 @@ document.querySelectorAll('.route').forEach(function(card){
   var CK='tp-ck-'+slug, ck=LS.get(CK,{}), lis=document.querySelectorAll('ul.todo li[data-ck]'), pkMini=document.querySelector('.pk-mini');
   function renderCk(){ var n=0; lis.forEach(function(li){ var on=!!ck[li.dataset.ck]; li.setAttribute('aria-checked',on); li.classList.toggle('done',on); if(on) n++; });
     if(pkMini) pkMini.textContent=n+' / '+lis.length+' 완료'; }
-  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); renderCk(); };
+  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); renderCk(); nowMode(); };
     li.addEventListener('click',t); li.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){e.preventDefault();t();} }); });
   renderCk();
 
-  // 여행 중 모드: 지금·다음 일정
+  // 브리핑 카드: 출발 전(30일 안) · 여행 중(오늘·지금·다음·내일) — 여행자가 그날 꼭 알아야 할 것만
   var nc=document.querySelector('.nowcard');
+  var tm=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; };
+  var ymd=function(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  var esc=function(x){ return String(x||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); };
+  var hm=function(m){ return (m>=60?Math.floor(m/60)+'시간 ':'')+(m%60)+'분'; };
+  function spentOn(d){ var k=(d.getMonth()+1)+'/'+d.getDate(), t=0; ex.forEach(function(x){ if(x.date===k) t+=x.amt; }); return t; }
+  function chip(cls,txt,open){ return '<span class="bc '+cls+'"'+(open?' data-open="'+open+'" role="button" tabindex="0"':'')+'>'+txt+'</span>'; }
+  function flightFor(ds){ return (C.flights||[]).filter(function(f){return f.date===ds})[0]; }
   function nowMode(){
-    if(!nc) return; var n=localNow(), ds=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
-    var di=-1; (C.days||[]).forEach(function(d,i){ if(d.date===ds) di=i; }); if(di<0){ nc.hidden=true; return; }
-    var mins=n.getHours()*60+n.getMinutes(), bl=C.days[di].blocks, ci=-1;
-    var tm=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; };
+    if(!nc) return; var n=localNow(), ds=ymd(n), today0=new Date(ds+'T00:00:00'), st=new Date(C.start+'T00:00:00'), en=new Date(C.end+'T00:00:00');
+    var mins=n.getHours()*60+n.getMinutes(), h='', sym=cur.symbol||'';
+    var di=-1; (C.days||[]).forEach(function(d,i){ if(d.date===ds) di=i; });
+    if(di<0 && today0<st){
+      var left=Math.round((st-today0)/864e5); if(left>30){ nc.hidden=true; return; }
+      var ck=document.querySelectorAll('ul.todo li[data-ck]'), ckLeft=[].filter.call(ck,function(li){return li.getAttribute('aria-checked')!=='true'}).length;
+      var bagAll=bagItems().length, bagDone=[].filter.call(bagItems(),function(li){return li.classList.contains('done')}).length;
+      var f=(C.flights||[])[0];
+      h='<div class="nc-h"><span class="live off"></span>'+(left===1?'내일 출발해요':'출발 D-'+left+' 준비')+'</div><div class="bcs">'
+        +chip(ckLeft?'warn':'ok','출발 전 확인 '+(ckLeft?ckLeft+'개 남음':'완료'))+chip(bagDone<bagAll?'':'ok','캐리어 '+(bagAll?Math.round(bagDone/bagAll*100):0)+'%','tool-bag')+'</div>';
+      if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요</span></div>'; }
+      nc.innerHTML=h; nc.hidden=false; return;
+    }
+    if(di<0){ nc.hidden=true; return; }
+    var bl=C.days[di].blocks, ci=-1;
     bl.forEach(function(b,i){ var t=tm(b.time); if(t!==null&&t<=mins) ci=i; });
     var nx=bl.slice(ci+1).findIndex(function(b){return tm(b.time)!==null}); nx=nx<0?-1:ci+1+nx;
-    var row=function(i,lab){ if(i<0) return ''; var b=bl[i]; return '<button type="button" class="nc-row" data-open="blk-'+(di+1)+'-'+(i+1)+'"><small>'+lab+' · '+b.time+'</small><b>'+b.place+'</b><span>'+b.what+'</span></button>'; };
+    var row=function(i,lab,d){ if(i<0) return ''; var b=C.days[d].blocks[i];
+      return '<button type="button" class="nc-row'+(lab==='지금'?' cur':'')+'" data-open="blk-'+(d+1)+'-'+(i+1)+'"><small>'+lab+' · '+esc(b.time)+'</small><b>'+esc(b.place)+'</b><span>'+esc(b.what)+'</span></button>'; };
     var left=nx>=0?tm(bl[nx].time)-mins:null;
-    nc.innerHTML='<div class="nc-h"><span class="live"></span>여행 '+(di+1)+'일차 · 지금'+(left!==null&&left>0?'<em>다음 일정까지 '+(left>=60?Math.floor(left/60)+'시간 ':'')+(left%60)+'분</em>':'')+'</div>'+row(ci,'지금')+row(nx,'다음')+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
-    nc.hidden=false;
+    h='<div class="nc-h"><span class="live"></span>여행 '+(di+1)+'일차 · 지금'+(left!==null&&left>0?'<em>다음까지 '+hm(left)+'</em>':'')+'</div>';
+    var rs=bl.filter(function(b){return b.fl.indexOf('rsv')>=0&&tm(b.time)>=mins-30}), cs=bl.filter(function(b){return b.fl.indexOf('cash')>=0&&tm(b.time)>=mins-30});
+    var bg=(C.budget||[])[di], sp=spentOn(n);
+    h+='<div class="bcs">'+rs.map(function(b){return chip('rsv','예약 '+esc(b.time.split(/[–-]/)[0])+' '+esc(b.place.split(' ')[0]))}).join('')
+      +(cs.length?chip('cash','현금 필요 '+cs.length+'곳'):'')
+      +(bg?chip(sp>bg[1]?'warn':'','오늘 '+sym+fmt(sp)+' / 예산 '+sym+fmt(bg[0])+'~'+fmt(bg[1]),'tool-ex'):'')+'</div>';
+    var f=flightFor(ds); if(f&&f.dep_tz==='Asia/Tokyo'){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준</span></div>'; }
+    h+=row(ci,'지금',di)+row(nx,'다음',di)+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
+    if(mins>=18*60&&C.days[di+1]){ var tb=C.days[di+1].blocks, fi=tb.findIndex(function(b){return tm(b.time)!==null}), tr=tb.filter(function(b){return b.fl.indexOf('rsv')>=0});
+      h+='<div class="nc-tmr"><small>내일 브리핑</small>'+(fi>=0?'<b>'+esc(tb[fi].time.split(/[–-]/)[0])+' '+esc(tb[fi].place)+'</b>':'')+(tr.length?'<span>예약: '+tr.map(function(b){return esc(b.time.split(/[–-]/)[0])+' '+esc(b.place)}).join(', ')+'</span>':'')+'</div>'; }
+    nc.innerHTML=h; nc.hidden=false;
     var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
     if(go&&tgt&&tgt.place){ var dest=tgt.place.split('→').pop().trim()+' '+((C.geo||{}).city||'');
       go.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
       var m=go.querySelector('.go-mini'); if(m) m.textContent=tgt.place.split('→').pop().trim(); }
   }
   nowMode(); setInterval(nowMode,60000);
+
+  // 여행 기록: 다녀온 곳 체크, 별점, 한 줄 메모
+  var JK='tp-log-'+slug, jr=LS.get(JK,{d:{},s:{},m:{}}), logBox=document.querySelector('.log'), logMini=document.querySelector('.log-mini');
+  function paintJr(){
+    document.querySelectorAll('.jr').forEach(function(x){ var id=x.dataset.jr;
+      x.querySelector('.jr-done').setAttribute('aria-pressed',!!jr.d[id]); x.querySelector('.jr-done').textContent=jr.d[id]?'다녀왔어요 ✓':'다녀왔어요';
+      x.querySelectorAll('[data-star]').forEach(function(b){ b.classList.toggle('on',+b.dataset.star<=(jr.s[id]||0)); });
+      var ta=x.querySelector('textarea'); if(document.activeElement!==ta) ta.value=jr.m[id]||''; });
+    document.querySelectorAll('tr[data-open^="blk-"]').forEach(function(tr){ tr.classList.toggle('visited',!!jr.d[tr.dataset.open]); });
+    var ids=Object.keys(jr.d).filter(function(k){return jr.d[k]});
+    if(logMini) logMini.textContent=ids.length?ids.length+'곳 다녀옴':'다녀온 곳·한 줄 기록';
+    if(logBox){ var html=''; (C.days||[]).forEach(function(d,i){ var items=d.blocks.map(function(b,j){return [b,'blk-'+(i+1)+'-'+(j+1)]}).filter(function(p){return jr.d[p[1]]||jr.m[p[1]]});
+        if(!items.length) return; html+='<h4>'+(i+1)+'일차 · '+d.date.slice(5).replace('-','/')+'</h4><ul class="logl">'+items.map(function(p){ var sc=jr.s[p[1]]||0;
+          return '<li data-open="'+p[1]+'" role="button" tabindex="0"><b>'+esc(p[0].place)+'</b>'+(sc?'<span class="st5">'+'★'.repeat(sc)+'<i>'+'★'.repeat(5-sc)+'</i></span>':'')+(jr.m[p[1]]?'<p>'+esc(jr.m[p[1]])+'</p>':'')+'</li>'; }).join('')+'</ul>'; });
+      logBox.innerHTML=html||'<p class="lead" style="margin:0">아직 기록이 없어요. 시간표에서 한 줄을 누르고 \'다녀왔어요\'를 눌러 보세요. 별점과 한 줄 메모도 남길 수 있어요.</p>'; }
+  }
+  document.addEventListener('click',function(ev){ var x=ev.target.closest('.jr'); if(!x) return; var id=x.dataset.jr;
+    if(ev.target.closest('.jr-done')){ jr.d[id]=!jr.d[id]; LS.set(JK,jr); paintJr(); }
+    var sb=ev.target.closest('[data-star]'); if(sb){ var v=+sb.dataset.star; jr.s[id]=jr.s[id]===v?0:v; if(v) jr.d[id]=true; LS.set(JK,jr); paintJr(); } });
+  document.addEventListener('input',function(ev){ var ta=ev.target.closest('.jr textarea'); if(!ta) return; var id=ta.closest('.jr').dataset.jr; jr.m[id]=ta.value.slice(0,200); LS.set(JK,jr); });
+  document.addEventListener('change',function(ev){ if(ev.target.closest('.jr textarea')) paintJr(); });
+  paintJr();
 })();
 
 // 오프라인: 한 번 열어 본 페이지는 인터넷이 없어도 열린다
