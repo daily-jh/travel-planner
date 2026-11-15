@@ -27,7 +27,7 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 |---|---|---|
 | `title` / `short` / `eyebrow` | 문자열 | 표지 제목, 짧은 이름, 위 작은 글씨(`FUK · 博多`) |
 | `theme` | `hakata` `ocean` `forest` `snow` `citrus` `temple` | 남색·매화 / 바다·섬 / 숲·온천 / 겨울·설경 / 열대·휴양 / 고도·사찰 |
-| `landmark` | `{"name","image","focus","credit","license","license_url","source"}` | 첫 화면 여행 카드의 배경 사진. 아래 '랜드마크 사진' 참고 |
+| `landmark` | `{"name","art"}` | 첫 화면 여행 카드의 랜드마크 그림. 아래 '랜드마크 그림' 참고 |
 | `travelers` | `[{"name","tone":"pri"|"acc"}]` | 픽(♥)을 고를 사람. 이름만 |
 | `start` `end` | `YYYY-MM-DD` | 첫날·마지막 날 |
 | `timezone` `country` | `Asia/Tokyo`, `일본` | 캘린더 시간대, 목록 카드. `country`가 `한국`이면 국내 여행(아래 '국내 여행') |
@@ -105,19 +105,17 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 - 비용·정산은 원화(₩) 그대로. `budget.unit`은 `₩`
 - `eyebrow`는 "강원 강릉 · KTX"처럼 지역과 교통
 
-## 랜드마크 사진 (`landmark`)
+## 랜드마크 그림 (`landmark`)
 
-첫 화면 여행 목록 카드의 배경이에요. 없으면 `og.png` 썸네일로 보여요.
+첫 화면 여행 목록 카드 위쪽의 귀여운 랜드마크 그림이에요. 없으면 `og.png` 썸네일로 보여요.
+실제 사진은 쓰지 않아요 (지훈 선택). 직접 그린 SVG라 출처 표기가 필요 없어요.
 
-1. 위키미디어 커먼즈에서 그 도시를 대표하는 랜드마크 사진을 고른다. 라이선스는 CC BY / CC BY-SA / CC0 / 퍼블릭 도메인만 (공개 저장소라 재배포 가능해야 해요). 가로 사진, 랜드마크가 가운데 있는 것.
-2. 1280px 안으로 줄여 `trips/<폴더>/landmark.webp`로 저장 (품질 78 정도, 100KB 안팎). 사진 내려받기는 `upload.wikimedia.org` 주소로.
-3. `trip.json`에 넣는다:
+- `trips/<폴더>/landmark.svg`, `viewBox="0 0 400 250"` (8:5, 카드가 그대로 보여 줌)
+- 그 도시를 대표하는 랜드마크 하나를 가운데 크게, 둥근 모양·파스텔 색·굵기 2px 정도의 외곽선. 랜드마크에 작은 얼굴(눈 두 점, 웃는 입, 볼터치)을 넣어 귀엽게
+- 하늘 그라데이션, 구름, 주변 풍경(바다·산·나무 등) 한두 가지. 글자는 넣지 않아요 (카드가 이름을 따로 보여 줘요)
+- 위쪽 왼쪽·오른쪽 모서리(높이 40px 안)는 D-day와 이름 칩이 올라가니 비워 둬요
+- 예시: `trips/2027-03-fukuoka/landmark.svg` (후쿠오카 타워)
 
 ```json
-"landmark": {"name": "후쿠오카 타워", "image": "landmark.webp", "focus": "50% 30%",
-  "credit": "작가 이름", "license": "CC BY-SA 4.0", "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
-  "source": "https://commons.wikimedia.org/wiki/File:…"}
+"landmark": {"name": "후쿠오카 타워", "art": "landmark.svg"}
 ```
-
-`focus`는 휴대폰에서 잘릴 때 남길 위치(CSS `object-position`). 카드 아래에 '사진 작가 · 라이선스', 첫 화면 맨 아래 '사진 출처'에 원본 링크가 자동으로 붙어요. `check_trip.py`는 출처·라이선스가 비면 실패해요.
-

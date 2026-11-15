@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" role="img" aria-label="후쿠오카 타워 일러스트">
+  <!-- 여행 플래너 자체 제작 일러스트: 후쿠오카 타워와 모모치 해변 -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fd3ff"/>
+      <stop offset=".62" stop-color="#d8ecff"/>
+      <stop offset="1" stop-color="#ffe4ec"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7fb4f0"/>
+      <stop offset=".5" stop-color="#b9dcff"/>
+      <stop offset="1" stop-color="#6aa2e6"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5cc3e6"/>
+      <stop offset="1" stop-color="#3a9ad0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="250" fill="url(#sky)"/>
+  <!-- 해 -->
+  <circle cx="326" cy="84" r="20" fill="#fff3b8"/>
+  <circle cx="326" cy="84" r="27" fill="#fff3b8" opacity=".35"/>
+  <!-- 구름 -->
+  <g fill="#fff">
+    <g opacity=".95"><ellipse cx="78" cy="62" rx="26" ry="14"/><ellipse cx="98" cy="54" rx="20" ry="15"/><ellipse cx="116" cy="64" rx="22" ry="12"/></g>
+    <g opacity=".85"><ellipse cx="270" cy="104" rx="20" ry="10"/><ellipse cx="286" cy="97" rx="15" ry="11"/><ellipse cx="300" cy="105" rx="16" ry="9"/></g>
+  </g>
+  <!-- 새 -->
+  <g fill="none" stroke="#5a6b8c" stroke-width="2" stroke-linecap="round">
+    <path d="M140 40q5 -5 9 0q4 -5 9 0"/>
+    <path d="M160 54q4 -4 7 0q3 -4 7 0"/>
+  </g>
+  <!-- 뒤쪽 빌딩 -->
+  <g fill="#c9d6ee">
+    <rect x="96" y="150" width="34" height="62" rx="5"/>
+    <rect x="132" y="168" width="22" height="44" rx="4"/>
+    <rect x="252" y="160" width="28" height="52" rx="5"/>
+    <rect x="282" y="146" width="20" height="66" rx="4"/>
+  </g>
+  <g fill="#e3ebf8">
+    <rect x="102" y="158" width="6" height="6" rx="1.5"/><rect x="114" y="158" width="6" height="6" rx="1.5"/>
+    <rect x="102" y="172" width="6" height="6" rx="1.5"/><rect x="114" y="172" width="6" height="6" rx="1.5"/>
+    <rect x="258" y="168" width="6" height="6" rx="1.5"/><rect x="268" y="168" width="6" height="6" rx="1.5"/>
+    <rect x="287" y="154" width="5" height="5" rx="1.5"/><rect x="287" y="166" width="5" height="5" rx="1.5"/>
+  </g>
+  <!-- 후쿠오카 타워 -->
+  <g>
+    <!-- 안테나 -->
+    <rect x="198.5" y="22" width="3" height="52" rx="1.5" fill="#8a99b8"/>
+    <rect x="195" y="40" width="10" height="3" rx="1.5" fill="#8a99b8"/>
+    <rect x="196" y="54" width="8" height="3" rx="1.5" fill="#8a99b8"/>
+    <circle cx="200" cy="20" r="4.5" fill="#ff7a9a"/>
+    <!-- 몸통 (거울 유리 삼각기둥) -->
+    <path d="M186 84 L214 84 L222 212 L178 212 Z" fill="url(#glass)" stroke="#5b8fd6" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M200 84 L200 212" stroke="#d9ecff" stroke-width="3" opacity=".8"/>
+    <g stroke="#e8f4ff" stroke-width="1.6" opacity=".7">
+      <path d="M185 102h30M184 118h32M183 134h34M182 150h36M181 166h38M180 182h40M179 198h42"/>
+    </g>
+    <!-- 전망대 + 얼굴 -->
+    <rect x="180" y="70" width="40" height="20" rx="8" fill="#ffffff" stroke="#5b8fd6" stroke-width="2"/>
+    <circle cx="192" cy="80" r="2.2" fill="#2b3550"/>
+    <circle cx="208" cy="80" r="2.2" fill="#2b3550"/>
+    <path d="M197 83.5q3 3 6 0" fill="none" stroke="#2b3550" stroke-width="1.8" stroke-linecap="round"/>
+    <ellipse cx="187.5" cy="84.5" rx="3" ry="1.8" fill="#ffb3c4"/>
+    <ellipse cx="212.5" cy="84.5" rx="3" ry="1.8" fill="#ffb3c4"/>
+    <!-- 받침 -->
+    <rect x="170" y="206" width="60" height="10" rx="5" fill="#e9b48a"/>
+  </g>
+  <!-- 마리존 같은 하얀 집, 빨간 지붕 -->
+  <g>
+    <rect x="44" y="178" width="46" height="34" rx="4" fill="#fff"/>
+    <path d="M38 180 L67 160 L96 180 Z" fill="#f2735c" stroke-linejoin="round"/>
+    <rect x="54" y="190" width="9" height="11" rx="2" fill="#9fd3ff"/>
+    <rect x="72" y="190" width="9" height="11" rx="2" fill="#9fd3ff"/>
+    <rect x="318" y="182" width="40" height="30" rx="4" fill="#fff"/>
+    <path d="M313 184 L338 166 L363 184 Z" fill="#f2735c"/>
+    <rect x="331" y="194" width="12" height="18" rx="3" fill="#9fd3ff"/>
+  </g>
+  <!-- 야자수 -->
+  <g>
+    <path d="M150 212 q-3 -26 4 -46" fill="none" stroke="#a97b55" stroke-width="5" stroke-linecap="round"/>
+    <g fill="#5fbf86">
+      <ellipse cx="144" cy="164" rx="14" ry="5" transform="rotate(-20 144 164)"/>
+      <ellipse cx="166" cy="163" rx="14" ry="5" transform="rotate(20 166 163)"/>
+      <ellipse cx="155" cy="158" rx="12" ry="5" transform="rotate(-80 155 158)"/>
+    </g>
+    <path d="M248 212 q3 -22 -3 -40" fill="none" stroke="#a97b55" stroke-width="5" stroke-linecap="round"/>
+    <g fill="#5fbf86">
+      <ellipse cx="238" cy="171" rx="13" ry="5" transform="rotate(-20 238 171)"/>
+      <ellipse cx="258" cy="170" rx="13" ry="5" transform="rotate(20 258 170)"/>
+    </g>
+  </g>
+  <!-- 모래사장과 바다 -->
+  <path d="M0 210 Q200 200 400 210 L400 226 L0 226 Z" fill="#ffe2b8"/>
+  <path d="M0 222 Q100 214 200 222 T400 222 L400 250 L0 250 Z" fill="url(#sea)"/>
+  <g fill="none" stroke="#bfeaff" stroke-width="2.5" stroke-linecap="round" opacity=".9">
+    <path d="M30 236q8 -5 16 0q8 5 16 0"/>
+    <path d="M180 240q8 -5 16 0q8 5 16 0"/>
+    <path d="M318 234q8 -5 16 0q8 5 16 0"/>
+  </g>
+  <!-- 매화 꽃잎 -->
+  <g fill="#ff9fb8">
+    <circle cx="60" cy="110" r="3.5"/><circle cx="350" cy="130" r="3"/><circle cx="238" cy="52" r="2.6"/>
+  </g>
+</svg>
