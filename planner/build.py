@@ -490,7 +490,7 @@ def render_trip(slug, t):
     if bf:
         w(f'<section id="before"><h2>출발 전 확인</h2><p class="lead">{rich(bf.get("note", ""))}</p><div class="grid2">')
         for title, items in bf["lists"]:
-            w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo">'
+            w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo" role="group" aria-label="{e(title)}">'
               + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"><span class="box"></span><span>{rich(x)}</span></li>' for n, x in enumerate(items)) + '</ul></div>')
         w('</div></section>')
     w(extras.export_section(slug, t))
