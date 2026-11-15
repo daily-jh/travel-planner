@@ -12,11 +12,39 @@ document.querySelectorAll('.route').forEach(function(card){
       box.classList.add('loading');
       frame.src='https://maps.google.com/maps?q='+encodeURIComponent(a.dataset.q)+'&z=15&hl=ko&output=embed';
       cap.textContent=a.dataset.label;
+      var mo=card.querySelector('.mapopen'); if(mo) mo.href=a.href;
       card.querySelectorAll('li a').forEach(function(x){x.classList.remove('on')});
       a.classList.add('on');
     });
   });
 });
+
+// 네이버 지도: 휴대폰에서는 네이버 지도 앱으로 연다 (국내 여행). 앱이 없으면 웹 지도로.
+// - map.naver.com/p/search/<검색어> 링크 → nmap://search
+// - data-nmap 이 있는 링크(좌표가 있는 길찾기) → 그 nmap:// 주소, 안 되면 원래 href
+(function(){
+  var ua=navigator.userAgent, android=/Android/i.test(ua), ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(!android&&!ios) return;
+  var KEY='tp-nmap-missing', missing=function(){ try{return localStorage.getItem(KEY)==='1'}catch(e){return false} };
+  var APP=encodeURIComponent(location.hostname||'travel-planner');
+  document.addEventListener('click',function(ev){
+    var a=ev.target.closest&&ev.target.closest('a[href]'); if(!a||ev.metaKey||ev.ctrlKey||a.closest('.route ol')) return; // 동선 번호는 아래 지도를 바꾼다
+    var app=a.dataset.nmap||'', m=a.href.match(/^https:\/\/map\.naver\.com\/p\/search\/([^?#]+)/);
+    if(!app&&m) app='nmap://search?query='+m[1];
+    if(!app||(ios&&missing())) return;
+    app+=(app.indexOf('?')<0?'?':'&')+'appname='+APP;
+    ev.preventDefault(); ev.stopPropagation();
+    var web=a.href;
+    if(android){ // 안드로이드: 앱이 없으면 브라우저가 바로 웹 주소로 간다
+      location.href='intent://'+app.slice(7)+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent(web)+';end';
+      return; }
+    var left=false, gone=function(){ if(document.hidden) left=true; };
+    document.addEventListener('visibilitychange',gone);
+    location.href=app;
+    setTimeout(function(){ document.removeEventListener('visibilitychange',gone);
+      if(!left&&!document.hidden){ try{localStorage.setItem(KEY,'1')}catch(e){} location.href=web; } },1400);
+  },true);
+})();
 
 // 여행 목록: D-day, 여행 중, 다녀온 여행
 (function(){
@@ -376,11 +404,11 @@ document.querySelectorAll('.route').forEach(function(card){
   function loadWx(){
     if(!wx||!C.geo||wx.dataset.done) return; wx.dataset.done=1;
     var st=new Date(C.start), en=new Date(C.end), now=new Date(), days=(st-now)/864e5, url, label;
-    var p='latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia%2FTokyo';
+    var p='latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone='+encodeURIComponent(C.timezone||'Asia/Tokyo')+'';
     if(days<=15){ url='https://api.open-meteo.com/v1/forecast?'+p+',precipitation_probability_max&start_date='+C.start+'&end_date='+C.end; label='예보'; }
     else { var y=function(s){var d=new Date(s);d.setFullYear(d.getFullYear()-1);return d.toISOString().slice(0,10)}; url='https://archive-api.open-meteo.com/v1/archive?'+p+'&start_date='+y(C.start)+'&end_date='+y(C.end); label='작년 같은 날'; }
     var nowBox=document.createElement('div'); nowBox.className='wxnow'; wx.before(nowBox);
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&current=temperature_2m,apparent_temperature,weather_code,precipitation,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=Asia%2FTokyo')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&current=temperature_2m,apparent_temperature,weather_code,precipitation,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone='+encodeURIComponent(C.timezone||'Asia/Tokyo')+'')
       .then(function(r){return r.json()}).then(function(j){ var c=j.current; if(!c) throw 0;
         nowBox.innerHTML='<div class="wn-l"><small>지금 '+(C.geo.city||'')+' · '+c.time.slice(11,16)+'</small><b>'+Math.round(c.temperature_2m)+'°</b><span>'+WMO(c.weather_code)+' · 체감 '+Math.round(c.apparent_temperature)+'°</span></div>'
           +'<div class="wn-r"><span>최고 '+Math.round(j.daily.temperature_2m_max[0])+'° / 최저 '+Math.round(j.daily.temperature_2m_min[0])+'°</span><span>바람 '+Math.round(c.wind_speed_10m/3.6)+'m/s · 습도 '+c.relative_humidity_2m+'%</span>'+(c.precipitation>0?'<span>☂ '+c.precipitation+'mm</span>':'')+'</div>';
@@ -540,7 +568,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var cur_tr=ci>=0&&document.querySelector('tr[data-open="blk-'+(di+1)+'-'+(ci+1)+'"]'); if(cur_tr) cur_tr.classList.add('now');
     var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
     if(go&&tgt&&tgt.place){ var dest=tgt.place.split('→').pop().trim()+' '+((C.geo||{}).city||'');
-      go.href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
+      go.href=C.map==='naver'?'https://map.naver.com/p/search/'+encodeURIComponent(dest):'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
       var m=go.querySelector('.go-mini'); if(m) m.textContent=tgt.place.split('→').pop().trim(); }
   }
   nowMode(); setInterval(nowMode,60000);
