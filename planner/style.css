@@ -223,3 +223,5 @@ nav.chips .wrap{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-ov
 nav.chips .wrap::-webkit-scrollbar{display:none}
 nav.chips a{flex:none}
 .c-ume{--accent:var(--ume)} .c-hakata{--accent:var(--hakata)} .c-lantern{--accent:var(--lantern)} .c-tide{--accent:var(--tide)}
+button.btn{font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:10px;padding:10px 14px;font-size:14px;z-index:7;max-width:calc(100% - 32px);box-shadow:var(--shadow);animation:rise .25s ease both}

@@ -60,3 +60,22 @@ document.querySelectorAll('.route').forEach(function(card){
   window.addEventListener('scroll',on,{passive:true}); on();
   b.addEventListener('click',function(ev){ev.preventDefault();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
 })();
+
+// 일행에게 공유: 휴대폰 공유 시트(문자·카카오톡), 없으면 링크 복사
+(function(){
+  var toast=document.querySelector('.toast'), timer;
+  function say(msg){ if(!toast) return; toast.textContent=msg; toast.hidden=false; clearTimeout(timer); timer=setTimeout(function(){toast.hidden=true},2600); }
+  document.querySelectorAll('button.share').forEach(function(b){
+    b.addEventListener('click',function(){
+      var url=location.href.split('#')[0], title=b.dataset.title||document.title;
+      if(navigator.share){
+        navigator.share({title:title,text:title,url:url}).catch(function(){});
+        return;
+      }
+      var done=function(){say('링크를 복사했어요. 문자나 카카오톡에 붙여 넣어 보내세요.')};
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(done,function(){prompt('이 링크를 복사해서 보내세요',url)});
+      } else { prompt('이 링크를 복사해서 보내세요',url); }
+    });
+  });
+})();

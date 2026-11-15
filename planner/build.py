@@ -71,7 +71,7 @@ def page(title, body, depth):
     return (f'<!doctype html>\n<html lang="ko">\n<meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
             f'<title>{e(title)}</title>\n{FONTS}\n<link rel="stylesheet" href="{up}assets/style.css">\n'
-            f'<body>\n{body}\n<a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
+            f'<body>\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js"></script>\n</body>\n</html>\n')
 
 
 # ---------------------------------------------------------------- 여행 상세
@@ -85,6 +85,7 @@ def render_trip(slug, t):
         url = l.get("url") or gmap(l["query"])
         links.append(f'<a class="btn{" primary" if l.get("primary") else ""}" href="{e(url)}" target="_blank" rel="noopener">{e(l["label"])}</a>')
     links.append('<a class="btn" href="calendar.ics">캘린더에 추가</a>')
+    links.append(f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일행에게 공유</button>')
     title_html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", e(t["title"]))
     w(f'''<header class="hero"><div class="wrap">
 <a class="back" href="../../">← 여행 목록</a>
@@ -322,6 +323,7 @@ def render_home(trips):
 <div class="eyebrow">TRAVEL PLANNER</div>
 <h1>{SITE_NAME}</h1>
 <p>우리 여행의 동선, 지도, 예약, 비용을 한곳에서 봐요. 여행을 누르면 날짜별 일정과 지도가 열려요.</p>
+<div class="cta"><button class="btn share" type="button" data-title="{SITE_NAME}">일행에게 공유</button></div>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 <section><h2>여행 {len(trips)}개</h2><p class="lead">가까운 여행부터 보여요.</p><div class="trips">{"".join(cards)}</div></section>
