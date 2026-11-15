@@ -1009,3 +1009,5 @@ dialog.sheet .sheet-b{overscroll-behavior:contain}
  body.views[data-vdir] main [data-view],#detail[data-swipe] .daypane{animation:none!important}
  dialog.sheet[data-phase="closing"],dialog.sheet[data-phase="closing"]::backdrop{animation:none}
 }
+/* 쇼핑 출처·사진 저작자 표기: 연회색(1.7:1) → 보조 글자색, 최소 12px */
+.shop-src,.shop-credit,.shop-credit a{color:var(--label2);font-size:12px}
