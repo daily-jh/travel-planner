@@ -25,7 +25,15 @@
     "#ffffff",
     "#c8102e",
     "#c9a24a"
-   ]
+   ],
+   "photo": {
+    "file": "s00.webp",
+    "w": 480,
+    "h": 320,
+    "credit": "火国男児",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Torimon(1).JPG"
+   }
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -85,7 +93,15 @@
     "#ffffff",
     "#f7d548",
     "#b86b2a"
-   ]
+   ],
+   "photo": {
+    "file": "s03.webp",
+    "w": 480,
+    "h": 267,
+    "credit": "毒島みるく",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Hiyoko_-_front_and_side.jpg"
+   }
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -145,7 +161,15 @@
     "#c62f2f",
     "#2f7d4a",
     "#f2efe6"
-   ]
+   ],
+   "photo": {
+    "file": "s06.webp",
+    "w": 480,
+    "h": 233,
+    "credit": "毒島みるく",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tirolian_of_Chidoriya.jpg"
+   }
   },
   {
    "cat": "후쿠오카 한정 기념품",
@@ -165,7 +189,15 @@
     "#d42a2a",
     "#ffffff",
     "#f5c542"
-   ]
+   ],
+   "photo": {
+    "file": "s07.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "Nissy-KITAQ",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Menbei.JPG"
+   }
   },
   {
    "cat": "마트 식품·조미료",
@@ -245,7 +277,16 @@
     "#f5d33f",
     "#d42a2a",
     "#ffffff"
-   ]
+   ],
+   "photo": {
+    "file": "s11.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "RuinDig/Yuki Uchida",
+    "license": "CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%E3%83%9E%E3%83%AB%E3%82%BF%E3%82%A4%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3_%E3%82%AB%E3%83%83%E3%83%97%E3%83%A9%E3%83%BC%E3%83%A1%E3%83%B3_001.jpg",
+    "note": "같은 브랜드 컵라면 사진, 봉지 제품은 포장이 달라요"
+   }
   },
   {
    "cat": "마트 식품·조미료",
@@ -265,7 +306,16 @@
     "#7aa83b",
     "#f2d64b",
     "#2e5d2a"
-   ]
+   ],
+   "photo": {
+    "file": "s12.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "njt",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Yuzukosyou.jpg",
+    "note": "브랜드는 다를 수 있어요"
+   }
   },
   {
    "cat": "마트 식품·조미료",
@@ -365,7 +415,16 @@
     "#f4e7c5",
     "#f6d24a",
     "#ffffff"
-   ]
+   ],
+   "photo": {
+    "file": "s17.webp",
+    "w": 320,
+    "h": 480,
+    "credit": "円周率３パーセント",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%E5%8D%8A%E9%A1%8D%E3%81%AE%E3%81%9F%E3%81%BE%E3%81%94%E3%82%B5%E3%83%B3%E3%83%89_20251205.jpg",
+    "note": "다른 가게 제품 사진이에요"
+   }
   },
   {
    "cat": "편의점 먹거리",
@@ -385,7 +444,15 @@
     "#f6d24a",
     "#2f9a5a",
     "#d9932f"
-   ]
+   ],
+   "photo": {
+    "file": "s18.webp",
+    "w": 480,
+    "h": 244,
+    "credit": "毒島みるく",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Famichiki_of_FamilyMart.jpg"
+   }
   },
   {
    "cat": "편의점 먹거리",
@@ -405,7 +472,16 @@
     "#d42a2a",
     "#f6d24a",
     "#d9932f"
-   ]
+   ],
+   "photo": {
+    "file": "s19.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "Corpse Reviver",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Karaagekun_Red.jpg",
+    "note": "레드 맛"
+   }
   },
   {
    "cat": "편의점 먹거리",
@@ -425,7 +501,15 @@
     "#eaf1fb",
     "#ffffff",
     "#2a6fc9"
-   ]
+   ],
+   "photo": {
+    "file": "s20.webp",
+    "w": 480,
+    "h": 435,
+    "credit": "Popbeans",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%E3%83%97%E3%83%AC%E3%83%9F%E3%82%A2%E3%83%A0%E3%83%AD%E3%83%BC%E3%83%AB%E3%82%B1%E3%83%BC%E3%82%AD.jpg"
+   }
   },
   {
    "cat": "과자·디저트",
@@ -445,7 +529,16 @@
     "#f6d24a",
     "#3a9a4a",
     "#ffffff"
-   ]
+   ],
+   "photo": {
+    "file": "s21.webp",
+    "w": 480,
+    "h": 330,
+    "credit": "毒島みるく",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Calbee_Jagarico_Salad.jpg",
+    "note": "샐러드 맛"
+   }
   },
   {
    "cat": "과자·디저트",
@@ -465,7 +558,15 @@
     "#1c1c1c",
     "#f6d24a",
     "#f6d24a"
-   ]
+   ],
+   "photo": {
+    "file": "s22.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "Boneyard90",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Black_Thunder_(8).JPG"
+   }
   },
   {
    "cat": "과자·디저트",
@@ -485,7 +586,16 @@
     "#d42a2a",
     "#ffffff",
     "#7aa83b"
-   ]
+   ],
+   "photo": {
+    "file": "s23.webp",
+    "w": 270,
+    "h": 480,
+    "credit": "Haha169",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Japanese_kit_Kat_varieties.jpg",
+    "note": "매장 진열 모습"
+   }
   },
   {
    "cat": "과자·디저트",
@@ -505,7 +615,15 @@
     "#ffffff",
     "#9cc7e8",
     "#2a5a8a"
-   ]
+   ],
+   "photo": {
+    "file": "s24.webp",
+    "w": 480,
+    "h": 480,
+    "credit": "François Nguyen",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Shiroi_Koibito_(2).jpg"
+   }
   },
   {
    "cat": "드러그스토어(의약품)",
@@ -585,7 +703,15 @@
     "#c9ccd2",
     "#2a4a9a",
     "#ffffff"
-   ]
+   ],
+   "photo": {
+    "file": "s28.webp",
+    "w": 480,
+    "h": 360,
+    "credit": "ジダネ",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Ota_medicinal_powder_for_the_stomach.JPG"
+   }
   },
   {
    "cat": "드러그스토어(생활)",
@@ -745,7 +871,15 @@
     "#c9862a",
     "#f6d24a",
     "#3a2a1a"
-   ]
+   ],
+   "photo": {
+    "file": "s36.webp",
+    "w": 270,
+    "h": 480,
+    "credit": "Kuha455405",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Suntory_Kakubin.jpg"
+   }
   },
   {
    "cat": "주류·음료",

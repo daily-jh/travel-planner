@@ -831,6 +831,9 @@ document.querySelectorAll('.route').forEach(function(card){
   document.addEventListener('click',function(ev){
     var b=ev.target.closest('[data-f]'); if(b){ f=b.dataset.f; document.querySelectorAll('[data-f]').forEach(function(x){x.setAttribute('aria-pressed',x===b)}); paint(); return; }
     var a=ev.target.closest('.shop-add'); if(a){ var id=a.closest('.shop').dataset.id; if(mine[id]) delete mine[id]; else mine[id]=1; try{localStorage.setItem(K,JSON.stringify(mine))}catch(e){} paint(); return; }
+    var zm=document.querySelector('.shop-zoom'), z=ev.target.closest('[data-zoom]');
+    if(z&&zm){ var im=zm.querySelector('img'); im.src=z.dataset.zoom; im.alt=z.getAttribute('aria-label')||''; zm.showModal(); return; }
+    if(zm&&zm.open&&ev.target.closest('.shop-zoom')){ zm.close(); return; }
     var big=document.querySelector('.bigshow'), s=ev.target.closest('[data-big]');
     if(s&&big){ big.querySelector('b').textContent=s.dataset.big; big.querySelector('small').textContent=s.dataset.bigko+' 있나요? · これはありますか?'; big.showModal(); return; }
     if(big&&big.open&&ev.target.closest('.bigshow')) big.close();

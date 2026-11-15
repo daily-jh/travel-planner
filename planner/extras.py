@@ -12,6 +12,7 @@ import io
 import json
 import os
 import re
+import shutil
 from urllib.parse import quote
 
 import build as B
@@ -299,6 +300,55 @@ def shape_svg(item):
     return f'<svg viewBox="0 0 80 80" aria-hidden="true">{body}</svg>'
 
 
+SHOP_IMG = "shopping-img"   # trips/<폴더>/shopping-img/ 의 사진을 _site/trips/<폴더>/shopping/img/ 로 복사
+
+
+def shop_photo(slug, it):
+    """shopping.json 항목의 photo가 있고 파일도 있으면 photo dict, 아니면 None"""
+    ph = it.get("photo")
+    if not ph or not ph.get("file"):
+        return None
+    return ph if os.path.isfile(os.path.join(B.ROOT, "trips", slug, SHOP_IMG, ph["file"])) else None
+
+
+def shop_art(slug, it):
+    e = B.e
+    bg = e((it.get("colors") or ["#eee"])[0])
+    ph = shop_photo(slug, it)
+    if not ph:
+        return f'<div class="shop-art" style="--bg:{bg}">{shape_svg(it)}</div>'
+    w, h = ph.get("w", 320), ph.get("h", 320)
+    return (f'<button type="button" class="shop-art has-photo" style="--bg:{bg}" data-zoom="img/{e(ph["file"])}" aria-label="{e(it["ko"])} 사진 크게 보기">'
+            f'<img src="img/{e(ph["file"])}" alt="{e(it["ko"])} 사진" width="{w}" height="{h}" loading="lazy" decoding="async"></button>')
+
+
+def shop_credit(slug, it):
+    ph = shop_photo(slug, it)
+    if not ph:
+        return ""
+    e = B.e
+    who = " · ".join(x for x in (ph.get("credit"), ph.get("license")) if x)
+    src = f'<a href="{e(ph["source"])}" target="_blank" rel="noopener">{e(who or "출처")}</a>' if ph.get("source") else e(who)
+    note = f' <span>({e(ph["note"])})</span>' if ph.get("note") else ""
+    return f'<p class="shop-credit">사진 {src}{note}</p>'
+
+
+def shop_buy_url(it):
+    """파는 곳 링크: shopping.json buy가 있으면 그것, 없으면 아마존재팬에서 일본어 상품명 검색"""
+    if it.get("buy"):
+        return it["buy"]
+    q = it.get("ja") or it["ko"]
+    b = it.get("brand", "")
+    if b and not re.search(r"[가-힣]", b) and b.split("(")[0] not in q:
+        q = f'{b.split("(")[0].strip()} {q}'
+    return "https://www.amazon.co.jp/s?k=" + quote(q)
+
+
+def shop_images(slug, data):
+    """배포할 사진 파일 이름 목록"""
+    return [p["file"] for p in (shop_photo(slug, it) for it in data["items"]) if p]
+
+
 def shopping_page(slug, t, data):
     e = B.e
     cur = t.get("currency") or {}
@@ -315,15 +365,15 @@ def shopping_page(slug, t, data):
         won = f'₩{round(it["price_yen"] * rate / 100) * 100:,}' if rate and it.get("price_yen") else ""
         price = f'¥{it["price_yen"]:,}' if it.get("price_yen") else "참고가"
         cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="s{n}" data-yen="{it.get("price_yen") or 0}">
-<div class="shop-art" style="--bg:{e((it.get("colors") or ["#eee"])[0])}">{shape_svg(it)}</div>
+{shop_art(slug, it)}
 <div class="shop-b"><small class="shop-cat">{e(it["cat"])}{(" · " + e(it["brand"])) if it.get("brand") else ""}</small><h3>{e(it["ko"])}</h3>
 <p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>
 <div class="shop-price"><b>{price}</b><span>{won}</span><em>{e(it.get("size", ""))}</em></div>
 <p class="shop-src">{e(it.get("price_note") or "")}</p>
 <p class="shop-why">{e(it.get("why", ""))}</p>
 <p class="shop-look"><span>생김새</span> {e(it.get("look", ""))}</p>
-<p class="shop-where"><span>어디서</span> {e(it.get("where", ""))}</p>
-<div class="shop-act"><button type="button" class="shop-add" aria-pressed="false">담기</button>{f'<a href="{e(it["url"])}" target="_blank" rel="noopener">상품 정보 ↗</a>' if it.get("url") else ""}<button type="button" class="shop-show" data-big="{e(it.get("ja", ""))}" data-bigko="{e(it["ko"])}">점원에게 보여 주기</button></div>
+<p class="shop-where"><span>어디서</span> {e(it.get("where", ""))}</p>{shop_credit(slug, it)}
+<div class="shop-act"><button type="button" class="shop-add" aria-pressed="false">담기</button><a class="shop-buy" href="{e(shop_buy_url(it))}" target="_blank" rel="noopener">아마존재팬에서 보기 ↗</a>{f'<a href="{e(it["url"])}" target="_blank" rel="noopener">상품 정보 ↗</a>' if it.get("url") else ""}<button type="button" class="shop-show" data-big="{e(it.get("ja", ""))}" data-bigko="{e(it["ko"])}">점원에게 보여 주기</button></div>
 </div></article>''')
     notes = "".join(f'<li>{B.rich(x)}</li>' for x in data.get("notes", []))
     srcs = data.get("checked", "")
@@ -331,14 +381,15 @@ def shopping_page(slug, t, data):
 <div class="topbar">{B.brand("../../../")}<a class="back" href="../">{e(t.get("short", ""))} 여행</a></div>
 <div class="eyebrow">SHOPPING LIST · {e(t.get("short", ""))}·일본</div>
 <h1>꼭 사 올 <em>쇼핑 리스트</em></h1>
-<p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 생김새로 정리했어요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
+<p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 사진으로 정리했어요. 사진을 누르면 크게 보여요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 <section class="shop-sum card" aria-live="polite"><div><small>담은 것</small><b class="ss-n">0개</b></div><div><small>합계</small><b class="ss-y">¥0</b><span class="ss-w"></span></div><div class="ss-tf"><small>면세 (2026-11 바뀜)</small><span>세금 포함으로 내고 출국할 때 돌려받아요 · 같은 가게 하루 ¥5,000 이상(세금 제외)</span></div></section>
 <div class="shop-f seg" role="group" aria-label="분류">{chips}</div>
 <section class="shops">{"".join(cards)}</section>
-<section class="card shop-notes"><h3>사기 전에</h3><ul>{notes}</ul><p class="lead" style="font-size:13px;margin:8px 0 0">가격은 {e(srcs)} 기준 일반 판매가(세금 포함)예요. 가게·시기마다 달라요. 그림은 실제 포장 색과 모양을 단순하게 그린 것이에요.</p></section>
+<section class="card shop-notes"><h3>사기 전에</h3><ul>{notes}</ul><p class="lead" style="font-size:13px;margin:8px 0 0">가격은 {e(srcs)} 기준 일반 판매가(세금 포함)예요. 가게·시기마다 달라요. 사진은 위키미디어 커먼즈의 자유 이용 사진이라 지금 파는 포장과 다를 수 있어요. 사진이 없는 제품은 포장 색과 모양을 단순하게 그렸으니, 아마존재팬에서 보기를 눌러 실제 포장을 확인해요.</p></section>
 </main>
+<dialog class="shop-zoom" aria-label="사진 크게 보기"><img alt=""><span>화면을 누르면 닫혀요</span></dialog>
 <dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>
 <footer><div class="wrap">원화는 ¥100 ≈ ₩{cur.get("fallback_krw_per_100", "")}로 어림했어요.</div></footer>
 <script type="application/json" id="shop-cfg">{json.dumps({"trip": slug, "rate": rate}, ensure_ascii=False)}</script>'''
@@ -359,6 +410,12 @@ def write_trip_files(od, slug, t):
         os.makedirs(os.path.join(od, "shopping"), exist_ok=True)
         open(os.path.join(od, "shopping", "index.html"), "w", encoding="utf-8").write(shopping_page(slug, t, t["_shopping"]))
         extra.append(f"trips/{slug}/shopping/")
+        imgs = shop_images(slug, t["_shopping"])
+        if imgs:
+            os.makedirs(os.path.join(od, "shopping", "img"), exist_ok=True)
+            for f in imgs:
+                shutil.copy(os.path.join(B.ROOT, "trips", slug, SHOP_IMG, f), os.path.join(od, "shopping", "img", f))
+            extra += [f"trips/{slug}/shopping/img/{f}" for f in imgs]
     return extra
 
 
