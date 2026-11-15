@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="여행 플래너">
+  <defs><linearGradient id="tpg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#31479a"/><stop offset="1" stop-color="#1c2753"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#tpg)"/>
+  <path class="route" d="M15 49 C 24 49 20 36 30 37 S 39 40 42 33" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-dasharray="0.1 6.6"/>
+  <circle cx="15" cy="49" r="4.6" fill="#ffffff"/>
+  <path d="M44 8a10 10 0 0 1 10 10c0 7.6-10 16-10 16s-10-8.4-10-16a10 10 0 0 1 10-10z" fill="#e0557f"/>
+  <circle cx="44" cy="18" r="3.6" fill="#ffffff"/>
+</svg>

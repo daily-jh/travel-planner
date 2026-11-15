@@ -115,11 +115,21 @@ document.querySelectorAll('.route').forEach(function(card){
   function close(d){ d.close(); document.body.classList.remove('sheet-open'); }
   document.addEventListener('click',function(ev){
     var o=ev.target.closest('[data-open]');
-    if(o){ var d=document.getElementById(o.dataset.open); if(d&&d.showModal){ var acc=o.closest('[class*="c-"]'); if(acc) d.style.setProperty('--accent',getComputedStyle(acc).getPropertyValue('--accent')); d.showModal(); document.body.classList.add('sheet-open'); } return; }
+    if(o){ var d=document.getElementById(o.dataset.open); if(d&&d.showModal){ var cur=o.closest('dialog[open]'); if(cur&&cur!==d) cur.close(); var acc=o.closest('[class*="c-"]'); if(acc) d.style.setProperty('--accent',getComputedStyle(acc).getPropertyValue('--accent')); d.showModal(); document.body.classList.add('sheet-open'); } return; }
     if(ev.target.closest('[data-close]')){ close(ev.target.closest('dialog')); return; }
     if(ev.target.tagName==='DIALOG'&&ev.target.classList.contains('sheet')){ close(ev.target); }
   });
-  document.querySelectorAll('dialog.sheet').forEach(function(d){ d.addEventListener('close',function(){document.body.classList.remove('sheet-open')}); });
+  document.querySelectorAll('dialog.sheet').forEach(function(d){ d.addEventListener('close',function(){ if(!document.querySelector('dialog.sheet[open]')) document.body.classList.remove('sheet-open'); }); });
+  // 시간표 줄은 키보드 Enter로도 연다
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Enter'&&ev.target.matches&&ev.target.matches('tr[data-open]')){ ev.preventDefault(); ev.target.click(); } });
+  // 첫 방문 안내: 한 번 보면 다시 뜨지 않는다 (? 버튼으로 다시 볼 수 있음)
+  var w=document.querySelector('dialog[data-auto]');
+  if(w&&w.showModal){
+    var k=w.dataset.auto, seen=false;
+    try{ seen=!!localStorage.getItem(k); }catch(e){ seen=true; }
+    w.addEventListener('close',function(){ try{ localStorage.setItem(k,'1'); }catch(e){} });
+    if(!seen) setTimeout(function(){ if(!document.querySelector('dialog[open]')){ w.showModal(); document.body.classList.add('sheet-open'); } },900);
+  }
 })();
 
 // ---------------------------------------------------------------- 우리의 픽

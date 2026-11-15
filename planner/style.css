@@ -338,3 +338,41 @@ body.picking .totop{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .pk-list h4:first-child{margin-top:0}
 .pk-list ul{margin:0;padding-left:18px;font-size:14px;display:grid;gap:3px}
 .pk-list .empty{color:var(--muted);font-size:14px}
+
+/* ---------------------------------------------------------------- 브랜드 · 팝업 확장 · 모션 v4 */
+@view-transition{navigation:auto}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.brand{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:var(--pri);font-family:"Do Hyeon","Noto Sans KR",sans-serif;font-size:19px;letter-spacing:-.01em;view-transition-name:brand}
+.brand svg{width:34px;height:34px;flex:none;border-radius:10px;box-shadow:0 4px 12px color-mix(in srgb,var(--pri) 25%,transparent);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.brand:hover svg{transform:rotate(-8deg) scale(1.06)}
+.brand .route{stroke-dashoffset:40;animation:route 1.2s .2s cubic-bezier(.4,0,.2,1) forwards}
+.brand svg path[fill="#e0557f"]{transform-origin:44px 34px;animation:drop .6s .9s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes route{from{stroke-dashoffset:40;opacity:.2}to{stroke-dashoffset:0;opacity:1}}
+@keyframes drop{from{transform:translateY(-10px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.topbar .back{margin:0 0 0 auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13px}
+.topbar .back:hover{color:var(--pri);border-color:var(--pri)}
+.help{font:700 14px var(--f-body);width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:transform .2s ease,color .2s,border-color .2s}
+.help:hover{color:var(--acc);border-color:var(--acc);transform:rotate(12deg)}
+.ovchips{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.gchip.ov{position:relative;padding:14px 16px 14px;gap:4px;overflow:hidden}
+.gchip.ov .k{font:500 11.5px var(--f-data);letter-spacing:.08em;color:var(--muted)}
+.gchip.ov .nm{font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gchip.ov:after{content:"";position:absolute;right:14px;top:14px;width:8px;height:8px;border-top:2px solid var(--muted);border-right:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s ease,border-color .2s}
+.gchip.ov:hover:after{transform:translateX(3px) rotate(45deg);border-color:var(--acc)}
+.gchip.ov.hot{background:linear-gradient(135deg,var(--acc-soft),var(--surface) 70%);border-color:color-mix(in srgb,var(--acc) 35%,var(--line))}
+.gchip.ov.hot .k{color:var(--acc)}
+.blocks tr.tap{cursor:pointer;transition:background .18s ease}
+.blocks tr.tap:hover,.blocks tr.tap:focus-visible{background:color-mix(in srgb,var(--accent,var(--pri)) 7%,transparent);outline:none}
+.blocks tr.tap td.place{position:relative}
+.blocks tr.tap:hover td.place b,.blocks tr.tap:hover td.place{color:var(--accent,var(--pri))}
+.steps{list-style:none;counter-reset:s;margin:4px 0 14px;padding:0;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:2px 12px;align-items:start;animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+.steps li:before{content:counter(s);grid-row:span 2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--pri);color:var(--paper);font:500 14px var(--f-data)}
+.steps li:nth-child(2){animation-delay:.07s}.steps li:nth-child(3){animation-delay:.14s}.steps li:nth-child(4){animation-delay:.21s}
+.steps b{font-size:15px}.steps span{color:var(--muted);font-size:14px}
+dialog.sheet.welcome .sheet-h{background:linear-gradient(120deg,var(--pri-soft),var(--acc-soft))}
+dialog.sheet .sheet-b>*{animation:rise .35s .05s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion: reduce){
+ @view-transition{navigation:none}
+ .brand .route,.brand svg path[fill="#e0557f"],.steps li,dialog.sheet .sheet-b>*{animation:none;stroke-dashoffset:0}
+}

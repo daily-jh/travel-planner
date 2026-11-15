@@ -1,6 +1,7 @@
 {
- "feedback": true,
- "feedback_name": "지훈",
- "supabase_url": "",
- "supabase_anon_key": ""
+  "feedback": true,
+  "feedback_name": "지훈",
+  "supabase_url": "",
+  "supabase_anon_key": "",
+  "base_url": "https://daily-jh.github.io/travel-planner/"
 }
