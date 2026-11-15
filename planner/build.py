@@ -32,7 +32,7 @@ MODE_KO = {"transit": "대중교통", "driving": "차량", "walking": "도보"}
 TYPE_CLS = {"아침": "meal", "점심": "meal", "저녁": "meal", "밤": "cafe", "카페": "cafe",
             "이동": "move", "숙소": "stay", "활동": "act", "쇼핑": "act"}
 STATUS = {"sel": "선정", "alt": "대안", "off": "미배치", "exc": "배제"}
-THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))
+THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))["themes"]
 
 
 def fonts(themes):
@@ -248,6 +248,7 @@ def render_trip(slug, t):
         ("t-sync", "tool-sync", "⇄", "일행과 맞추기", '<small>픽·지출을 링크로 보내기</small>') if len(trav) > 1 else None,
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
     ]
+    tiles += extras.tiles(t)
     tl = []
     for x in tiles:
         if not x:
@@ -256,7 +257,10 @@ def render_trip(slug, t):
         if cls == "t-taxi":
             tl.append(f'<button type="button" class="tool {cls}" data-big="{e(t["stay_ja"])}までお願いします" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
             continue
-        if cls == "t-pk":
+        if did.startswith("href:"):
+            ext = ' target="_blank" rel="noopener"' if did.startswith("href:http") else ""
+            tl.append(f'<a class="tool {cls}" href="{e(did[5:])}"{ext}><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
+        elif cls == "t-pk":
             tl.append(f'<a class="tool {cls}" href="#before"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         elif cls == "t-go":
             tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
@@ -268,7 +272,7 @@ def render_trip(slug, t):
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
               f'<label class="fx-row"><span class="fx-from">{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="금액"></label>'
               f'<div class="fx-out"><span class="fx-to">₩</span> <b>-</b></div><div class="fx-quick"></div>'
-              f'<p class="fx-tax">면세: 같은 가게에서 하루 세금 제외 {e(sym)}5,000 이상 사면 소비세 10%를 빼 줘요. 여권을 꼭 챙겨요.</p>'
+              f'<p class="fx-tax">면세: 2026년 11월부터 가게에서는 세금 포함으로 내고, 출국할 때 공항에서 소비세 10%를 돌려받아요. 같은 가게 하루 세금 제외 {e(sym)}5,000 이상, 여권 필수예요.</p>'
               f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
     if ph:
         tabs = '<div class="seg" role="tablist">' + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>'
@@ -304,6 +308,7 @@ def render_trip(slug, t):
             for nm, num in t["emergency"]) + '</ul><p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>'))
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
+    w(extras.sheets(slug, t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -455,6 +460,7 @@ def render_trip(slug, t):
             w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo">'
               + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"><span class="box"></span><span>{rich(x)}</span></li>' for n, x in enumerate(items)) + '</ul></div>')
         w('</div></section>')
+    w(extras.export_section(slug, t))
     w('</main>')
     if FEEDBACK:
         w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 내용이 적힌 문자 창이 열리고, 받는 사람은 연락처에서 고르면 돼요.</p>'
@@ -474,7 +480,7 @@ def render_trip(slug, t):
           "desc": f'{nights}박 {nights + 1}일 일정과 지도: {days_txt}', "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/"}
     body = "\n".join(P)
     views = {"simple": "home", "tools": "home", "detail": "plan", "picks": "places", "cands": "places",
-             "overview": "prep", "budget": "prep", "before": "prep", "feedback": "prep"}
+             "overview": "prep", "budget": "prep", "before": "prep", "export": "prep", "feedback": "prep"}
     for sid, v in views.items():
         body = body.replace(f'<section id="{sid}"', f'<section data-view="{v}" id="{sid}"', 1)
     body = body.replace('<header class="hero">', '<header class="hero" data-view="home">', 1)
@@ -605,8 +611,8 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
-    for f in ("style.css", "app.js"):
-        shutil.copy(os.path.join(here, f), os.path.join(OUT, "assets", f))
+    shutil.copy(os.path.join(here, "app.js"), os.path.join(OUT, "assets", "app.js"))
+    open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
     manifest = {"name": SITE_NAME, "short_name": SITE_NAME, "lang": "ko", "start_url": "../", "scope": "../", "display": "standalone",
@@ -614,13 +620,14 @@ def main():
                 "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
                           {"src": "favicon.svg", "sizes": "any", "type": "image/svg+xml"}]}
     open(os.path.join(OUT, "assets", "manifest.webmanifest"), "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False))
-    trips = []
+    trips, extra_pre = [], []
     tdir = os.path.join(ROOT, "trips")
     for slug in sorted(os.listdir(tdir)):
         p = os.path.join(tdir, slug, "trip.json")
         if not os.path.isfile(p):
             continue
         t = json.load(open(p, encoding="utf-8"))
+        t["_shopping"] = extras.load_shopping(slug)
         trips.append((slug, t))
         od = os.path.join(OUT, "trips", slug)
         os.makedirs(od)
@@ -629,11 +636,14 @@ def main():
             shutil.copy(os.path.join(tdir, slug, "og.png"), os.path.join(od, "og.png"))
         ics, n = render_ics(slug, t)
         open(os.path.join(od, "calendar.ics"), "w", encoding="utf-8", newline="").write(ics)
+        extra_pre += extras.write_trip_files(od, slug, t)
         print(f"{slug}: {len(t['days'])}일, 캘린더 {n}건")
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(render_home(trips))
+    os.makedirs(os.path.join(OUT, "design"))
+    open(os.path.join(OUT, "design", "index.html"), "w", encoding="utf-8").write(extras.design_page())
     open(os.path.join(OUT, ".nojekyll"), "w").close()
     import hashlib
-    pre = ["./", "assets/style.css", "assets/app.js", "assets/favicon.svg", "assets/manifest.webmanifest"] + [f"trips/{slug}/" for slug, _ in trips]
+    pre = ["./", "assets/style.css", "assets/app.js", "assets/favicon.svg", "assets/manifest.webmanifest"] + [f"trips/{slug}/" for slug, _ in trips] + extra_pre
     h = hashlib.sha1()
     for f in pre:
         fp = os.path.join(OUT, f, "index.html") if f.endswith("/") else os.path.join(OUT, f)
@@ -641,6 +651,8 @@ def main():
     sw = open(os.path.join(here, "sw.js"), encoding="utf-8").read().replace("__VER__", h.hexdigest()[:10]).replace("__PRE__", json.dumps(pre))
     open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 
+
+import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 
 if __name__ == "__main__":
     sys.exit(main())

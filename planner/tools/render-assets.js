@@ -7,7 +7,10 @@ const BRAND = path.join(ROOT, 'planner/brand');
 const mark = fs.readFileSync(path.join(BRAND, 'mark.svg'), 'utf8');
 const icon = fs.readFileSync(path.join(BRAND, 'icon.svg'), 'utf8');
 const themes = JSON.parse(fs.readFileSync(path.join(ROOT, 'planner/themes.json'), 'utf8'));
-const css = fs.readFileSync(path.join(ROOT, 'planner/style.css'), 'utf8');
+// 테마 색은 themes.json 에만 있다 (build.py의 extras.theme_css 와 같은 규칙)
+const themeCss = Object.entries(themes.themes || themes).map(([n, t]) =>
+  t.light ? `.theme-${n}{${Object.entries(t.light).map(([k, v]) => `--${k}:${v}`).join(';')}}` : '').join('\n');
+const css = themeCss + '\n' + fs.readFileSync(path.join(ROOT, 'planner/style.css'), 'utf8');
 const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=block">';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ymd = s => s.replace(/-/g, '.');
