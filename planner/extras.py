@@ -159,8 +159,13 @@ def booklet(slug, t):
         if d.get("places"):
             P.append('<h3>장소 메모</h3><ul class="places">' + "".join(
                 f'<li><b>{e(p["name"])}</b> <span lang="ja">{e(p.get("local", ""))}</span><small>{rich(p.get("hours", ""))} · {rich(p.get("cost", ""))}</small></li>' for p in d["places"]) + '</ul>')
+        pb = d.get("plan_b")
+        if pb:
+            P.append(f'<h3>플랜 B · {e(pb["title"])}</h3><p class="note">{rich(pb.get("when", ""))}</p><ul class="places">'
+                     + "".join(f'<li><b>{e(r["slot"])} {e(r["time"])}</b> {rich(r["text"])}</li>' for r in pb["simple"])
+                     + "".join(f'<li><b>{e(x["name"])}</b> <span lang="ja">{e(x.get("local", ""))}</span><small>{rich(x.get("hours", ""))}</small></li>' for x in pb.get("places", [])) + '</ul>')
         if d.get("alternatives"):
-            P.append('<h3>플랜 B</h3><ul class="places">' + "".join(f'<li><b>{e(a["when"])}</b><small>{rich(a["text"])}</small></li>' for a in d["alternatives"]) + '</ul>')
+            P.append(f'<h3>{"상황별 대안" if pb else "플랜 B"}</h3><ul class="places">' + "".join(f'<li><b>{e(a["when"])}</b><small>{rich(a["text"])}</small></li>' for a in d["alternatives"]) + '</ul>')
         P.append('</section>')
     # 비용
     b = t.get("budget")

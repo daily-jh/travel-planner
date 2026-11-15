@@ -64,6 +64,9 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
  "route": {"mode": "transit", "stops": [{"label": "구시다 신사", "query": "櫛田神社 福岡"}]},
  "blocks": [{"time": "13:00–14:00", "type": "점심", "place": "이치란 본사 총본점", "what": "라멘 ¥1,080", "move": "도보 5분", "note": "12~13시 피크, 15~20분 대기"}],
  "alternatives": [{"when": "비·강풍", "text": "..."}],
+ "plan_b": {"title": "비 오는 토요일 · 하카타역 실내 동선", "when": "언제 이 일정으로 바꾸는지",
+            "simple": [{"slot": "아침", "time": "08:00", "text": "..."}, ... 6칸],
+            "places": [{"name", "local", "query", "hours", "why", "cost"}]},
  "places": [{"name", "local", "query", "address", "hours", "why", "tip", "cost"}]
 }
 ```
@@ -76,4 +79,5 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 - `blocks`의 `note`·`what`에 `예약`, `현금`/`카드 불가`, `줄서기`/`대기`가 있으면 배지가 자동으로 붙는다
 - 시각은 모두 여행지 현지 시각(`timezone`). 인천 출발처럼 한국 시각은 현지 시각으로 바꿔 넣고 원래 시각은 `what`에 적는다
 - 항공편 번호(`TW0203`, `7C2203`)가 `what`에 있으면 캘린더 알림이 3시간 전, 예약 배지가 있으면 1시간 전
+- `plan_b`(선택): 하루 전체를 바꾸는 대안 일정. `simple`은 원래 일정처럼 6칸. 플랜 B 팝업과 PDF 책자에 나오고 캘린더에는 넣지 않는다. `places.hours`도 휴무 요일 점검을 받는다
 - `places.hours`에 `화요일 휴무`, `월·화 휴무`, `토·일만`처럼 쓰면 `check_trip.py`가 그 요일 방문을 잡아낸다

@@ -930,3 +930,17 @@ dialog.sheet .alt p{margin:4px 0 0;font-size:15px}
 .shop-page main{padding-bottom:40px}
 @media (max-width:420px){.shop{grid-template-columns:64px minmax(0,1fr)}.shop-art{width:64px;height:64px}.shop-art svg{width:54px;height:54px}}
 @media (prefers-reduced-motion: reduce){.shop{animation:none}}
+
+/* 플랜 B 하루 대안 일정 */
+.day-go.pb{margin-top:-8px;background:color-mix(in srgb,#0a84ff 10%,transparent);color:#0a84ff}
+dialog.sheet .pbday{display:grid;gap:10px;margin-bottom:14px}
+.pb-when{margin:0;font-size:14px;color:var(--muted)}
+dialog.sheet .pbday .simple{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pb-places{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pb-places li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.pb-places li>div{min-width:0}
+.pb-places small{color:var(--muted)}
+.pb-places p{margin:3px 0 0;font-size:13.5px}
+.pb-places p.hrs{color:var(--muted);font-size:12.5px}
+.pb-places .btn{flex:none}
+.pb-title{font-size:17px;font-weight:800}
