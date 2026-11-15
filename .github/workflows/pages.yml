@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Playwright 1.56(책자 PDF)이 지원하는 우분투로 고정. ubuntu-latest(26.04)는 아직 지원하지 않는다
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
