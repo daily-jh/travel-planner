@@ -49,7 +49,7 @@ def tiles(t):
     x = []
     if t.get("vouchers"):
         x.append(("t-qr", "tool-qr", "▦", "QR·바우처", '<small class="qr-mini">이 휴대폰에만 저장</small>'))
-    if t.get("lang", {}).get("code", "ja-JP") in EAT or not t.get("lang"):
+    if not B.domestic(t) and B.lang(t)["code"] in EAT:
         x.append(("t-eat", "tool-eat", "◍", "식당 카드", '<small>인원·메뉴판·재료 빼기</small>'))
     if t.get("areas"):
         x.append(("t-near", "tool-near", "◎", "주변 대안", '<small>지금 열었을 만한 곳</small>'))
@@ -117,8 +117,8 @@ def sheets(t):
 <ul class="vault" aria-live="polite"></ul>
 <form class="vault-add"><input name="label" placeholder="칸 직접 추가 (예: 렌터카 예약)" maxlength="30" required><button class="btn primary" type="submit">추가</button></form>'''))
         out.append('<dialog class="vaultview" aria-label="QR 크게 보기"><img alt=""><p class="vv-t"></p><p class="vv-hint">화면 밝기를 올리면 잘 읽혀요 · 누르면 닫혀요</p></dialog>')
-    lc = (t.get("lang") or {}).get("code", "ja-JP")
-    if lc in EAT:
+    lc = B.lang(t)["code"]
+    if lc in EAT and not B.domestic(t):
         E = EAT[lc]
         rows = []
         for kind, ko, ja in E["basic"]:

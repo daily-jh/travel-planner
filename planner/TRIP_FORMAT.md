@@ -29,12 +29,14 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `theme` | `hakata` `ocean` `forest` `snow` `citrus` `temple` | 남색·매화 / 바다·섬 / 숲·온천 / 겨울·설경 / 열대·휴양 / 고도·사찰 |
 | `travelers` | `[{"name","tone":"pri"|"acc"}]` | 픽(♥)을 고를 사람. 이름만 |
 | `start` `end` | `YYYY-MM-DD` | 첫날·마지막 날 |
-| `timezone` `country` | `Asia/Tokyo`, `일본` | 캘린더 시간대, 목록 카드 |
+| `timezone` `country` | `Asia/Tokyo`, `일본` | 캘린더 시간대, 목록 카드. `country`가 `한국`이면 국내 여행(아래 '국내 여행') |
+| `domestic` | `true`/`false` (선택) | 국내 여행인지. 없으면 `country`로 정한다 |
+| `map` | `"naver"`/`"google"` (선택) | 장소 링크·캘린더 위치를 여는 지도. 없으면 국내는 네이버, 해외는 구글 |
 | `intro` | 문자열 | 한두 문장 소개 |
 | `facts` | `[[이름, 값]]` | 표지 아래 칩 (숙소·항공·환율) |
-| `links` | `[{"label", "url"|"query", "primary"}]` | 표지 버튼. `query`는 구글 지도 검색어 |
+| `links` | `[{"label", "url"|"query", "primary"}]` | 표지 버튼. `query`는 지도 검색어 (해외 구글, 국내 네이버) |
 | `stay` `transport` | `[[이름, 값]]` | 준비 탭 숙소·이동 |
-| `stay_query` / `stay_ja` | 문자열 | 숙소 구글 지도 검색어 / 택시 카드용 현지어 숙소명 |
+| `stay_query` / `stay_ja` | 문자열 | 숙소 지도 검색어 / 택시 카드용 현지어 숙소명 (국내는 `stay_ja` 없음) |
 | `pace` | `{"columns":[날짜,권역,강도,숙소 복귀], "rows":[[...]]}` | 날짜별 권역과 강도(상·중·하) |
 | `reservations` | `{"required":[[언제, 무엇]], "recommended":[...]}` | 필수 예약 / 권장 예약 |
 | `closures` | `[[장소, 휴무, "M/D 요일", "ok"|"check"]]` | 방문 요일 휴무 점검 |
@@ -50,7 +52,8 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `local_tz_note` | 문자열 | "한국과 시차 없음" 등 |
 | `phrases` | `[{"cat", "items":[[한국어, 현지어, 발음]]}]` | 현지 회화 (분류 6개 안팎) |
 | `packing` | `[{"cat", "items":[[물건, "기내"|"위탁"]]}]` | 캐리어 짐 |
-| `emergency` | `[[이름, 번호]]` | 경찰·구급·영사콜센터 같은 공공 번호만 |
+| `packing_note` | 문자열 (선택) | 짐 팝업 부제. 없으면 "5월 초 강릉 날씨 기준"처럼 자동 |
+| `emergency` | `[[이름, 번호]]` | 경찰·구급·영사콜센터 같은 공공 번호만 (국내: 112·119·1330) |
 | `emergency_link` | URL | 총영사관 등 |
 | `flights` | `[{"date","dep","from","to","no","airline","dep_tz"}]` | 지금 카드의 '공항 도착까지' 계산 |
 | `areas` (선택) | `{"권역": [위도, 경도]}` | 주변 대안의 거리 계산용 동네 중심 좌표. `blocks.area`·`candidates.area`가 이 이름을 쓴다 |
@@ -79,7 +82,8 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 
 - `simple`: 꼭 `아침 · 오전 · 점심 · 오후 · 저녁 · 밤` 6칸, 이 순서
 - `color`: `ume` `hakata` `lantern` `tide` `sea` `gold` `plum` `indigo`. 날마다 다르게
-- `route.mode`: `transit` `walking` `driving`. `stops`는 방문 순서, 10곳 이하. `query`는 현지어 이름 + 도시가 가장 정확하다
+- `route.mode`: `transit` `walking` `driving`. `stops`는 방문 순서, 10곳 이하. `query`는 현지어 이름 + 도시가 가장 정확하다 (국내는 "강릉 오죽헌"처럼 한국어 이름 + 지역)
+- `route.stops[].lat` `lng` (선택, 국내): 위도·경도. 그날 모든 장소에 있으면 '네이버 지도 길찾기' 버튼이 앱 길찾기로 열린다 (차·도보는 경유지 5곳까지, 대중교통은 출발→도착). 네이버 지도에서 확인한 좌표만 넣고, 모르면 빼둔다
 - `blocks.type`: `아침` `점심` `저녁` `밤` `카페` `이동` `숙소` `활동` `쇼핑`
 - `blocks.time`에 `HH:MM`이 있어야 캘린더에 들어간다 (`10:10–11:35`). `오전`처럼 쓰면 페이지에만 보인다
 - `blocks`의 `note`·`what`에 `예약`, `현금`/`카드 불가`, `줄서기`/`대기`가 있으면 배지가 자동으로 붙는다
@@ -89,3 +93,13 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 - 항공편 번호(`TW0203`, `7C2203`)가 `what`에 있으면 캘린더 알림이 3시간 전, 예약 배지가 있으면 1시간 전
 - `plan_b`(선택): 하루 전체를 바꾸는 대안 일정. `simple`은 원래 일정처럼 6칸. 플랜 B 팝업과 PDF 책자에 나오고 캘린더에는 넣지 않는다. `places.hours`도 휴무 요일 점검을 받는다
 - `places.hours`에 `화요일 휴무`, `월·화 휴무`, `토·일만`처럼 쓰면 `check_trip.py`가 그 요일 방문을 잡아낸다
+
+## 국내 여행
+
+`country`가 `한국`이면(또는 `"domestic": true`) 국내 여행으로 본다. `new_trip.py --city 강릉`처럼 아는 국내 도시는 자동으로 채운다.
+
+- 지도: 장소·동선·숙소·후보 링크와 캘린더 위치가 **네이버 지도**로 열린다. 휴대폰에서는 네이버 지도 앱으로 열고, 앱이 없으면 웹(map.naver.com)으로 연다
+- 페이지 안 지도는 키 없이 되는 구글 지도 그대로 (네이버 지도를 페이지 안에 넣으려면 네이버 클라우드 Maps API 키가 필요해서 아직 안 함)
+- 숨기는 도구: 환율 계산·면세(함께 쓴 돈의 '면세로 샀어요')·현지 회화·택시 카드·현지 시각. `currency` `lang` `phrases` `stay_ja` `local_tz_note` `flights`는 넣지 않아도 된다
+- 비용·정산은 원화(₩) 그대로. `budget.unit`은 `₩`
+- `eyebrow`는 "강원 강릉 · KTX"처럼 지역과 교통
