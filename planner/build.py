@@ -574,7 +574,7 @@ def render_ics(slug, t):
                                           "메모: " + plain(b["note"]) if plain(b["note"]) else ""] if x)
             loc = q or (place if place != "미정" else "")
             fl = [k for k, _ in flags(b)]
-            alarm = 180 if re.search(r"[A-Z]{2}\d{3,4}", b["what"]) else (60 if "rsv" in fl else 0)
+            alarm = 180 if re.search(r"(?<![A-Za-z0-9])(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])\d{3,4}(?!\d)", b["what"]) else (60 if "rsv" in fl else 0)
             add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None, alarm)
     cal = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//travel-planner//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
            "X-WR-CALNAME:" + ics_escape(t.get("short", t["title"]) + " 여행"), "X-WR-TIMEZONE:" + tz]

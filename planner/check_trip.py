@@ -34,6 +34,18 @@ PRIVATE = [
 ]
 
 
+def closed_days(h):
+    """영업시간 글에서 닫는 요일을 뽑는다: '화요일 휴무', '월·화 휴무', '평일 휴무', '토·일만', '주말만 영업'."""
+    h = re.sub(r"휴무\s*없음|무휴", "", h).replace("평일", "월화수목금").replace("주말", "토일")
+    m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)(?:요일)?\s*(정기)?\s*휴무", h)
+    if m:
+        return "".join(c for c in m.group(1) if c in WD)
+    m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)(?:요일)?\s*만", h)
+    if m:
+        return "".join(c for c in WD if c not in m.group(1))
+    return ""
+
+
 def strings(o, path=""):
     if isinstance(o, str):
         yield path, o
@@ -102,9 +114,9 @@ def check(folder):
                 timed += 1
         wd = WD[dt.date.fromisoformat(d["date"]).weekday()] if d.get("date") else ""
         for pl in d.get("places", []):
-            m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)요일?\s*(정기)?\s*휴무", pl.get("hours", ""))
-            if m and wd in m.group(1):
-                err.append(f"{tag}({wd}) '{pl.get('name')}' 은 {m.group(1)}요일 휴무예요. 다른 날로 옮기거나 대안을 넣어요")
+            off = closed_days(pl.get("hours", ""))
+            if wd and wd in off:
+                err.append(f"{tag}({wd}) '{pl.get('name')}' 은 {off}요일에 닫아요. 다른 날로 옮기거나 대안을 넣어요")
             if not pl.get("hours"):
                 warn.append(f"{tag} '{pl.get('name')}' 영업시간이 비었어요. 모르면 {{확인 필요}}")
 
@@ -141,7 +153,7 @@ def check(folder):
     if left:
         err.append(f"{{채우기}} 가 {len(left)}군데 남았어요: " + ", ".join(left[:8]) + (" …" if len(left) > 8 else ""))
     if not os.path.isfile(os.path.join(folder, "og.png")):
-        warn.append("og.png(링크 썸네일)가 없어요. node planner/tools/render-assets.js 로 만들어요")
+        warn.append(f"og.png(링크 썸네일)가 없어요. node planner/tools/render-assets.js {slug} 로 만들어요")
     return err, warn, {"days": len(t["days"]), "timed": timed, "chk": chk,
                        "cands": len(t.get("candidates", [])), "places": sum(len(d.get("places", [])) for d in t["days"])}
 
@@ -153,7 +165,7 @@ def main():
         err, warn, st = check(f)
         name = os.path.basename(os.path.normpath(f))
         if st:
-            print(f"■ {name}: {st['days']}일 · 시간표 중 캘린더 {st['timed']}건 · 장소 {st['places']}곳 · 후보 {st['cands']}곳 · 확인 필요 {st['chk']}개")
+            print(f"■ {name}: {st['days']}일 · 시각 있는 시간표 {st['timed']}줄 · 장소 {st['places']}곳 · 후보 {st['cands']}곳 · 확인 필요 {st['chk']}개")
         else:
             print(f"■ {name}")
         for x in err:

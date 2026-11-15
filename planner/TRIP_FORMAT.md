@@ -10,7 +10,7 @@
 python planner/new_trip.py --slug 2027-10-osaka --title "오사카, *가을* 먹방" --short 오사카 \
     --start 2027-10-02 --end 2027-10-05 --city 오사카 --theme temple --travelers 지훈,지윤
 python planner/check_trip.py trips/2027-10-osaka
-python planner/build.py && node planner/tools/render-assets.js
+python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 ```
 
 ## 글자 규칙 (모든 문자열)
@@ -74,5 +74,6 @@ python planner/build.py && node planner/tools/render-assets.js
 - `blocks.type`: `아침` `점심` `저녁` `밤` `카페` `이동` `숙소` `활동` `쇼핑`
 - `blocks.time`에 `HH:MM`이 있어야 캘린더에 들어간다 (`10:10–11:35`). `오전`처럼 쓰면 페이지에만 보인다
 - `blocks`의 `note`·`what`에 `예약`, `현금`/`카드 불가`, `줄서기`/`대기`가 있으면 배지가 자동으로 붙는다
-- 항공편 번호(`TW0203`)가 `what`에 있으면 캘린더 알림이 3시간 전, 예약 배지가 있으면 1시간 전
-- `places.hours`에 `화요일 휴무`처럼 쓰면 `check_trip.py`가 그 요일 방문을 잡아낸다
+- 시각은 모두 여행지 현지 시각(`timezone`). 인천 출발처럼 한국 시각은 현지 시각으로 바꿔 넣고 원래 시각은 `what`에 적는다
+- 항공편 번호(`TW0203`, `7C2203`)가 `what`에 있으면 캘린더 알림이 3시간 전, 예약 배지가 있으면 1시간 전
+- `places.hours`에 `화요일 휴무`, `월·화 휴무`, `토·일만`처럼 쓰면 `check_trip.py`가 그 요일 방문을 잡아낸다

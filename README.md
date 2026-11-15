@@ -18,7 +18,7 @@ Claude에게 여행 메모(날짜·인원·숙소·항공·가고 싶은 곳)를
    날짜별 칸, 6칸 간단 일정, 비용표 날짜 줄까지 만들어지고 채울 곳은 `{채우기}`로 표시돼요.
 2. 채우기: 항목 설명은 [`planner/TRIP_FORMAT.md`](planner/TRIP_FORMAT.md). 확정되지 않은 정보는 `{확인 필요}`라고 쓰면 배지로 표시돼요.
 3. 점검: `python planner/check_trip.py trips/<폴더>` — 날짜·6칸 구조·휴무 요일·남은 빈칸·개인정보(전화번호·예약번호·이메일)를 확인해요. 배포 때도 자동으로 돌고, 실패하면 배포되지 않아요.
-4. 썸네일: `node planner/tools/render-assets.js`로 `og.png`를 만들어요.
+4. 썸네일: `node planner/tools/render-assets.js <폴더>`로 `og.png`를 만들어요.
 5. `main`에 올리면 1~2분 뒤 여행 목록과 캘린더 파일이 함께 반영돼요.
 
 테마: `hakata`(남색·매화), `ocean`(바다·섬), `forest`(숲·온천), `snow`(겨울·설경), `citrus`(열대·휴양), `temple`(고도·사찰).
