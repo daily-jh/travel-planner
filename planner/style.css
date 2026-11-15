@@ -641,3 +641,7 @@ ul.todo li.done>span:last-child{color:var(--label2);text-decoration:line-through
 .fc{width:128px;height:160px;margin-left:-64px;top:36px;transform:translateX(calc(var(--i) * 50px)) translateY(calc(var(--i) * var(--i) * 6px)) rotate(calc(var(--i) * 8deg))}
 .fc b{font-size:14.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 @media (prefers-reduced-motion: reduce){.live{animation:none}}
+.wxnow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:16px 18px;border-radius:18px;color:#fff;background:linear-gradient(160deg,#5ac8fa,#0a63d1)}
+.wn-l{display:grid}.wn-l small{font-size:13px;opacity:.85}.wn-l b{font-size:52px;font-weight:300;line-height:1;letter-spacing:-.04em}.wn-l span{font-size:15px;font-weight:600}
+.wn-r{display:grid;gap:2px;font-size:13px;text-align:right;opacity:.92}
+.wxh{font-size:16px;margin:0 0 2px}
