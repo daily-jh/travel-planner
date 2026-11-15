@@ -32,6 +32,12 @@ MODE_KO = {"transit": "대중교통", "driving": "차량", "walking": "도보"}
 TYPE_CLS = {"아침": "meal", "점심": "meal", "저녁": "meal", "밤": "cafe", "카페": "cafe",
             "이동": "move", "숙소": "stay", "활동": "act", "쇼핑": "act"}
 STATUS = {"sel": "선정", "alt": "대안", "off": "미배치", "exc": "배제"}
+LANG_DEFAULT = {"code": "ja-JP", "name": "일본어", "icon": "あ", "taxi": "{stay}までお願いします"}
+
+
+def lang(t):
+    """현지 언어: 회화 탭 이름, 음성 언어, 택시 카드 문장. 없으면 일본어 (후쿠오카 여행과 같게)."""
+    return {**LANG_DEFAULT, **(t.get("lang") or {})}
 THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))
 
 
@@ -213,7 +219,8 @@ def render_trip(slug, t):
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
                "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
-               "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", "")}
+               "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
+               "timezone": t.get("timezone", "Asia/Tokyo"), "lang": lang(t)["code"]}
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -237,7 +244,7 @@ def render_trip(slug, t):
     tiles = [
         ("t-wx", "tool-wx", "☀︎", "날씨", f'<small class="wx-mini">{e(city)}</small>'),
         ("t-fx", "tool-fx", e(sym or "₩"), "환율 계산", f'<small class="fx-mini">{e(fx_mini)}</small>'),
-        ("t-ph", "tool-ph", "あ", "일본어 회화", f'<small>{sum(len(c["items"]) for c in ph)}문장 · 소리로 듣기</small>') if ph else None,
+        ("t-ph", "tool-ph", lang(t)["icon"], lang(t)["name"] + " 회화", f'<small>{sum(len(c["items"]) for c in ph)}문장 · 소리로 듣기</small>') if ph else None,
         ("t-bag", "tool-bag", "⌸", "캐리어 짐", f'<small class="bag-mini">{npk}개 챙기기</small>') if pk else None,
         ("t-ex", "tool-ex", "÷", "함께 쓴 돈", '<small class="ex-mini">기록하고 나눠요</small>'),
         ("t-go", "", "➚", "다음 장소 길찾기", '<small class="go-mini">구글 지도로 열기</small>'),
@@ -255,7 +262,7 @@ def render_trip(slug, t):
             continue
         cls, did, ic, name, sub = x
         if cls == "t-taxi":
-            tl.append(f'<button type="button" class="tool {cls}" data-big="{e(t["stay_ja"])}までお願いします" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
+            tl.append(f'<button type="button" class="tool {cls}" data-big="{e(lang(t)["taxi"].replace("{stay}", t["stay_ja"]))}" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
             continue
         if did.startswith("href:"):
             ext = ' target="_blank" rel="noopener"' if did.startswith("href:http") else ""
@@ -279,7 +286,7 @@ def render_trip(slug, t):
         lists = "".join(f'<ul class="phr" data-cat="{k}"{"" if k == 0 else " hidden"}>' + "".join(
             f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(ko)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button><button type="button" class="big" data-big="{e(j)}" data-bigko="{e(ko)}" aria-label="크게 보여주기">⤢</button></li>'
             for ko, j, r in c["items"]) + '</ul>' for k, c in enumerate(ph))
-        w(sheet("tool-ph", "일본어 회화", "누르면 소리로 들려요 · ⤢ 누르면 크게 보여 줘요", tabs + lists))
+        w(sheet("tool-ph", lang(t)["name"] + " 회화", "누르면 소리로 들려요 · ⤢ 누르면 크게 보여 줘요", tabs + lists))
     if pk:
         inner = ('<div class="bag-top"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" pathLength="100"/></svg><b class="bag-pct">0%</b></div>'
                  '<div class="bag-filter seg" role="group"><button type="button" data-bf="all" aria-pressed="true">전체</button><button type="button" data-bf="기내" aria-pressed="false">기내</button><button type="button" data-bf="위탁" aria-pressed="false">위탁</button><button type="button" data-bf="left" aria-pressed="false">남은 것</button></div></div>'
@@ -515,6 +522,19 @@ def plain(s):
     return re.sub(r"\*\*|\{확인 필요\}", lambda m: "" if m.group(0) == "**" else "확인 필요", s or "").strip()
 
 
+def vtimezone(tz, day):
+    """여행 시작일 기준 시차로 VTIMEZONE을 만든다. 서머타임이 있는 곳도 여행 기간 동안은 대개 한 가지 시차라 이것으로 충분하다."""
+    try:
+        from zoneinfo import ZoneInfo
+        z = dt.datetime.combine(day, dt.time(12), ZoneInfo(tz))
+    except Exception:
+        return []
+    m = int(z.utcoffset().total_seconds() // 60)
+    off = f"{'+' if m >= 0 else '-'}{abs(m) // 60:02d}{abs(m) % 60:02d}"
+    return ["BEGIN:VTIMEZONE", f"TZID:{tz}", "BEGIN:STANDARD", "DTSTART:19700101T000000",
+            f"TZOFFSETFROM:{off}", f"TZOFFSETTO:{off}", f"TZNAME:{z.tzname()}", "END:STANDARD", "END:VTIMEZONE"]
+
+
 def render_ics(slug, t):
     tz = t.get("timezone", "Asia/Seoul")
     ev = []
@@ -560,14 +580,11 @@ def render_ics(slug, t):
                                           "메모: " + plain(b["note"]) if plain(b["note"]) else ""] if x)
             loc = q or (place if place != "미정" else "")
             fl = [k for k, _ in flags(b)]
-            alarm = 180 if re.search(r"[A-Z]{2}\d{3,4}", b["what"]) else (60 if "rsv" in fl else 0)
+            alarm = 180 if re.search(r"(?<![A-Za-z0-9])(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])\d{3,4}(?!\d)", b["what"]) else (60 if "rsv" in fl else 0)
             add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None, alarm)
     cal = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//travel-planner//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
            "X-WR-CALNAME:" + ics_escape(t.get("short", t["title"]) + " 여행"), "X-WR-TIMEZONE:" + tz]
-    off = {"Asia/Tokyo": ("+0900", "JST"), "Asia/Seoul": ("+0900", "KST")}.get(tz)
-    if off:
-        cal += ["BEGIN:VTIMEZONE", f"TZID:{tz}", "BEGIN:STANDARD", "DTSTART:19700101T000000",
-                f"TZOFFSETFROM:{off[0]}", f"TZOFFSETTO:{off[0]}", f"TZNAME:{off[1]}", "END:STANDARD", "END:VTIMEZONE"]
+    cal += vtimezone(tz, d_of(t["start"]))
     cal += ev + ["END:VCALENDAR"]
     return "\r\n".join(ics_fold(x) for x in cal) + "\r\n", ev.count("BEGIN:VEVENT")
 

@@ -330,7 +330,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var say=function(m){var t=document.querySelector('.toast'); if(!t) return; t.textContent=m; t.hidden=false; clearTimeout(say.t); say.t=setTimeout(function(){t.hidden=true},3200);};
   var tzNow=function(tz){return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))};
   var q=new URLSearchParams(location.search).get('now'); // 미리보기: ?now=2027-02-27T13:30
-  var localNow=function(){ return q?new Date(q):tzNow('Asia/Tokyo'); };
+  var localNow=function(){ return q?new Date(q):tzNow(C.timezone||'Asia/Tokyo'); };
 
   // 환율 (양방향)
   var cur=C.currency||{}, rate=(cur.fallback_krw_per_100||0)/100, dir='f', sym=cur.symbol||'';
@@ -385,15 +385,15 @@ document.querySelectorAll('.route').forEach(function(card){
   }
   loadWx();
 
-  // 현지 한마디: 일본어 음성
+  // 현지 한마디: 현지어 음성 (trip.json lang.code)
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-say]'); if(!b||!window.speechSynthesis) return;
-    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang='ja-JP'; u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang=(C.lang||'ja-JP'); u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
     b.classList.remove('said'); void b.offsetWidth; b.classList.add('said'); });
 
   // 현지 시각
   var tl=document.querySelector('.tz-local'), th=document.querySelector('.tz-home');
   function clock(){ var o={hour:'2-digit',minute:'2-digit',hour12:false};
-    if(tl) tl.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:'Asia/Tokyo'},o));
+    if(tl) tl.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:C.timezone||'Asia/Tokyo'},o));
     if(th) th.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:'Asia/Seoul'},o)); }
   clock(); setInterval(clock,30000);
 
@@ -517,7 +517,7 @@ document.querySelectorAll('.route').forEach(function(card){
       +(RAIN[ds]>=50&&C.days[di].alt?chip('rain','비 올 확률 '+RAIN[ds]+'% · 플랜 B','alt-'+(di+1)):'')
       +(cs.length?chip('cash','현금 필요 '+cs.length+'곳'):'')
       +(bg?chip(sp>bg[1]?'warn':'','오늘 '+sym+fmt(sp)+' / 예산 '+sym+fmt(bg[0])+'~'+fmt(bg[1]),'tool-ex'):'')+'</div>';
-    var f=flightFor(ds); if(f&&f.dep_tz==='Asia/Tokyo'){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준</span></div>'; }
+    var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준</span></div>'; }
     h+=row(ci,'지금',di)+row(nx,'다음',di)+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
     if(mins>=18*60&&C.days[di+1]){ var tb=C.days[di+1].blocks, fi=tb.findIndex(function(b){return tm(b.time)!==null}), tr=tb.filter(function(b){return b.fl.indexOf('rsv')>=0});
       h+='<div class="nc-tmr"><small>내일 브리핑</small>'+(fi>=0?'<b>'+esc(tb[fi].time.split(/[–-]/)[0])+' '+esc(tb[fi].place)+'</b>':'')+(tr.length?'<span>예약: '+tr.map(function(b){return esc(b.time.split(/[–-]/)[0])+' '+esc(b.place)}).join(', ')+'</span>':'')+'</div>'; }

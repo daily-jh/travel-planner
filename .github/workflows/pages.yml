@@ -23,6 +23,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install segno==1.6.6 openpyxl==3.1.5
+      - run: python planner/check_trip.py
       - run: python planner/build.py
       # 엑셀·PDF는 실패해도 사이트 배포는 계속한다 (책자 화면에서 바로 인쇄할 수 있음)
       - name: 엑셀 일정표

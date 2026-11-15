@@ -1,5 +1,7 @@
 // 앱 아이콘과 링크 썸네일(og.png)을 그려서 저장소에 넣는다. 여행을 추가하거나 제목을 바꾼 뒤 한 번 실행:
 //   node planner/tools/render-assets.js
+// 한 여행의 og.png만 다시 그리려면 폴더 이름을 붙인다 (아이콘·첫 화면 썸네일은 그대로):
+//   node planner/tools/render-assets.js 2027-10-osaka
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
@@ -50,10 +52,12 @@ function og({ theme, eyebrow, title, when, days }) {
 
 const iconHTML = (size, pad) => `<!doctype html><style>html,body{margin:0;background:#24346b}svg{display:block;width:${size}px;height:${size}px}</style>${pad ? icon.replace('rx="16"', 'rx="0"') : icon}`;
 
+const only = process.argv[2];
+
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage();
-  for (const [file, size, full] of [['apple-touch-icon.png', 180, true], ['icon-192.png', 192, true], ['icon-512.png', 512, true]]) {
+  if (!only) for (const [file, size, full] of [['apple-touch-icon.png', 180, true], ['icon-192.png', 192, true], ['icon-512.png', 512, true]]) {
     await p.setViewportSize({ width: size, height: size });
     await p.setContent(iconHTML(size, full));
     await p.screenshot({ path: path.join(BRAND, file) });
@@ -63,7 +67,7 @@ const iconHTML = (size, pad) => `<!doctype html><style>html,body{margin:0;backgr
   const all = [];
   for (const slug of fs.readdirSync(tdir).sort()) {
     const f = path.join(tdir, slug, 'trip.json');
-    if (!fs.existsSync(f)) continue;
+    if (!fs.existsSync(f) || (only && slug !== only)) continue;
     const t = JSON.parse(fs.readFileSync(f, 'utf8'));
     const n = Math.round((new Date(t.end) - new Date(t.start)) / 864e5);
     all.push(t);
@@ -74,6 +78,7 @@ const iconHTML = (size, pad) => `<!doctype html><style>html,body{margin:0;backgr
     await p.screenshot({ path: path.join(tdir, slug, 'og.png') });
     console.log('og', slug);
   }
+  if (only) { if (!all.length) console.error('trips/' + only + '/trip.json 이 없어요'); await b.close(); return; }
   await p.setContent(og({ theme: 'hakata', eyebrow: 'TRAVEL PLANNER', title: '우리 여행을 *한곳에*',
     when: { text: '동선 · 지도 · 예약 · 비용 · 캘린더', hand: '' }, days: all.map(t => t.short || t.title) }), { waitUntil: 'networkidle' });
   await p.evaluate(() => document.fonts.ready);
