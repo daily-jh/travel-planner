@@ -1,26 +1,134 @@
 {
  "hakata": {
   "label": "하카타 남색·매화",
-  "font": "Do Hyeon"
+  "mood": "도시·야경, 남색과 매화색",
+  "light": {
+   "paper": "#f5f6f9",
+   "surface2": "#eceef4",
+   "line": "#dcdfe8",
+   "pri": "#24346b",
+   "pri-soft": "#e2e6f3",
+   "acc": "#c13d69",
+   "acc-soft": "#f7e2ea"
+  },
+  "dark": {
+   "paper": "#0f121b",
+   "surface2": "#20253a",
+   "line": "#2b3146",
+   "pri": "#9fb3ec",
+   "pri-soft": "#1e2742",
+   "acc": "#f08eb0",
+   "acc-soft": "#3a2131"
+  }
  },
  "ocean": {
   "label": "바다·섬",
-  "font": "Jua"
+  "mood": "바다·섬, 청록과 산호색",
+  "light": {
+   "paper": "#f2f8f8",
+   "surface2": "#e3eff0",
+   "line": "#cfe1e3",
+   "pri": "#0d5a6b",
+   "pri-soft": "#d8ecef",
+   "acc": "#d9583e",
+   "acc-soft": "#fbe3dc"
+  },
+  "dark": {
+   "paper": "#0b1517",
+   "surface2": "#15292d",
+   "line": "#22393e",
+   "pri": "#7fd0dc",
+   "pri-soft": "#153236",
+   "acc": "#ff9a83",
+   "acc-soft": "#3b211b"
+  }
  },
  "forest": {
   "label": "숲·온천",
-  "font": "Gowun Dodum"
+  "mood": "숲·온천, 초록과 호박색",
+  "light": {
+   "paper": "#f4f6f1",
+   "surface2": "#e7ece2",
+   "line": "#d6ddcf",
+   "pri": "#2c5536",
+   "pri-soft": "#dfeadf",
+   "acc": "#b06a14",
+   "acc-soft": "#f5e8d3"
+  },
+  "dark": {
+   "paper": "#0e130f",
+   "surface2": "#1c261d",
+   "line": "#2a362b",
+   "pri": "#9fd1a8",
+   "pri-soft": "#1b2c1e",
+   "acc": "#e8b665",
+   "acc-soft": "#352914"
+  }
  },
  "snow": {
   "label": "겨울·설경",
-  "font": "Black Han Sans"
+  "mood": "겨울·설경, 회청과 하늘색",
+  "light": {
+   "paper": "#f4f7fa",
+   "surface2": "#e6edf4",
+   "line": "#d3dde8",
+   "pri": "#2b4862",
+   "pri-soft": "#dde7f1",
+   "acc": "#3f86c9",
+   "acc-soft": "#dcebf8"
+  },
+  "dark": {
+   "paper": "#0d1117",
+   "surface2": "#1a2330",
+   "line": "#28333f",
+   "pri": "#a9c6e3",
+   "pri-soft": "#1b2836",
+   "acc": "#8fc3f5",
+   "acc-soft": "#18293b"
+  }
  },
  "citrus": {
   "label": "열대·휴양",
-  "font": "Jua"
+  "mood": "열대·휴양, 녹색과 귤색",
+  "light": {
+   "paper": "#f7f6ef",
+   "surface2": "#eeece0",
+   "line": "#e0dccb",
+   "pri": "#1d5c48",
+   "pri-soft": "#dcece4",
+   "acc": "#d9741f",
+   "acc-soft": "#fae6d2"
+  },
+  "dark": {
+   "paper": "#10120d",
+   "surface2": "#22251b",
+   "line": "#323628",
+   "pri": "#86d3b5",
+   "pri-soft": "#173027",
+   "acc": "#ffb36b",
+   "acc-soft": "#3a2917"
+  }
  },
  "temple": {
   "label": "고도·사찰",
-  "font": "Gowun Batang"
+  "mood": "고도·사찰, 고동과 주홍",
+  "light": {
+   "paper": "#f6f4f1",
+   "surface2": "#ebe6df",
+   "line": "#ddd5ca",
+   "pri": "#3d2a22",
+   "pri-soft": "#ebe1da",
+   "acc": "#c0392b",
+   "acc-soft": "#f6dfdb"
+  },
+  "dark": {
+   "paper": "#12100e",
+   "surface2": "#25201c",
+   "line": "#36302a",
+   "pri": "#e2c9b8",
+   "pri-soft": "#2b231e",
+   "acc": "#f08a7c",
+   "acc-soft": "#3b1f1b"
+  }
  }
 }
