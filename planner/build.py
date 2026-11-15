@@ -58,8 +58,51 @@ def rich(s):
     return s.replace("{확인 필요}", '<span class="chk">확인 필요</span>')
 
 
+# 지도: 해외는 구글 지도, 국내(한국)는 네이버 지도. 여행마다 render_trip·render_ics 가 MAP 을 바꾼다.
+# 네이버 지도 웹 주소(map.naver.com/p/search/…)는 휴대폰에서 app.js 가 네이버 지도 앱(nmap://)으로 바꿔 연다.
+MAP = {"kind": "google", "name": "구글 지도"}
+KOREA = ("한국", "대한민국", "국내", "Korea", "South Korea", "KR")
+
+
+def domestic(t):
+    """국내 여행인지: domestic 값이 있으면 그것, 없으면 country 가 한국이면 국내."""
+    if "domestic" in t:
+        return bool(t["domestic"])
+    return str(t.get("country", "")).strip() in KOREA
+
+
+def map_kind(t):
+    """trip.json map: "naver" 또는 "google". 없으면 국내는 네이버, 해외는 구글."""
+    k = t.get("map") or ("naver" if domestic(t) else "google")
+    return k if k in ("naver", "google") else "google"
+
+
+def use_map(t):
+    MAP["kind"] = map_kind(t)
+    MAP["name"] = "네이버 지도" if MAP["kind"] == "naver" else "구글 지도"
+
+
 def gmap(q):
+    """장소 하나를 지도에서 여는 주소 (여행의 지도 종류를 따른다)."""
+    if MAP["kind"] == "naver":
+        return "https://map.naver.com/p/search/" + quote(q)
     return "https://www.google.com/maps/search/?api=1&query=" + quote(q)
+
+
+NMAP_MODE = {"transit": "public", "driving": "car", "walking": "walk"}
+
+
+def nmap_route(mode, stops):
+    """네이버 지도 앱 길찾기 (좌표가 있는 경로만). 대중교통은 경유지를 못 넣어 출발→도착만, 차·도보는 경유지 5곳까지."""
+    if not stops or not all(isinstance(s.get("lat"), (int, float)) and isinstance(s.get("lng"), (int, float)) for s in stops) or len(stops) < 2:
+        return ""
+    m = NMAP_MODE.get(mode, "public")
+    pt = lambda k, s: f"{k}lat={s['lat']}&{k}lng={s['lng']}&{k}name={quote(s['label'])}"
+    u = f"nmap://route/{m}?" + pt("s", stops[0]) + "&" + pt("d", stops[-1])
+    if m != "public":
+        for n, s in enumerate(stops[1:-1][:5], 1):
+            u += "&" + pt(f"v{n}", s)
+    return u
 
 
 def embed(q):
@@ -191,6 +234,8 @@ def page(title, body, depth, theme="hakata", font_themes=None, og=None):
 def render_trip(slug, t):
     P = []
     w = P.append
+    use_map(t)
+    DOM = domestic(t)  # 국내 여행: 환율·면세·회화·택시 카드·현지 시각처럼 해외에서만 쓰는 도구를 숨긴다
     start, end = d_of(t["start"]), d_of(t["end"])
     nights = (end - start).days
     AI = {}
@@ -222,6 +267,10 @@ def render_trip(slug, t):
 <div class="countdown" data-start="{t["start"]}" data-end="{t["end"]}" aria-live="off"><span class="cd-l">출발까지</span><div class="cd-tiles"><span><b data-u="d">--</b><small>일</small></span><span><b data-u="h">--</b><small>시간</small></span><span><b data-u="m">--</b><small>분</small></span></div></div>
 <div class="cta">{"".join(links)}</div>
 </div><canvas class="petals" aria-hidden="true"></canvas><div class="kenjo" aria-hidden="true"></div></header>''')
+    if t.get("stay_ja") and not domestic(t):
+        w(live.quickbar(t, lang(t)["taxi"].replace("{stay}", t["stay_ja"]), t["stay"][0][1].split(" (")[0] + "까지 가 주세요"))
+    else:
+        w(live.quickbar(t, "", ""))
     w('<main class="wrap">')
 
     # 1. 간단 일정표
@@ -241,14 +290,16 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)], "area": b.get("area", ""), "alert": b.get("alert")} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
-               "timezone": t.get("timezone", "Asia/Tokyo"), "lang": lang(t)["code"]}
+               "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
+               "map": MAP["kind"], "domestic": DOM}
+        cfg.update(live.cfg_extra(t))
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
-          '<span class="ai">AI 추천</span>은 구글 평점·리뷰 수와 지도 메모를 보고 Claude가 고른 곳이에요.</p>'
+          '<span class="ai">AI 추천</span>은 ' + ("네이버" if MAP["kind"] == "naver" else "구글") + ' 평점·리뷰 수와 지도 메모를 보고 Claude가 고른 곳이에요.</p>'
           '<div class="pp-who" role="group" aria-label="나는 누구">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-me="{e(x["name"])}">{e(x["name"])}</button>' for x in trav) + '</div>'
           '<div class="pp-actions"><button type="button" class="btn primary" data-pk="start">픽 고르기</button>'
           '<button type="button" class="btn" data-pk="save" hidden>저장</button><button type="button" class="btn" data-pk="cancel" hidden>취소</button>'
@@ -256,10 +307,10 @@ def render_trip(slug, t):
           '<div class="pp-sum"></div></div></section>')
         w(sheet("picks-all", "우리의 픽 모아보기", "둘 다 고른 곳부터 보여요", '<div class="pk-list"></div>'))
     # 여행 도구 (트리플·완더로그·스티플에서 흔한 기능을 정적 사이트로)
-    cur = t.get("currency") or {}
+    cur = {} if DOM else (t.get("currency") or {})
     sym = cur.get("symbol", "")
     city = (t.get("geo") or {}).get("city", "")
-    ph = t.get("phrases") or []
+    ph = [] if DOM else (t.get("phrases") or [])
     if ph and isinstance(ph[0], list):
         ph = [{"cat": "기본", "items": ph}]
     pk = t.get("packing") or []
@@ -267,18 +318,20 @@ def render_trip(slug, t):
     fx_mini = f'{sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")}' if cur else ""
     tiles = [
         ("t-wx", "tool-wx", "☀︎", "날씨", f'<small class="wx-mini">{e(city)}</small>'),
-        ("t-fx", "tool-fx", e(sym or "₩"), "환율 계산", f'<small class="fx-mini">{e(fx_mini)}</small>'),
+        ("t-fx", "tool-fx", e(sym or "₩"), "환율 계산", f'<small class="fx-mini">{e(fx_mini)}</small>') if cur else None,
         ("t-ph", "tool-ph", lang(t)["icon"], lang(t)["name"] + " 회화", f'<small>{sum(len(c["items"]) for c in ph)}문장 · 소리로 듣기</small>') if ph else None,
         ("t-bag", "tool-bag", "⌸", "캐리어 짐", f'<small class="bag-mini">{npk}개 챙기기</small>') if pk else None,
         ("t-ex", "tool-ex", "÷", "함께 쓴 돈", '<small class="ex-mini">기록하고 나눠요</small>'),
-        ("t-go", "", "➚", "다음 장소 길찾기", '<small class="go-mini">구글 지도로 열기</small>'),
+        ("t-go", "", "➚", "다음 장소 길찾기", f'<small class="go-mini">{MAP["name"]}로 열기</small>'),
         ("t-pk", "", "✓", "출발 전 확인", '<small class="pk-mini">예약·확인 체크</small>'),
-        ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급·영사콜센터</small>') if t.get("emergency") else None,
-        ("t-taxi", "", "⛟", "택시 카드", '<small>기사님께 보여 주기</small>') if t.get("stay_ja") else None,
+        ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급' + ('·병원' if DOM else '·영사콜센터') + '</small>') if t.get("emergency") else None,
+        ("t-taxi", "", "⛟", "택시 카드", '<small>기사님께 보여 주기</small>') if t.get("stay_ja") and not DOM else None,
         ("t-log", "tool-log", "✎", "여행 기록", '<small class="log-mini">다녀온 곳·사진·한 줄</small>'),
         ("t-sync", "tool-sync", "⇄", "일행과 맞추기", '<small>픽·지출을 링크로 보내기</small>') if len(trav) > 1 else None,
-        ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
+        ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>') if not DOM else None,
     ]
+    at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
+    tiles[at:at] = live.tiles(t)
     tiles += extras.tiles(t)
     tl = []
     for x in tiles:
@@ -303,8 +356,8 @@ def render_trip(slug, t):
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
               f'<label class="fx-row"><span class="fx-from">{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="금액"></label>'
               f'<div class="fx-out"><span class="fx-to">₩</span> <b>-</b></div><div class="fx-quick"></div>'
-              f'<p class="fx-tax">면세: 2026년 11월부터 가게에서는 세금 포함으로 내고, 출국할 때 공항에서 소비세 10%를 돌려받아요. 같은 가게 하루 세금 제외 {e(sym)}5,000 이상, 여권 필수예요.</p>'
-              f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
+              + (f'<p class="fx-tax">면세: 2026년 11월부터 가게에서는 세금 포함으로 내고, 출국할 때 공항에서 소비세 10%를 돌려받아요. 같은 가게 하루 세금 제외 {e(sym)}5,000 이상, 여권 필수예요.</p>' if t.get("country") == "일본" else "")
+              + f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
     if ph:
         tabs = '<div class="seg" role="tablist">' + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>'
         lists = "".join(f'<ul class="phr" data-cat="{k}"{"" if k == 0 else " hidden"}>' + "".join(
@@ -319,13 +372,13 @@ def render_trip(slug, t):
                      for n, (it, wh) in enumerate(c["items"])) + '</ul></div>' for c in pk)
                  + '<form class="bag-add"><input name="it" placeholder="챙길 것 직접 추가" required><select name="wh" aria-label="기내 또는 위탁"><option>기내</option><option>위탁</option></select><button class="btn primary" type="submit">추가</button></form>'
                  '<div class="bag-mine"></div><button type="button" class="btn bag-reset">체크 모두 지우기</button>')
-        w(sheet("tool-bag", "캐리어 짐 싸기", "2월 말 후쿠오카 날씨 기준 · 이 휴대폰에 저장돼요", inner))
+        w(sheet("tool-bag", "캐리어 짐 싸기", e(t.get("packing_note") or f"{start.month}월 {'초' if start.day <= 10 else '중순' if start.day <= 20 else '말'} {city} 날씨 기준") + " · 이 휴대폰에 저장돼요", inner))
     cats = ["식비", "교통", "쇼핑", "카페·간식", "입장료", "기타"]
     w(sheet("tool-ex", "함께 쓴 돈", "이 휴대폰에 저장돼요", '<form class="exf"><input name="what" placeholder="무엇에 썼나요 (예: 라멘)" required>'
             '<div class="exf-cat seg" role="group" aria-label="분류">' + "".join(f'<button type="button" data-cat="{c}" aria-pressed="{str(k == 0).lower()}">{c}</button>' for k, c in enumerate(cats)) + '</div>'
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
             '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
-            '<div class="exf-row"><button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button><button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
+            '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
     w(sheet("tool-sync", "일행과 맞추기", "서버 없이 링크 하나로 픽과 지출을 합쳐요",
             '<ol class="steps"><li><b>내 기록 보내기</b><span>아래 버튼을 누르면 내 픽, 함께 쓴 돈, 출발 전 체크가 담긴 링크가 만들어져요. 카카오톡이나 문자로 보내요.</span></li>'
             '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
@@ -336,16 +389,17 @@ def render_trip(slug, t):
     if t.get("emergency"):
         w(sheet("tool-sos", "비상 연락", "누르면 전화가 걸려요", '<ul class="sos">' + "".join(
             (f'<li><a href="tel:{e(num.replace("-", ""))}"><span>{e(nm)}</span><b>{e(num)}</b></a></li>' if any(ch.isdigit() for ch in num) else f'<li><a href="{e(t.get("emergency_link", "#"))}" target="_blank" rel="noopener"><span>{e(nm)}</span><b>{e(num)} ↗</b></a></li>')
-            for nm, num in t["emergency"]) + '</ul><p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>'))
+            for nm, num in t["emergency"]) + '</ul>' + ("" if DOM else '<p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>')))
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
     w(extras.sheets(slug, t))
+    w(live.sheets(t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
     plain1 = lambda x: re.sub(r"\*\*|\{확인 필요\}", "", x)
     ov_chips, ov_dlgs = [], []
-    stay_map = f'<div class="row"><a class="btn primary" href="{gmap(t["stay_query"])}" target="_blank" rel="noopener">숙소 구글 지도</a></div>' if t.get("stay_query") else ""
+    stay_map = f'<div class="row"><a class="btn primary" href="{gmap(t["stay_query"])}" target="_blank" rel="noopener">숙소 {MAP["name"]}</a></div>' if t.get("stay_query") else ""
     for did, label, rows, extra in (("ov-stay", "숙소", t.get("stay", []), stay_map), ("ov-move", "이동", t.get("transport", []), "")):
         if rows:
             ov_chips.append(f'<button type="button" class="gchip ov" data-open="{did}"><span class="k">{label}</span><span class="nm">{e(plain1(rows[0][1]))}</span><small>{e(plain1(rows[1][0] + " · " + rows[1][1])) if len(rows) > 1 else ""}</small></button>')
@@ -388,10 +442,23 @@ def render_trip(slug, t):
             w('<div class="card route"><h3>하루 동선</h3><ol>')
             for n, s in enumerate(stops, 1):
                 w(f'<li><a href="{gmap(s["query"])}" target="_blank" rel="noopener" data-q="{e(s["query"])}" data-label="{e(s["label"])}"{" class=on" if n == 1 else ""}><i>{n}</i>{e(s["label"])}</a></li>')
-            w(f'</ol><div class="row"><a class="btn primary" href="{dirurl(r["mode"], stops)}" target="_blank" rel="noopener">구글 지도에서 경로 보기 ({MODE_KO.get(r["mode"], r["mode"])})</a>'
-              '' + day_fb + '<span class="hint">번호를 누르면 아래 지도가 그 장소로 바뀌어요. 경로 버튼은 구글 지도에서 전체 동선을 열어요.</span></div>'
-              f'<div class="mapbox"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{i}일차 지도" src="{embed(stops[0]["query"])}"></iframe>'
-              f'<div class="mapcap">지도: <b>{e(stops[0]["label"])}</b></div></div></div>')
+            mk = MODE_KO.get(r["mode"], r["mode"])
+            nm = nmap_route(r["mode"], stops) if MAP["kind"] == "naver" else ""
+            if nm:  # 네이버 지도 앱 길찾기. 앱이 없거나 컴퓨터면 구글 지도 경로로 연다
+                rbtn = f'<a class="btn primary" href="{dirurl(r["mode"], stops)}" data-nmap="{e(nm)}" target="_blank" rel="noopener">네이버 지도 길찾기 ({mk})</a>'
+                hint = "장소를 누르면 네이버 지도가 열려요. 아래 지도를 불러온 뒤에는 누른 장소로 지도가 바뀌어요. 길찾기는 네이버 지도 앱으로, 앱이 없으면 구글 지도로 열어요."
+            elif MAP["kind"] == "naver":
+                rbtn = f'<a class="btn primary" href="{dirurl(r["mode"], stops)}" target="_blank" rel="noopener">구글 지도에서 전체 경로 ({mk})</a>'
+                hint = "장소를 누르면 네이버 지도가 열려요. 아래 지도를 불러온 뒤에는 누른 장소로 지도가 바뀌어요. 하루 전체 경로는 구글 지도로 열어요."
+            else:
+                rbtn = f'<a class="btn primary" href="{dirurl(r["mode"], stops)}" target="_blank" rel="noopener">구글 지도에서 경로 보기 ({mk})</a>'
+                hint = "장소를 누르면 구글 지도 앱이 열려요. 아래 지도를 불러온 뒤에는 누른 장소로 지도가 바뀌어요."
+            w('</ol><div class="row">' + rbtn + day_fb + f'<span class="hint">{hint}</span></div>'
+              f'<div class="mapbox idle"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{i}일차 지도" data-src="{embed(stops[0]["query"])}"></iframe>'
+              f'<button type="button" class="map-load"><b>지도 불러오기</b><small>데이터를 아끼려고 누를 때만 불러와요 · 위 장소 이름을 누르면 {MAP["name"]} 앱이 열려요</small></button>'
+              f'<div class="mapcap">지도: <b>{e(stops[0]["label"])}</b>'
+              + (f' <a class="mapopen" href="{gmap(stops[0]["query"])}" target="_blank" rel="noopener">네이버 지도로 열기 ↗</a>' if MAP["kind"] == "naver" else "")
+              + '</div></div></div>')
         w('<div class="card" style="padding:6px 12px"><table class="blocks"><thead><tr><th>시간</th><th>구분</th><th>장소</th><th>내용</th><th>이동·소요</th><th>비고</th></tr></thead><tbody>')
         pl_ids = {p["name"]: f"pl-{i}-{n}" for n, p in enumerate(d.get("places", []), 1)}
         blk_dlgs = []
@@ -400,15 +467,15 @@ def render_trip(slug, t):
             pname = plain(b["place"])
             pid = next((v for k, v in pl_ids.items() if k in pname or (pname and pname.split()[0] in k)), "")
             w(f'<tr class="tap" data-open="{bid}" tabindex="0"><td class="time">{e(b["time"])}</td><td class="cat"><span class="tag {TYPE_CLS.get(b["type"], "act")}">{e(b["type"])}</span></td>'
-              f'<td class="place">{rich(b["place"])}{"".join(f"<span class=\'fl {k}\'>{v}</span>" for k, v in flags(b))}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
+              f'<td class="place">{rich(b["place"])}{"".join(f"<span class=\'fl {k}\'>{v}</span>" for k, v in flags(b))}{live.alert_badge(b)}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
             rows = [("할 일", b["what"]), ("이동·소요", b["move"]), ("메모", b["note"])]
-            inner = '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{rich(v)}</dd>" for k, v in rows if plain(v) not in ("", "-")) + "</dl>"
+            inner = live.block_extra(b) + '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{rich(v)}</dd>" for k, v in rows if plain(v) not in ("", "-")) + "</dl>"
             btns = []
             if pid:
                 btns.append(f'<button type="button" class="btn primary" data-open="{pid}">장소 상세 보기</button>')
             if pname and pname not in ("미정", "-"):
-                btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">구글 지도</a>')
-            inner += '<div class="row">' + "".join(btns) + "</div>"
+                btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">{MAP["name"]}</a>')
+            inner += '<div class="row">' + "".join(btns) + "</div>" + live.plan_ctl(bid, b.get("area"), b["type"])
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
                       '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
                       '<textarea rows="2" placeholder="한 줄 기록 (맛, 분위기, 다음에 또 올지)"></textarea>'
@@ -429,7 +496,7 @@ def render_trip(slug, t):
                 w(f'<div class="pitem"><button type="button" class="pchip" data-open="{did}"><span class="nm">{e(p["name"])}</span><span class="cost">{rich(p.get("cost", ""))}</span></button>{pick_bar(p["name"], ai_for(p["name"]))}</div>')
                 inner = (f'<dl class="kv"><dt>주소</dt><dd>{rich(p.get("address", ""))}</dd><dt>영업·휴무</dt><dd>{rich(p.get("hours", ""))}</dd><dt>추천 이유</dt><dd>{rich(p.get("why", ""))}</dd>'
                          + (f'<dt>팁</dt><dd>{rich(p["tip"])}</dd>' if p.get("tip") else "")
-                         + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="btn primary" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">구글 지도에서 보기</a>{place_fb}</div>')
+                         + f'<dt>예상 비용</dt><dd>{rich(p.get("cost", ""))}</dd></dl><div class="row"><a class="btn primary" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">{MAP["name"]}에서 보기</a>{place_fb}</div>')
                 dlgs.append(sheet(did, e(p["name"]), e(p.get("local", "")), inner))
             w('</div></div>' + "".join(dlgs))
         w('</div></div>')
@@ -468,7 +535,7 @@ def render_trip(slug, t):
     if b:
         u = b.get("unit", "")
         M = max(r[3] for r in b["rows"])
-        M = int(-(-M // 4000) * 4000) if M > 4000 else M
+        M = int(-(-M // 4000) * 4000) if M > 4000 else max(M, 1)
         w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>'
           f'<div class="card" style="margin-bottom:14px"><h3>일차별 범위</h3><div class="bars">')
         for lab, _, a, z, _ in b["rows"]:
@@ -562,6 +629,7 @@ def vtimezone(tz, day):
 
 
 def render_ics(slug, t):
+    use_map(t)
     tz = t.get("timezone", "Asia/Seoul")
     ev = []
 
@@ -647,7 +715,7 @@ def render_home(trips):
     credits_html = ('<details class="lm-credits"><summary>사진 출처</summary><ul>' + "".join(credits) + '</ul><p>위키미디어 커먼즈 사진을 크기만 줄여 썼어요. 각 라이선스를 따라요.</p></details>') if credits else ""
     howto_sheet = sheet("howto", "새 여행 추가하기", "3단계", '''<ol>
 <li><code>trips/2027-03-fukuoka/trip.json</code>을 복사해서 <code>trips/연도-월-도시/trip.json</code>을 만들어요.</li>
-<li>날짜, 동선(<code>route.stops</code>의 이름과 구글 지도 검색어), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
+<li>날짜, 동선(<code>route.stops</code>의 이름과 지도 검색어. 해외는 구글, 국내는 네이버 지도), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
 <li>GitHub에 올리면 1~2분 뒤 이 목록과 캘린더 파일이 자동으로 바뀌어요.</li>
 </ol>''')
     body = f'''<header class="hero"><div class="wrap">
@@ -672,7 +740,8 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
-    shutil.copy(os.path.join(here, "app.js"), os.path.join(OUT, "assets", "app.js"))
+    open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
@@ -717,6 +786,7 @@ def main():
 
 
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
+import live  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -9,6 +9,7 @@
 - 개인정보: 휴대폰 번호, 이메일, 예약·확인 번호, 여권 번호가 보이면 오류 (공개 저장소라서)
 - 영업 요일: closures 의 방문일 요일이 실제 날짜와 맞는지, 장소 영업시간에 적힌 휴무 요일에 방문하는지
 - 캘린더: 시각(HH:MM)이 있는 시간표 줄 수. 시각이 없는 줄은 캘린더에 들어가지 않는다
+- 지도: 국내 여행(country 한국)은 네이버 지도. route.stops 의 lat·lng 좌표 형식과 한국 안인지
 """
 import datetime as dt
 import glob
@@ -88,6 +89,7 @@ def check(folder):
         err.append("travelers 에 이름이 필요해요")
 
     timed = 0
+    nolat = []
     for i, d in enumerate(t["days"], 1):
         tag = f"{i}일차"
         slots = [r.get("slot") for r in d.get("simple", [])]
@@ -100,6 +102,15 @@ def check(folder):
             err.append(f"{tag} route.mode 는 {', '.join(sorted(MODES))} 중 하나예요")
         if not r.get("stops") or any(not x.get("label") or not x.get("query") for x in r.get("stops", [])):
             err.append(f"{tag} route.stops 에 label·query 가 있는 장소가 한 곳 이상 필요해요")
+        dom = t.get("domestic") if "domestic" in t else str(t.get("country", "")).strip() in ("한국", "대한민국", "국내")
+        for x in r.get("stops", []):
+            la, ln = x.get("lat"), x.get("lng")
+            if (la is None) != (ln is None) or (la is not None and not (isinstance(la, (int, float)) and isinstance(ln, (int, float)))):
+                err.append(f"{tag} 경로 '{x.get('label')}' 의 lat·lng 는 둘 다 숫자로 넣거나 둘 다 빼요")
+            elif la is not None and dom and not (33 <= la <= 39 and 124 <= ln <= 132):
+                err.append(f"{tag} 경로 '{x.get('label')}' 좌표 {la},{ln} 가 한국 밖이에요 (위도·경도 순서 확인)")
+        if dom and (t.get("map") or "naver") == "naver" and r.get("stops") and not all("lat" in x for x in r["stops"]):
+            nolat.append(tag)
         if len(r.get("stops", [])) > 10:
             warn.append(f"{tag} 경로 장소가 {len(r['stops'])}곳이에요. 구글 지도 경로는 10곳까지라 일부가 빠질 수 있어요")
         if not d.get("blocks"):
@@ -133,6 +144,11 @@ def check(folder):
                 if not pl.get("hours"):
                     warn.append(f"{tag} 플랜 B '{pl.get('name')}' 영업시간이 비었어요. 모르면 {{확인 필요}}")
 
+    if t.get("map") not in (None, "naver", "google"):
+        err.append(f"map 은 'naver' 또는 'google' 이에요 (지금: {t.get('map')})")
+    if nolat:
+        warn.append(f"국내 여행인데 {', '.join(nolat)} 경로에 좌표(lat·lng)가 없는 장소가 있어요. "
+                    "장소 링크는 네이버 지도로 열리지만, 하루 길찾기 버튼은 좌표가 다 있어야 네이버 지도 앱으로 열려요 (없으면 구글 지도 경로)")
     for c in t.get("closures", []):
         if len(c) != 4 or c[3] not in ("ok", "check"):
             err.append(f"closures 줄 {c} 은 [장소, 휴무, 방문일 'M/D 요일', 'ok'|'check'] 형식이어야 해요")

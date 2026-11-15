@@ -1013,6 +1013,119 @@ dialog.sheet .sheet-b{overscroll-behavior:contain}
 /* 쇼핑 출처·사진 저작자 표기: 연회색(1.7:1) → 보조 글자색, 최소 12px */
 .shop-src,.shop-credit,.shop-credit a{color:var(--label2);font-size:12px}
 
+/* ---------------------------------------------------------------- 현지 실전 기능 (planner/live.py · live.js) */
+/* 여행 중 퀵 바: 스크롤해도 위에 붙어 있다 */
+.quick{position:sticky;top:0;z-index:40;padding:8px 12px calc(8px);padding-top:max(8px,env(safe-area-inset-top));background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:saturate(1.8) blur(18px);backdrop-filter:saturate(1.8) blur(18px);border-bottom:.5px solid var(--sep)}
+.qbar{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;max-width:720px;margin:0 auto}
+.qk{font:inherit;cursor:pointer;border:none;text-decoration:none;color:var(--ink);background:var(--card);border-radius:14px;padding:7px 4px 6px;display:grid;justify-items:center;gap:1px;min-height:48px;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:transform .15s var(--ease)}
+.qk:active{transform:scale(.95)}
+.qk span{font-size:17px;font-weight:700;line-height:1.2;color:var(--pri)} .qk b{font-size:12px;font-weight:600;color:var(--label2)}
+.q-go span{color:#0a84ff} .q-taxi span{color:#c99a00} .q-ex span{color:var(--ok)} .q-qr span{color:var(--acc)}
+.qbanner{max-width:720px;margin:0 auto 8px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:9px 12px;border-radius:14px;cursor:pointer;background:color-mix(in srgb,#0a84ff 13%,var(--card));color:var(--ink);animation:rise .35s var(--ease) both}
+.qbanner .qb-t{font-size:12px;font-weight:700;color:var(--blue-ink,#0a5bd6)} .qbanner b{font-size:15px;letter-spacing:-.02em} .qbanner em{margin-left:auto;font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+.qbanner.urgent{background:color-mix(in srgb,#ff3b30 14%,var(--card))} .qbanner.urgent .qb-t,.qbanner.urgent em{color:var(--warn)}
+.qbanner.urgent em{animation:qpulse 1.6s ease-in-out infinite}
+@keyframes qpulse{50%{opacity:.45}}
+body.offline .quick{border-bottom-color:var(--warn)}
+body.offline .qbar::after{content:"오프라인";position:absolute;right:14px;top:-2px;font-size:10.5px;font-weight:700;color:var(--warn)}
+.qbar{position:relative}
+
+/* 시간표: 꼭 지킬 시각 배지, 건너뜀·바꿈 */
+.fl.alert{background:color-mix(in srgb,#ff3b30 13%,transparent);color:var(--warn)}
+.fl.alert::before{content:"⏰ "}
+.blk-alert{display:grid;gap:2px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ff3b30 10%,transparent)}
+.blk-alert b{color:var(--warn);font-size:15px} .blk-alert span{font-size:14px;color:var(--label2)}
+.blocks tr.skipped td{opacity:.42} .blocks tr.skipped td.place{text-decoration:line-through}
+.blocks tr .swap-to{display:block;font-size:13px;font-weight:700;color:var(--acc);text-decoration:none}
+.blocks tr.swapped td.place{text-decoration:none}
+.plan-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0;padding-top:12px;border-top:.5px solid var(--sep)}
+.plan-ctl>button{font:inherit;font-weight:600;font-size:14px;cursor:pointer;border:none;border-radius:999px;padding:8px 14px;background:var(--fill);color:var(--ink)}
+.plan-ctl>button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.plan-st{flex-basis:100%;font-size:13px;color:var(--label2)} .plan-st button{font:inherit;font-size:13px;border:none;background:none;color:var(--blue-ink,#0a5bd6);cursor:pointer;padding:0 0 0 4px;text-decoration:underline}
+.nc-row.skipped{opacity:.5} .nc-row .swp{font-style:normal;font-size:11px;font-weight:700;color:var(--acc);vertical-align:2px}
+.nc-al{font-style:normal;font-size:12.5px;font-weight:700;color:var(--warn);margin-top:3px}
+.nc-near{font:inherit;text-align:left;cursor:pointer;border:none;border-radius:14px;padding:10px 12px;display:grid;gap:1px;color:var(--ink);background:color-mix(in srgb,var(--ok) 11%,transparent)}
+.nc-near b{font-size:14px} .nc-near span{font-size:13px;color:var(--ok);font-weight:600}
+
+/* 지도: 누를 때만 불러온다 */
+.mapbox{position:relative}
+.mapbox.idle iframe{height:0}
+.map-load{font:inherit;cursor:pointer;width:100%;border:none;background:var(--fill);color:var(--ink);padding:22px 16px;display:grid;gap:4px;text-align:center}
+.map-load b{font-size:15px;color:var(--blue-ink,#0a5bd6)} .map-load small{font-size:12.5px;color:var(--label2)}
+.mapbox.idle .mapcap{display:none}
+
+/* 도구 아이콘 */
+.t-qr .ti{background:linear-gradient(160deg,#ff375f,#5e5ce6)} .t-eat .ti{background:linear-gradient(160deg,#ff9f0a,#ff453a)}
+.t-near .ti{background:linear-gradient(160deg,#30d158,#00a39a)} .t-pass .ti{background:linear-gradient(160deg,#ffcc00,#ff9500)}
+.t-coin .ti{background:linear-gradient(160deg,#c7a26b,#8e6b3a)}
+
+/* QR·바우처 */
+.vault-note{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--ok) 10%,transparent);font-size:13.5px;color:var(--label2)} .vault-note b{color:var(--ok)}
+ul.vault{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:10px}
+ul.vault li{background:var(--fill);border-radius:16px;padding:12px;display:grid;gap:8px}
+ul.vault li.today{background:color-mix(in srgb,var(--acc) 12%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--acc) 40%,transparent)}
+.v-h{display:flex;align-items:baseline;gap:8px} .v-h b{font-size:15px} .v-h small{margin-left:auto;font-size:12px;font-weight:600;color:var(--label2);white-space:nowrap}
+.v-pic{border:none;padding:0;cursor:zoom-in;background:#fff;border-radius:12px;overflow:hidden;max-height:200px;display:block}
+.v-pic img{display:block;width:100%;max-height:200px;object-fit:contain}
+.v-num{font:inherit;font-size:15px;border:none;border-radius:10px;padding:10px 12px;background:var(--card);color:var(--ink);min-width:0}
+.v-a{display:flex;flex-wrap:wrap;gap:6px} .v-a .btn{font-size:13px;padding:7px 12px;cursor:pointer}
+.vault-add{display:flex;gap:8px} .vault-add input{flex:1;min-width:0;font:inherit;border:none;border-radius:12px;padding:10px 12px;background:var(--fill);color:var(--ink)}
+.vaultview{width:100%;height:100%;max-width:none;max-height:none;margin:0;border:none;box-sizing:border-box;padding:16px;background:#fff;color:#111;display:none;place-content:center;gap:10px;text-align:center}
+.vaultview[open]{display:grid} .vaultview::backdrop{background:#fff}
+.vaultview img{max-width:100%;max-height:78vh;object-fit:contain;margin:0 auto} .vv-t{margin:0;font-weight:700;font-size:17px} .vv-hint{margin:0;font-size:12.5px;color:#666}
+
+/* 식당 카드 */
+ul.eat{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+ul.eat li>button{font:inherit;cursor:pointer;width:100%;text-align:left;border:none;border-radius:14px;padding:10px 12px;background:var(--fill);color:var(--ink);display:grid;gap:1px}
+ul.eat .ko{font-size:13px;color:var(--label2)} ul.eat b{font-size:17px}
+.eat-n{display:flex;align-items:center;gap:10px;padding:4px 2px} .eat-n .seg{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px} .eat-n .btn{padding:9px 0;cursor:pointer}
+.eat-h{margin:16px 0 4px}
+.ings{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ing{font:inherit;font-size:14px;cursor:pointer;border:none;border-radius:999px;padding:7px 12px;background:var(--fill);color:var(--ink)}
+.ing[aria-pressed="true"]{background:var(--warn);color:#fff}
+
+/* 주변 대안 */
+.near-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.near-gps{font-size:13px;padding:7px 12px;cursor:pointer}
+.near-where{margin:4px 0 10px;font-size:13px}
+ul.near{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+ul.near li{display:flex;gap:10px;align-items:center;background:var(--fill);border-radius:14px;padding:10px 12px}
+ul.near li.closed{opacity:.55}
+.nr-b{flex:1;min-width:0;display:grid;gap:2px} .nr-b b{font-size:15px} .nr-b small{font-size:12.5px;color:var(--label2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nr-m{font-size:12.5px;color:var(--label2)}
+.nst{font-style:normal;font-weight:700;margin-right:6px}
+.nst.open{color:var(--ok)} .nst.closing,.nst.soon{color:#c26b00} .nst.closed,.nst.unk{color:var(--label2)}
+.nr-a{display:grid;gap:6px} .nr-a .btn{font-size:13px;padding:7px 12px;white-space:nowrap}
+
+/* 지하철 1일권 */
+.pass-touch{display:grid;gap:4px;margin:0 0 12px;padding:12px;border-radius:14px;background:color-mix(in srgb,#0a84ff 10%,transparent)}
+.pass-touch b{font-size:15px} .pass-touch span{font-size:13.5px;color:var(--label2)}
+ul.pdays{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pd{background:var(--fill);border-radius:14px;padding:10px 12px}
+.pd.today{box-shadow:inset 0 0 0 1.5px var(--acc)}
+.pd-h{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline} .pd-h em{font-style:normal;font-size:13px;font-weight:700;margin-left:auto}
+.pd.win .pd-h em{color:var(--ok)} .pd.lose .pd-h em{color:var(--label2)} .pd.na .pd-h em{color:var(--label3)}
+.pd-r{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;font-size:13px;color:var(--label2)} .pd-r li{display:flex;justify-content:space-between;gap:8px}
+.pd-s{display:flex;gap:10px;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:.5px solid var(--sep);font-size:13px} .pd-s span:last-child{color:var(--label2)}
+
+/* 동전 털기 */
+.coin-calc{padding:12px;border-radius:14px;background:var(--fill);margin-bottom:6px} .coin-calc label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-weight:600}
+.coin-calc .fx-row{flex:1;min-width:140px} .coin-out{margin:8px 0 0;font-size:14px}
+.steps.coin{margin-top:8px}
+
+/* 쇼핑: 가게별 면세 */
+.shop-at{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--label2);margin:6px 0 0}
+.shop-at select{font:inherit;font-size:13px;border:none;border-radius:10px;padding:6px 8px;background:var(--fill);color:var(--ink)}
+.tfx-card{margin:0 0 16px} .tfx{display:grid;gap:10px}
+.tfx-r{background:var(--fill);border-radius:14px;padding:10px 12px} .tfx-r p{margin:6px 0 0;font-size:13px;color:var(--label2)}
+.tfx-h{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline} .tfx-h span{margin-left:auto;font-size:13px;color:var(--label2)}
+.tfx-bar{height:8px;border-radius:4px;background:color-mix(in srgb,var(--label3) 50%,transparent);margin-top:8px;overflow:hidden}
+.tfx-bar i{display:block;height:100%;border-radius:4px;background:#ff9f0a;transition:width .4s var(--ease)}
+.tfx-r.ok .tfx-bar i{background:var(--ok)} .tfx-r.ok p{color:var(--ok);font-weight:600}
+.tfx-r.na{opacity:.75}
+@media (prefers-reduced-motion: reduce){.qbanner,.qbanner.urgent em{animation:none}}
+.blocks tr.swapped .fl.alert,.blocks tr.skipped .fl.alert{display:none}
+
 /* 여행 목록: 랜드마크 사진 카드 (trip.json의 landmark) */
 a.trip.lm{position:relative;padding:0;gap:0;overflow:hidden;isolation:isolate}
 a.trip.lm .lm-ph{position:relative;display:block;aspect-ratio:4/3;overflow:hidden;background:var(--pri)}
