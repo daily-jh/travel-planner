@@ -123,6 +123,29 @@ def sheet(did, title, sub, inner):
             f'<div class="sheet-b">{inner}</div></dialog>')
 
 
+def planb_html(d):
+    """플랜 B 팝업: 하루 대안 일정(6칸·장소) + 상황별 짧은 대안."""
+    out = ""
+    pb = d.get("plan_b")
+    if pb:
+        out += f'<div class="pbday"><b class="pb-title">{e(pb["title"])}</b><p class="pb-when">{rich(pb.get("when", ""))}</p><table class="simple"><tbody>'
+        for r in pb["simple"]:
+            cls = "meal" if r["slot"] in ("아침", "점심", "저녁") else ""
+            out += f'<tr class="{cls}"><td class="k">{e(r["slot"])}</td><td class="t">{e(r["time"])}</td><td>{rich(r["text"])}</td></tr>'
+        out += '</tbody></table>'
+        if pb.get("places"):
+            out += '<div class="sub">대안 장소 · 이날 요일에 여는지 확인한 곳</div><ul class="pb-places">'
+            for p in pb["places"]:
+                out += (f'<li><div><b>{e(p["name"])}</b>' + (f' <small>{e(p.get("local", ""))}</small>' if p.get("local") else "")
+                        + f'<p>{rich(p.get("why", ""))}</p><p class="hrs">{rich(p.get("hours", ""))}' + (f' · {rich(p["cost"])}' if p.get("cost") else "")
+                        + f'</p></div><a class="btn" href="{gmap(p.get("query") or p["name"])}" target="_blank" rel="noopener">지도</a></li>')
+            out += '</ul>'
+        out += '</div>'
+    if d.get("alternatives"):
+        out += ('<div class="sub">상황별로 조금만 바꾸기</div>' if pb else "") + '<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b><p>{rich(a["text"])}</p></div>' for a in d["alternatives"]) + '</div>'
+    return out
+
+
 BASE = SITE.get("base_url", "").rstrip("/") + "/"
 MARK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand", "icon.svg"), encoding="utf-8").read().strip()
 
@@ -209,7 +232,8 @@ def render_trip(slug, t):
         for r in d["simple"]:
             cls = "meal" if r["slot"] in ("아침", "점심", "저녁") else ""
             w(f'<tr class="{cls}"><td class="k">{e(r["slot"])}</td><td class="t">{e(r["time"])}</td><td>{rich(r["text"])}</td></tr>')
-        w(f'</tbody></table><button type="button" class="day-go" data-goto="day{i}">{i}일차 자세히 보기</button></details>')
+        w(f'</tbody></table><button type="button" class="day-go" data-goto="day{i}">{i}일차 자세히 보기</button>'
+          + (f'<button type="button" class="day-go pb" data-open="alt-{i}">플랜 B · {e(d["plan_b"]["title"])}</button>' if d.get("plan_b") else "") + '</details>')
     w('</div></section>')
 
     # 2. 한눈에 보기
@@ -217,7 +241,7 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives"))} for d in t["days"]],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
                "timezone": t.get("timezone", "Asia/Tokyo"), "lang": lang(t)["code"]}
@@ -391,9 +415,11 @@ def render_trip(slug, t):
                       '<div class="jr-pics"></div><label class="jr-add">사진 추가<input type="file" accept="image/*" multiple hidden></label></div>')
             blk_dlgs.append(sheet(bid, rich(b["place"]), f'{i}일차 · {e(b["time"])} · {e(b["type"])}', inner))
         w('</tbody></table></div>' + "".join(blk_dlgs))
-        if d.get("alternatives"):
-            w(f'<button type="button" class="gchip ov wide planb" data-open="alt-{i}"><span class="k">플랜 B</span><span class="nm">{e(" · ".join(a["when"] for a in d["alternatives"]))}</span><small>날씨나 컨디션이 안 좋을 때 바꿀 일정</small></button>')
-            w(sheet(f"alt-{i}", "플랜 B", f"{i}일차 · {md(d['date'])}", '<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b><p>{rich(a["text"])}</p></div>' for a in d["alternatives"]) + '</div>'))
+        if d.get("alternatives") or d.get("plan_b"):
+            pb = d.get("plan_b")
+            nm = pb["title"] if pb else " · ".join(a["when"] for a in d["alternatives"])
+            w(f'<button type="button" class="gchip ov wide planb" data-open="alt-{i}"><span class="k">플랜 B</span><span class="nm">{e(nm)}</span><small>{"하루 대안 일정 · 휴무 요일 확인" if pb else "날씨나 컨디션이 안 좋을 때 바꿀 일정"}</small></button>')
+            w(sheet(f"alt-{i}", "플랜 B", f"{i}일차 · {md(d['date'])}", planb_html(d)))
         if d.get("places"):
             w('<div><div class="sub">장소 ' + str(len(d["places"])) + '곳 · 누르면 상세</div><div class="pchips">')
             dlgs = []

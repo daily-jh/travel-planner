@@ -37,7 +37,7 @@ PRIVATE = [
 def closed_days(h):
     """영업시간 글에서 닫는 요일을 뽑는다: '화요일 휴무', '월·화 휴무', '평일 휴무', '토·일만', '주말만 영업'."""
     h = re.sub(r"휴무\s*없음|무휴", "", h).replace("평일", "월화수목금").replace("주말", "토일")
-    m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)(?:요일)?\s*(정기)?\s*휴무", h)
+    m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)(?:요일)?\s*(정기)?\s*휴(?:무|관)", h)
     if m:
         return "".join(c for c in m.group(1) if c in WD)
     m = re.search(r"([월화수목금토일](?:[·,/ ]*[월화수목금토일])*)(?:요일)?\s*만", h)
@@ -119,6 +119,19 @@ def check(folder):
                 err.append(f"{tag}({wd}) '{pl.get('name')}' 은 {off}요일에 닫아요. 다른 날로 옮기거나 대안을 넣어요")
             if not pl.get("hours"):
                 warn.append(f"{tag} '{pl.get('name')}' 영업시간이 비었어요. 모르면 {{확인 필요}}")
+
+        pb = d.get("plan_b")
+        if pb:
+            if [r.get("slot") for r in pb.get("simple", [])] != SLOTS:
+                err.append(f"{tag} plan_b.simple 도 {'·'.join(SLOTS)} 6칸이어야 해요")
+            if not pb.get("title"):
+                err.append(f"{tag} plan_b 에 title 이 필요해요")
+            for pl in pb.get("places", []):
+                off = closed_days(pl.get("hours", ""))
+                if wd and wd in off:
+                    err.append(f"{tag}({wd}) 플랜 B '{pl.get('name')}' 은 {off}요일에 닫아요")
+                if not pl.get("hours"):
+                    warn.append(f"{tag} 플랜 B '{pl.get('name')}' 영업시간이 비었어요. 모르면 {{확인 필요}}")
 
     for c in t.get("closures", []):
         if len(c) != 4 or c[3] not in ("ok", "check"):
