@@ -1,16 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a52aa"/><stop offset=".55" stop-color="#26387a"/><stop offset="1" stop-color="#18224a"/></linearGradient>
-    <linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7ea3"/><stop offset="1" stop-color="#d63f6c"/></linearGradient>
-    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.4" flood-color="#0b1230" flood-opacity=".45"/></filter>
+    <linearGradient id="ib" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d56b0"/><stop offset=".6" stop-color="#25367a"/><stop offset="1" stop-color="#17214a"/></linearGradient>
+    <linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="ip1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f3e8d3"/></linearGradient>
+    <linearGradient id="ip2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#dccdb0"/><stop offset="1" stop-color="#ebdfc8"/></linearGradient>
+    <radialGradient id="ipin" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff9dbb"/><stop offset=".55" stop-color="#ee5583"/><stop offset="1" stop-color="#b8325b"/></radialGradient>
+    <filter id="is" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="2.2" stdDeviation="1.8" flood-color="#070c22" flood-opacity=".55"/></filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <path d="M0 16A16 16 0 0 1 16 0h32a16 16 0 0 1 16 16v8C46 30 18 30 0 22z" fill="url(#gl)"/>
-  <circle cx="10" cy="14" r="1.1" fill="#fff" opacity=".5"/><circle cx="22" cy="9" r=".8" fill="#fff" opacity=".4"/><circle cx="55" cy="44" r="1" fill="#fff" opacity=".35"/>
-  <path d="M15 49 C 24 49 20 36 30 37 S 39 40 42 33" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-dasharray="0.1 6.6" filter="url(#sh)"/>
-  <circle cx="15" cy="49" r="4.6" fill="#ffffff" filter="url(#sh)"/>
-  <g filter="url(#sh)"><path d="M44 8a10 10 0 0 1 10 10c0 7.6-10 16-10 16s-10-8.4-10-16a10 10 0 0 1 10-10z" fill="url(#pin)"/>
-  <circle cx="44" cy="18" r="3.6" fill="#ffffff"/></g>
-  <rect x=".5" y=".5" width="63" height="63" rx="15.5" fill="none" stroke="#fff" stroke-opacity=".12"/>
+  <rect width="64" height="64" rx="16" fill="url(#ib)"/>
+  <path d="M0 16A16 16 0 0 1 16 0h32a16 16 0 0 1 16 16v6C44 28 20 28 0 21z" fill="url(#ig)"/>
+  <g filter="url(#is)">
+    <path d="M10 21 23 17 23 51 10 55z" fill="url(#ip1)"/>
+    <path d="M23 17 37 21 37 55 23 51z" fill="url(#ip2)"/>
+    <path d="M37 21 51 17 51 51 37 55z" fill="url(#ip1)"/>
+  </g>
+  <path d="M14 47c5-1 6-8 11-9s7 4 12 1 5-8 7-10" fill="none" stroke="#2a3b80" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 4.4" class="route"/>
+  <circle cx="14" cy="47" r="2.6" fill="#2a3b80"/>
+  <g class="pin" filter="url(#is)">
+    <path d="M44 9.5a8.5 8.5 0 0 1 8.5 8.5c0 6.3-8.5 13.5-8.5 13.5S35.5 24.3 35.5 18A8.5 8.5 0 0 1 44 9.5z" fill="url(#ipin)"/>
+    <circle cx="44" cy="18" r="3.1" fill="#fff"/>
+    <ellipse cx="40.6" cy="13.6" rx="2.2" ry="1.2" fill="#fff" opacity=".45" transform="rotate(-35 40.6 13.6)"/>
+  </g>
+  <rect x=".5" y=".5" width="63" height="63" rx="15.5" fill="none" stroke="#fff" stroke-opacity=".14"/>
 </svg>

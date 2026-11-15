@@ -105,12 +105,12 @@ def sheet(did, title, sub, inner):
 
 
 BASE = SITE.get("base_url", "").rstrip("/") + "/"
-MARK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand", "mark.svg"), encoding="utf-8").read().strip()
+MARK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand", "icon.svg"), encoding="utf-8").read().strip()
 
 
 def brand(up):
     """로고: 경로 점선 + 핀 심볼과 워드마크. 홈으로 가는 링크."""
-    m = re.sub(r'role="img" aria-label="[^"]*"', 'aria-hidden="true"', MARK)
+    m = MARK.replace("<svg ", '<svg aria-hidden="true" ', 1)
     return f'<a class="brand" href="{up or "./"}" aria-label="{SITE_NAME} 홈">{m}<span>{SITE_NAME}</span></a>'
 
 
@@ -177,9 +177,10 @@ def render_trip(slug, t):
 <h1>{title_html}</h1>
 <p>{rich(t.get("intro", ""))}</p>
 <div class="facts">{"".join(f'<span>{e(k)} <b>{rich(v)}</b></span>' for k, v in t.get("facts", []))}</div>
+<div class="countdown" data-start="{t["start"]}" data-end="{t["end"]}" aria-live="off"><span class="cd-l">출발까지</span><div class="cd-tiles"><span><b data-u="d">--</b><small>일</small></span><span><b data-u="h">--</b><small>시간</small></span><span><b data-u="m">--</b><small>분</small></span></div></div>
 <div class="cta">{"".join(links)}</div>
 </div><canvas class="petals" aria-hidden="true"></canvas><div class="kenjo" aria-hidden="true"></div></header>''')
-    chips = [("simple", "간단 일정"), ("overview", "한눈에")]
+    chips = [("tools", "여행 도구"), ("simple", "간단 일정"), ("overview", "한눈에")]
     chips += [("detail", "날짜별 일정")]
     day_dates = {f"day{i}": d["date"] for i, d in enumerate(t["days"], 1)}
     chips += [("cands", "후보"), ("budget", "비용"), ("before", "출발 전")]
@@ -199,7 +200,9 @@ def render_trip(slug, t):
     # 2. 한눈에 보기
     trav = t.get("travelers", [])
     if trav:
-        cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")}}
+        cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
+               "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"])} for b in d["blocks"]]} for d in t["days"]]}
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -210,6 +213,29 @@ def render_trip(slug, t):
           '<button type="button" class="btn" data-open="picks-all">모아보기</button></div>'
           '<div class="pp-sum"></div></div></section>')
         w(sheet("picks-all", "우리의 픽 모아보기", "둘 다 고른 곳부터 보여요", '<div class="pk-list"></div>'))
+    # 여행 도구 (트리플·완더로그·스티플에서 흔한 기능을 정적 사이트로)
+    cur = t.get("currency") or {}
+    sym = cur.get("symbol", "")
+    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><p class="lead">날씨, 환율, 현지 말, 함께 쓴 돈을 한곳에서 봐요.</p><div class="tools">'
+      '<button type="button" class="tool t-wx" data-open="tool-wx"><span class="ti">☀︎</span><b>날씨</b><small class="wx-mini">' + e((t.get("geo") or {}).get("city", "")) + '</small></button>'
+      '<button type="button" class="tool t-fx" data-open="tool-fx"><span class="ti">' + e(sym or "₩") + '</span><b>환율 계산</b><small class="fx-mini">' + e(f'{sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")}' if cur else "") + '</small></button>'
+      + ('<button type="button" class="tool t-ph" data-open="tool-ph"><span class="ti">あ</span><b>현지 한마디</b><small>누르면 소리로 들려요</small></button>' if t.get("phrases") else '')
+      + '<button type="button" class="tool t-ex" data-open="tool-ex"><span class="ti">÷</span><b>함께 쓴 돈</b><small class="ex-mini">기록하고 나눠요</small></button>'
+      '<a class="tool t-pk" href="#before"><span class="ti">✓</span><b>준비물</b><small class="pk-mini">출발 전 체크</small></a>'
+      '<button type="button" class="tool t-tz" data-open="tool-tz"><span class="ti">◷</span><b>현지 시각</b><small class="tz-mini">' + e(t.get("local_tz_note", "")) + '</small></button>'
+      '</div></section>')
+    w(sheet("tool-wx", "날씨", e((t.get("geo") or {}).get("city", "")) + " · 여행 날짜 기준", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">출발 16일 전부터는 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨를 보여 줘요. 자료: Open-Meteo</p>'))
+    if cur:
+        w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx"><label class="fx-row"><span>{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="{e(cur.get("name", ""))} 금액"></label>'
+              f'<div class="fx-out">₩ <b>-</b></div><div class="fx-quick">' + "".join(f'<button type="button" class="btn" data-fx="{v}">{sym}{v:,}</button>' for v in (500, 1000, 3000, 5000, 10000)) + '</div>'
+              f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
+    if t.get("phrases"):
+        w(sheet("tool-ph", "현지 한마디", "누르면 일본어 발음이 나와요", '<ul class="phr">' + "".join(f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(k)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button></li>' for k, j, r in t["phrases"]) + '</ul>'))
+    w(sheet("tool-ex", "함께 쓴 돈", "이 휴대폰에 저장돼요", '<form class="exf"><input name="what" placeholder="무엇에 썼나요 (예: 라멘)" required>'
+            f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
+            '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}"{" aria-pressed=true" if n == 0 else " aria-pressed=false"}>{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
+            '<button class="btn primary" type="submit">추가</button></form><div class="exsum"></div><ul class="exlist"></ul>'))
+    w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2><span class="num">2</span>한눈에 보기</h2><p class="lead">숙소, 이동, 날짜별 강도·복귀 계획이에요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
     plain1 = lambda x: re.sub(r"\*\*|\{확인 필요\}", "", x)
@@ -355,7 +381,7 @@ def render_trip(slug, t):
         w(f'<section id="before"><h2><span class="num">6</span>출발 전 확인</h2><p class="lead">{rich(bf.get("note", ""))}</p><div class="grid2">')
         for title, items in bf["lists"]:
             w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo">'
-              + "".join(f'<li><span class="box"></span><span>{rich(x)}</span></li>' for x in items) + '</ul></div>')
+              + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"><span class="box"></span><span>{rich(x)}</span></li>' for n, x in enumerate(items)) + '</ul></div>')
         w('</div></section>')
     w('</main>')
     if FEEDBACK:
@@ -368,7 +394,7 @@ def render_trip(slug, t):
              ("우리의 픽", "가고 싶은 곳에 하트를 눌러 저장하면 누가 고른 곳인지" + (f"({names})" if names else "") + " 장소마다 보여요. 나중에 '픽 수정'으로 바꿀 수 있어요."),
              ("캘린더·공유", "'캘린더에 추가'는 아이폰 캘린더에 일정을 넣고, '일행에게 공유'는 이 페이지 링크를 보내요.")]
     w(sheet("welcome", "이렇게 보면 돼요", e(t.get("short", "")) + " 여행 페이지 사용법",
-            '<img class="wl-cover" src="og.png" alt="" width="1200" height="630">'
+            '<div class="fan" aria-hidden="true">' + "".join(f'<div class="fc c-{e(d["color"])}" style="--i:{k - (min(len(t["days"]), 5) - 1) / 2}"><small>{k + 1}일차 · {md(d["date"])}</small><b>{e(d["theme"])}</b><span>{len(d["route"]["stops"])}곳</span></div>' for k, d in enumerate(t["days"][:5])) + '</div>'
             '<ol class="steps">' + "".join(f'<li><b>{e(a)}</b><span>{e(b)}</span></li>' for a, b in steps) + '</ol>'
             '<div class="row"><button type="button" class="btn primary" data-close>시작하기</button></div>').replace('<dialog class="sheet"', f'<dialog class="sheet welcome" data-auto="tp-welcome-{e(slug)}"', 1))
     days_txt = " / ".join(d["theme"] for d in t["days"])
@@ -517,6 +543,7 @@ def main():
         print(f"{slug}: {len(t['days'])}일, 캘린더 {n}건")
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(render_home(trips))
     open(os.path.join(OUT, ".nojekyll"), "w").close()
+    shutil.copy(os.path.join(here, "sw.js"), os.path.join(OUT, "sw.js"))
 
 
 if __name__ == "__main__":

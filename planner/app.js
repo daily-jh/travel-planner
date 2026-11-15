@@ -19,7 +19,7 @@ document.querySelectorAll('.route').forEach(function(card){
 // 여행 목록: D-day, 여행 중, 다녀온 여행
 (function(){
   var today=new Date(); today.setHours(0,0,0,0);
-  document.querySelectorAll('[data-start]').forEach(function(el){
+  document.querySelectorAll('.dday[data-start]').forEach(function(el){
     var s=new Date(el.dataset.start+'T00:00:00'), e=new Date(el.dataset.end+'T00:00:00');
     var d=Math.round((s-today)/864e5);
     if(today>e){el.textContent='다녀온 여행';el.classList.add('past');}
@@ -266,4 +266,133 @@ document.querySelectorAll('.route').forEach(function(card){
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
+})();
+
+// 출발 카운트다운: 남은 일·시간·분 (여행 중이면 n일차, 끝나면 숨김)
+(function(){
+  var el=document.querySelector('.countdown'); if(!el) return;
+  var st=new Date(el.dataset.start+'T00:00:00+09:00'), en=new Date(el.dataset.end+'T23:59:59+09:00');
+  var pad=function(n){return (n<10?'0':'')+n};
+  function tick(){
+    var now=new Date();
+    if(now>en){ el.hidden=true; return; }
+    if(now>=st){ el.querySelector('.cd-l').textContent='여행 중'; var d=Math.floor((now-st)/864e5)+1; el.querySelector('.cd-tiles').innerHTML='<span><b>'+d+'</b><small>일차</small></span>'; return; }
+    var ms=st-now, d=Math.floor(ms/864e5), h=Math.floor(ms%864e5/36e5), m=Math.floor(ms%36e5/6e4);
+    var set=function(u,v){ var b=el.querySelector('[data-u="'+u+'"]'); if(b&&b.textContent!==v){ b.textContent=v; b.classList.remove('flip'); void b.offsetWidth; b.classList.add('flip'); } };
+    set('d',String(d)); set('h',pad(h)); set('m',pad(m));
+  }
+  tick(); setInterval(tick,30000);
+})();
+
+// ---------------------------------------------------------------- 여행 도구
+(function(){
+  var cfgEl=document.getElementById('trip-cfg'); if(!cfgEl) return;
+  var C=JSON.parse(cfgEl.textContent), slug=C.trip;
+  var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+  var fmt=function(n){return Math.round(n).toLocaleString('ko-KR')};
+  var tzNow=function(tz){return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))};
+  var q=new URLSearchParams(location.search).get('now'); // 미리보기: ?now=2027-02-27T13:30
+  var localNow=function(){ return q?new Date(q):tzNow('Asia/Tokyo'); };
+
+  // 환율
+  var cur=C.currency||{}, rate=(cur.fallback_krw_per_100||0)/100, live=false;
+  var fxIn=document.querySelector('.fx-in'), fxOut=document.querySelector('.fx-out b'), fxRate=document.querySelector('.fx-rate'), fxMini=document.querySelector('.fx-mini');
+  function fx(){ if(fxIn&&fxOut) fxOut.textContent=fmt((parseFloat(fxIn.value)||0)*rate); }
+  if(fxIn){ fxIn.addEventListener('input',fx); fx();
+    document.querySelectorAll('[data-fx]').forEach(function(b){ b.addEventListener('click',function(){ fxIn.value=b.dataset.fx; fx(); }); });
+    if(cur.code) fetch('https://open.er-api.com/v6/latest/'+cur.code).then(function(r){return r.json()}).then(function(j){
+      if(j&&j.rates&&j.rates.KRW){ rate=j.rates.KRW; live=true; fx();
+        var t=(j.time_last_update_utc||'').slice(5,16);
+        fxRate.textContent=cur.symbol+'100 ≈ ₩'+fmt(rate*100)+' · '+t+' 기준 환율';
+        if(fxMini) fxMini.textContent=cur.symbol+'100 ≈ ₩'+fmt(rate*100); }
+    }).catch(function(){ fxRate.textContent=cur.symbol+'100 ≈ ₩'+(cur.fallback_krw_per_100||'')+' (기본값, 인터넷 연결 시 실시간으로 바뀌어요)'; });
+  }
+
+  // 날씨: 16일 안이면 예보, 아니면 작년 같은 날짜 실측
+  var wx=document.querySelector('.wx'), wxMini=document.querySelector('.wx-mini');
+  var WMO=function(c){ return c<=1?'맑음':c<=3?'구름':c<=48?'안개':c<=67?'비':c<=77?'눈':c<=82?'소나기':'뇌우'; };
+  function loadWx(){
+    if(!wx||!C.geo||wx.dataset.done) return; wx.dataset.done=1;
+    var st=new Date(C.start), en=new Date(C.end), now=new Date(), days=(st-now)/864e5, url, label;
+    var p='latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia%2FTokyo';
+    if(days<=15){ url='https://api.open-meteo.com/v1/forecast?'+p+'&start_date='+C.start+'&end_date='+C.end; label='예보'; }
+    else { var y=function(s){var d=new Date(s);d.setFullYear(d.getFullYear()-1);return d.toISOString().slice(0,10)}; url='https://archive-api.open-meteo.com/v1/archive?'+p+'&start_date='+y(C.start)+'&end_date='+y(C.end); label='작년 같은 날'; }
+    fetch(url).then(function(r){return r.json()}).then(function(j){
+      var d=j.daily; if(!d) throw 0;
+      var h='<p class="lead" style="margin:0 0 10px">'+label+' 기준이에요.</p><ul class="wxl">';
+      for(var i=0;i<d.time.length;i++){ var dd=new Date(C.start); dd.setDate(dd.getDate()+i);
+        h+='<li><span class="d">'+(i+1)+'일차 '+(dd.getMonth()+1)+'/'+dd.getDate()+'</span><span class="c">'+WMO(d.weather_code[i])+'</span><span class="tmp"><b>'+Math.round(d.temperature_2m_max[i])+'°</b> / '+Math.round(d.temperature_2m_min[i])+'°</span><span class="r">'+(d.precipitation_sum[i]>0.2?'☂ '+d.precipitation_sum[i].toFixed(1)+'mm':'')+'</span></li>'; }
+      wx.innerHTML=h+'</ul>';
+      var mx=Math.max.apply(null,d.temperature_2m_max), mn=Math.min.apply(null,d.temperature_2m_min);
+      if(wxMini) wxMini.textContent=Math.round(mn)+'°~'+Math.round(mx)+'° ('+label+')';
+    }).catch(function(){ wx.innerHTML='<p class="lead">날씨를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; });
+  }
+  loadWx();
+
+  // 현지 한마디: 일본어 음성
+  document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-say]'); if(!b||!window.speechSynthesis) return;
+    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang='ja-JP'; u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    b.classList.remove('said'); void b.offsetWidth; b.classList.add('said'); });
+
+  // 현지 시각
+  var tl=document.querySelector('.tz-local'), th=document.querySelector('.tz-home');
+  function clock(){ var o={hour:'2-digit',minute:'2-digit',hour12:false};
+    if(tl) tl.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:'Asia/Tokyo'},o));
+    if(th) th.textContent=new Date().toLocaleTimeString('ko-KR',Object.assign({timeZone:'Asia/Seoul'},o)); }
+  clock(); setInterval(clock,30000);
+
+  // 함께 쓴 돈
+  var EK='tp-exp-'+slug, ex=LS.get(EK,[]), names=(C.travelers||[]).map(function(x){return x.name});
+  var exf=document.querySelector('.exf'), exl=document.querySelector('.exlist'), exs=document.querySelector('.exsum'), exMini=document.querySelector('.ex-mini');
+  function renderEx(){
+    if(!exl) return; var sym=cur.symbol||'₩', tot=0, paid={}; names.forEach(function(n){paid[n]=0});
+    exl.innerHTML=ex.map(function(x,i){ tot+=x.amt; paid[x.who]=(paid[x.who]||0)+x.amt;
+      return '<li><span class="w">'+x.what.replace(/</g,'&lt;')+'<small>'+x.who+' · '+x.date+'</small></span><b>'+sym+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+i+'" aria-label="삭제">✕</button></li>'; }).reverse().join('');
+    var share=names.length?tot/names.length:0, line='';
+    if(names.length===2&&tot>0){ var a=names[0],b=names[1],d=paid[a]-share;
+      line=Math.abs(d)<1?'딱 반반이에요':(d>0?b+' → '+a:a+' → '+b)+' <b>'+sym+fmt(Math.abs(d))+'</b>'+(rate&&cur.symbol?' (₩'+fmt(Math.abs(d)*rate)+')':''); }
+    exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+sym+fmt(tot)+'</b></div><div><small>1인당</small><b>'+sym+fmt(share)+'</b></div><div class="settle"><small>정산</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
+    if(exMini) exMini.textContent=ex.length?'총 '+sym+fmt(tot):'기록하고 나눠요';
+  }
+  if(exf){
+    exf.addEventListener('click',function(ev){ var b=ev.target.closest('[data-payer]'); if(!b) return; exf.querySelectorAll('[data-payer]').forEach(function(x){x.setAttribute('aria-pressed',x===b)}); });
+    exf.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(exf), who=exf.querySelector('[data-payer][aria-pressed="true"]');
+      var amt=parseFloat(f.get('amt')); if(!amt) return;
+      var d=localNow(); ex.push({what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:names[0],date:(d.getMonth()+1)+'/'+d.getDate()});
+      LS.set(EK,ex); exf.reset(); renderEx(); });
+    exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; ex.splice(+b.dataset.del,1); LS.set(EK,ex); renderEx(); });
+    renderEx();
+  }
+
+  // 준비물 체크 (이 휴대폰에 저장)
+  var CK='tp-ck-'+slug, ck=LS.get(CK,{}), lis=document.querySelectorAll('ul.todo li[data-ck]'), pkMini=document.querySelector('.pk-mini');
+  function renderCk(){ var n=0; lis.forEach(function(li){ var on=!!ck[li.dataset.ck]; li.setAttribute('aria-checked',on); li.classList.toggle('done',on); if(on) n++; });
+    if(pkMini) pkMini.textContent=n+' / '+lis.length+' 완료'; }
+  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); renderCk(); };
+    li.addEventListener('click',t); li.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){e.preventDefault();t();} }); });
+  renderCk();
+
+  // 여행 중 모드: 지금·다음 일정
+  var nc=document.querySelector('.nowcard');
+  function nowMode(){
+    if(!nc) return; var n=localNow(), ds=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+    var di=-1; (C.days||[]).forEach(function(d,i){ if(d.date===ds) di=i; }); if(di<0){ nc.hidden=true; return; }
+    var mins=n.getHours()*60+n.getMinutes(), bl=C.days[di].blocks, ci=-1;
+    var tm=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; };
+    bl.forEach(function(b,i){ var t=tm(b.time); if(t!==null&&t<=mins) ci=i; });
+    var nx=bl.slice(ci+1).findIndex(function(b){return tm(b.time)!==null}); nx=nx<0?-1:ci+1+nx;
+    var row=function(i,lab){ if(i<0) return ''; var b=bl[i]; return '<button type="button" class="nc-row" data-open="blk-'+(di+1)+'-'+(i+1)+'"><small>'+lab+' · '+b.time+'</small><b>'+b.place+'</b><span>'+b.what+'</span></button>'; };
+    var left=nx>=0?tm(bl[nx].time)-mins:null;
+    nc.innerHTML='<div class="nc-h"><span class="live"></span>여행 '+(di+1)+'일차 · 지금'+(left!==null&&left>0?'<em>다음 일정까지 '+(left>=60?Math.floor(left/60)+'시간 ':'')+(left%60)+'분</em>':'')+'</div>'+row(ci,'지금')+row(nx,'다음')+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
+    nc.hidden=false;
+  }
+  nowMode(); setInterval(nowMode,60000);
+})();
+
+// 오프라인: 한 번 열어 본 페이지는 인터넷이 없어도 열린다
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+  var m=document.querySelector('link[rel=manifest]'); if(!m) return;
+  var sw=m.href.replace(/assets\/manifest\.webmanifest$/,'sw.js');
+  window.addEventListener('load',function(){ navigator.serviceWorker.register(sw).catch(function(){}); });
 })();

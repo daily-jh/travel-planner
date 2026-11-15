@@ -42,3 +42,13 @@ create policy "read" on picks for select using (true);
 create policy "add" on picks for insert with check (true);
 create policy "remove" on picks for delete using (true);
 ```
+
+## 여행 도구 (여행 페이지 안)
+
+- **날씨**: `trip.json`의 `geo`(위도·경도)로 Open-Meteo에서 불러와요. 출발 16일 전부터는 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요.
+- **환율 계산**: `currency.code`로 실시간 환율(open.er-api.com)을 불러오고, 안 되면 `fallback_krw_per_100`을 써요.
+- **현지 한마디**: `phrases`의 [한국어, 현지어, 발음]. 누르면 휴대폰이 현지어로 읽어 줘요.
+- **함께 쓴 돈**: 누가 얼마 냈는지 적으면 정산 금액을 계산해요. 지금은 각 휴대폰에만 저장돼요.
+- **준비물 체크**: '출발 전 확인' 항목을 누르면 체크가 저장돼요.
+- **여행 중 모드**: 여행 날짜가 되면 맨 위에 '지금·다음 일정' 카드가 떠요. 미리 보려면 주소 뒤에 `?now=2027-02-27T13:30`.
+- **오프라인**: 한 번 열어 본 페이지는 인터넷이 없어도 열려요.
