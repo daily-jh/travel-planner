@@ -32,7 +32,7 @@ MODE_KO = {"transit": "대중교통", "driving": "차량", "walking": "도보"}
 TYPE_CLS = {"아침": "meal", "점심": "meal", "저녁": "meal", "밤": "cafe", "카페": "cafe",
             "이동": "move", "숙소": "stay", "활동": "act", "쇼핑": "act"}
 STATUS = {"sel": "선정", "alt": "대안", "off": "미배치", "exc": "배제"}
-THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))["themes"]
+THEMES = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json"), encoding="utf-8"))
 
 
 def fonts(themes):

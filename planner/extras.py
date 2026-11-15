@@ -17,7 +17,7 @@ from urllib.parse import quote
 import build as B
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-THEMES = json.load(open(os.path.join(HERE, "themes.json"), encoding="utf-8"))["themes"]
+THEMES = json.load(open(os.path.join(HERE, "themes.json"), encoding="utf-8"))  # {이름: {label, mood, light, dark}}
 
 
 # ---------------------------------------------------------------- 디자인 토큰

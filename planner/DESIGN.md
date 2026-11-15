@@ -15,7 +15,7 @@
 ### 테마 색 (`planner/themes.json`)
 
 여행마다 `trip.json`의 `"theme"`으로 하나를 골라요. 각 테마는 밝은 화면(`light`)과 어두운 화면(`dark`) 값을 따로 가져요.
-`build.py`가 이 파일로 `.theme-<이름>` CSS를 만들어 `assets/style.css` 앞에 붙여요.
+키가 테마 이름이고 값은 `label, mood, light, dark`예요. `build.py`가 이 파일로 `.theme-<이름>` CSS를 만들어 `assets/style.css` 앞에 붙여요.
 
 | 토큰 | 쓰임 |
 |---|---|
