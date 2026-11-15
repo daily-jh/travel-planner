@@ -349,6 +349,20 @@ def shop_images(slug, data):
     return [p["file"] for p in (shop_photo(slug, it) for it in data["items"]) if p]
 
 
+# 면세 계산용 가게 (where 글자로 먼저 고르고, 여행자가 바꿀 수 있다). 위에서부터 먼저 맞는 것
+TF_STORES = [
+    {"id": "donki", "label": "돈키호테", "kw": "돈키호테", "tf": True},
+    {"id": "drug", "label": "드러그스토어", "kw": "드러그|마츠키요|선드럭|코코카라", "tf": True},
+    {"id": "muji", "label": "무인양품", "kw": "무인양품", "tf": True},
+    {"id": "dept", "label": "백화점·역 기념품 매장", "kw": "백화점|하카타역|기념품|아뮤|이와타야|후쿠야|가야노야", "tf": True},
+    {"id": "conv", "label": "편의점·슈퍼", "kw": "편의점|슈퍼|세븐|로손|패밀리|로피아|서니|하로데이|이온", "tf": False,
+     "note": "편의점·슈퍼는 대부분 면세가 안 돼요. 큰 슈퍼는 되는 곳도 있으니 계산대에 'TAX FREE' 표시를 확인해요"},
+    {"id": "airport", "label": "공항 출국장 면세점", "kw": "공항", "tf": False, "note": "출국장 면세점은 처음부터 세금이 빠진 값이라 따로 모을 필요가 없어요"},
+    {"id": "etc", "label": "기타 가게", "kw": "", "tf": True},
+]
+FOOD_CATS = {"후쿠오카 한정 기념품", "마트 식품·조미료", "편의점 먹거리", "과자·디저트"}  # 소비세 8%
+
+
 def shopping_page(slug, t, data):
     e = B.e
     cur = t.get("currency") or {}
@@ -361,10 +375,12 @@ def shopping_page(slug, t, data):
     chips = '<button type="button" data-f="all" aria-pressed="true">전체</button>' + "".join(
         f'<button type="button" data-f="{e(c)}" aria-pressed="false">{e(c)}</button>' for c in cats) + '<button type="button" data-f="mine" aria-pressed="false">담은 것</button>'
     cards = []
+    store_opts = "".join(f'<option value="{s["id"]}">{e(s["label"])}</option>' for s in TF_STORES)
     for n, it in enumerate(items):
         won = f'₩{round(it["price_yen"] * rate / 100) * 100:,}' if rate and it.get("price_yen") else ""
         price = f'¥{it["price_yen"]:,}' if it.get("price_yen") else "참고가"
-        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="{e(it.get("id") or f"s{n}")}" data-yen="{it.get("price_yen") or 0}">
+        food = "1" if it["cat"] in FOOD_CATS else "0"
+        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="{e(it.get("id") or f"s{n}")}" data-yen="{it.get("price_yen") or 0}" data-where="{e(it.get("where", ""))}" data-food="{food}">
 {shop_art(slug, it)}
 <div class="shop-b"><small class="shop-cat">{e(it["cat"])}{(" · " + e(it["brand"])) if it.get("brand") else ""}</small><h3>{e(it["ko"])}</h3>
 <p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>{f'<p class="shop-local"><span>현지인 픽</span> {e(it["local"])}</p>' if it.get("local") else ""}
@@ -373,6 +389,7 @@ def shopping_page(slug, t, data):
 <p class="shop-why">{e(it.get("why", ""))}</p>
 <p class="shop-look"><span>생김새</span> {e(it.get("look", ""))}</p>
 <p class="shop-where"><span>어디서</span> {e(it.get("where", ""))}</p>{shop_credit(slug, it)}
+<label class="shop-at" hidden><span>살 곳</span><select aria-label="살 곳">{store_opts}</select></label>
 <div class="shop-act"><button type="button" class="shop-add" aria-pressed="false">담기</button><a class="shop-buy" href="{e(shop_buy_url(it))}" target="_blank" rel="noopener">아마존재팬에서 보기 ↗</a>{f'<a href="{e(it["url"])}" target="_blank" rel="noopener">상품 정보 ↗</a>' if it.get("url") else ""}<button type="button" class="shop-show" data-big="{e(it.get("ja", ""))}" data-bigko="{e(it["ko"])}">점원에게 보여 주기</button></div>
 </div></article>''')
     notes = "".join(f'<li>{B.rich(x)}</li>' for x in data.get("notes", []))
@@ -384,7 +401,8 @@ def shopping_page(slug, t, data):
 <p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 사진으로 정리했어요. 일본 현지인이 실제로 자주 사는 것은 “현지인 픽”으로 표시했어요. 사진을 누르면 크게 보여요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
-<section class="shop-sum card" aria-live="polite"><div><small>담은 것</small><b class="ss-n">0개</b></div><div><small>합계</small><b class="ss-y">¥0</b><span class="ss-w"></span></div><div class="ss-tf"><small>면세 (2026-11 바뀜)</small><span>세금 포함으로 내고 출국할 때 돌려받아요 · 같은 가게 하루 ¥5,000 이상(세금 제외)</span></div></section>
+<section class="shop-sum card" aria-live="polite"><div><small>담은 것</small><b class="ss-n">0개</b></div><div><small>합계</small><b class="ss-y">¥0</b><span class="ss-w"></span></div><div class="ss-tf"><small>면세 (2026-11 바뀜)</small><span>세금 포함으로 내고 출국할 때 돌려받아요 · 같은 가게 하루 ¥5,000 이상(세금 제외, 일반 상품은 세금 포함 ¥5,500·식품은 ¥5,400쯤)</span></div></section>
+<section class="card tfx-card"><h3>가게별 면세 계산</h3><p class="lead" style="margin:0 0 10px;font-size:13px">담은 물건을 살 곳별로 모았어요. 물건 카드의 ‘살 곳’을 바꾸면 다시 계산해요. 같은 가게에서 <b>같은 날</b> 산 것만 합쳐져요. 여권을 꼭 챙겨요.</p><div class="tfx" aria-live="polite"></div></section>
 <div class="shop-f seg" role="group" aria-label="분류">{chips}</div>
 <section class="shops">{"".join(cards)}</section>
 <section class="card shop-notes"><h3>사기 전에</h3><ul>{notes}</ul><p class="lead" style="font-size:13px;margin:8px 0 0">가격은 {e(srcs)} 기준 일반 판매가(세금 포함)예요. 가게·시기마다 달라요. 사진은 위키미디어 커먼즈의 자유 이용 사진이라 지금 파는 포장과 다를 수 있어요. 사진이 없는 제품은 포장 색과 모양을 단순하게 그렸으니, 아마존재팬에서 보기를 눌러 실제 포장을 확인해요.</p></section>
@@ -392,7 +410,7 @@ def shopping_page(slug, t, data):
 <dialog class="shop-zoom" aria-label="사진 크게 보기"><img alt=""><span>화면을 누르면 닫혀요</span></dialog>
 <dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>
 <footer><div class="wrap">원화는 ¥100 ≈ ₩{cur.get("fallback_krw_per_100", "")}로 어림했어요.</div></footer>
-<script type="application/json" id="shop-cfg">{json.dumps({"trip": slug, "rate": rate}, ensure_ascii=False)}</script>'''
+<script type="application/json" id="shop-cfg">{json.dumps({"trip": slug, "rate": rate, "tf_min": 5000, "stores": TF_STORES}, ensure_ascii=False)}</script>'''
     og = {"title": f'{t.get("short", "")} 쇼핑 리스트', "desc": f"편의점·마트·드러그스토어 {len(items)}가지, 가격과 생김새", "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/shopping/"}
     return B.page(f'{t.get("short", "")} 쇼핑 리스트', body, 3, t.get("theme", "hakata"), og=og).replace("<body class=\"", "<body class=\"shop-page ", 1)
 
@@ -405,7 +423,7 @@ def load_shopping(slug):
 def write_trip_files(od, slug, t):
     open(os.path.join(od, "schedule.csv"), "w", encoding="utf-8", newline="").write(schedule_csv(t))
     open(os.path.join(od, "booklet.html"), "w", encoding="utf-8").write(booklet(slug, t))
-    extra = []
+    extra = [f"trips/{slug}/booklet.html"]  # 오프라인에서도 책자 화면이 열리게 미리 저장
     if t.get("_shopping"):
         os.makedirs(os.path.join(od, "shopping"), exist_ok=True)
         open(os.path.join(od, "shopping", "index.html"), "w", encoding="utf-8").write(shopping_page(slug, t, t["_shopping"]))

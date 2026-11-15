@@ -222,6 +222,10 @@ def render_trip(slug, t):
 <div class="countdown" data-start="{t["start"]}" data-end="{t["end"]}" aria-live="off"><span class="cd-l">출발까지</span><div class="cd-tiles"><span><b data-u="d">--</b><small>일</small></span><span><b data-u="h">--</b><small>시간</small></span><span><b data-u="m">--</b><small>분</small></span></div></div>
 <div class="cta">{"".join(links)}</div>
 </div><canvas class="petals" aria-hidden="true"></canvas><div class="kenjo" aria-hidden="true"></div></header>''')
+    if t.get("stay_ja"):
+        w(live.quickbar(t, lang(t)["taxi"].replace("{stay}", t["stay_ja"]), t["stay"][0][1].split(" (")[0] + "까지 가 주세요"))
+    else:
+        w(live.quickbar(t, "", ""))
     w('<main class="wrap">')
 
     # 1. 간단 일정표
@@ -241,10 +245,11 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)]} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)], "area": b.get("area", ""), "alert": b.get("alert")} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
                "timezone": t.get("timezone", "Asia/Tokyo"), "lang": lang(t)["code"]}
+        cfg.update(live.cfg_extra(t))
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -279,6 +284,8 @@ def render_trip(slug, t):
         ("t-sync", "tool-sync", "⇄", "일행과 맞추기", '<small>픽·지출을 링크로 보내기</small>') if len(trav) > 1 else None,
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>'),
     ]
+    at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
+    tiles[at:at] = live.tiles(t)
     tiles += extras.tiles(t)
     tl = []
     for x in tiles:
@@ -340,6 +347,7 @@ def render_trip(slug, t):
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
     w(extras.sheets(slug, t))
+    w(live.sheets(t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -389,8 +397,9 @@ def render_trip(slug, t):
             for n, s in enumerate(stops, 1):
                 w(f'<li><a href="{gmap(s["query"])}" target="_blank" rel="noopener" data-q="{e(s["query"])}" data-label="{e(s["label"])}"{" class=on" if n == 1 else ""}><i>{n}</i>{e(s["label"])}</a></li>')
             w(f'</ol><div class="row"><a class="btn primary" href="{dirurl(r["mode"], stops)}" target="_blank" rel="noopener">구글 지도에서 경로 보기 ({MODE_KO.get(r["mode"], r["mode"])})</a>'
-              '' + day_fb + '<span class="hint">번호를 누르면 아래 지도가 그 장소로 바뀌어요. 경로 버튼은 구글 지도에서 전체 동선을 열어요.</span></div>'
-              f'<div class="mapbox"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{i}일차 지도" src="{embed(stops[0]["query"])}"></iframe>'
+              '' + day_fb + '<span class="hint">장소를 누르면 구글 지도 앱이 열려요. 아래 지도를 불러온 뒤에는 누른 장소로 지도가 바뀌어요.</span></div>'
+              f'<div class="mapbox idle"><iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{i}일차 지도" data-src="{embed(stops[0]["query"])}"></iframe>'
+              f'<button type="button" class="map-load"><b>지도 불러오기</b><small>데이터를 아끼려고 누를 때만 불러와요 · 위 장소 이름을 누르면 구글 지도 앱이 열려요</small></button>'
               f'<div class="mapcap">지도: <b>{e(stops[0]["label"])}</b></div></div></div>')
         w('<div class="card" style="padding:6px 12px"><table class="blocks"><thead><tr><th>시간</th><th>구분</th><th>장소</th><th>내용</th><th>이동·소요</th><th>비고</th></tr></thead><tbody>')
         pl_ids = {p["name"]: f"pl-{i}-{n}" for n, p in enumerate(d.get("places", []), 1)}
@@ -400,15 +409,15 @@ def render_trip(slug, t):
             pname = plain(b["place"])
             pid = next((v for k, v in pl_ids.items() if k in pname or (pname and pname.split()[0] in k)), "")
             w(f'<tr class="tap" data-open="{bid}" tabindex="0"><td class="time">{e(b["time"])}</td><td class="cat"><span class="tag {TYPE_CLS.get(b["type"], "act")}">{e(b["type"])}</span></td>'
-              f'<td class="place">{rich(b["place"])}{"".join(f"<span class=\'fl {k}\'>{v}</span>" for k, v in flags(b))}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
+              f'<td class="place">{rich(b["place"])}{"".join(f"<span class=\'fl {k}\'>{v}</span>" for k, v in flags(b))}{live.alert_badge(b)}</td><td>{rich(b["what"])}</td><td class="move">{rich(b["move"])}</td><td class="note">{rich(b["note"])}</td></tr>')
             rows = [("할 일", b["what"]), ("이동·소요", b["move"]), ("메모", b["note"])]
-            inner = '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{rich(v)}</dd>" for k, v in rows if plain(v) not in ("", "-")) + "</dl>"
+            inner = live.block_extra(b) + '<dl class="kv">' + "".join(f"<dt>{k}</dt><dd>{rich(v)}</dd>" for k, v in rows if plain(v) not in ("", "-")) + "</dl>"
             btns = []
             if pid:
                 btns.append(f'<button type="button" class="btn primary" data-open="{pid}">장소 상세 보기</button>')
             if pname and pname not in ("미정", "-"):
                 btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">구글 지도</a>')
-            inner += '<div class="row">' + "".join(btns) + "</div>"
+            inner += '<div class="row">' + "".join(btns) + "</div>" + live.plan_ctl(bid, b.get("area"), b["type"])
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
                       '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
                       '<textarea rows="2" placeholder="한 줄 기록 (맛, 분위기, 다음에 또 올지)"></textarea>'
@@ -654,7 +663,8 @@ def main():
         shutil.rmtree(OUT)
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
-    shutil.copy(os.path.join(here, "app.js"), os.path.join(OUT, "assets", "app.js"))
+    open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
@@ -696,6 +706,7 @@ def main():
 
 
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
+import live  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())
