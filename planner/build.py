@@ -391,7 +391,7 @@ def render_trip(slug, t):
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
-               "map": MAP["kind"], "domestic": DOM}
+               "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
