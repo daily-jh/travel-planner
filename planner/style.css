@@ -1130,12 +1130,12 @@ ul.pdays{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 a.trip.lm{position:relative;padding:0 0 16px;gap:4px;overflow:hidden}
 a.trip.lm>.ttl,a.trip.lm>.when,a.trip.lm>.intro{margin:0 18px}
 a.trip.lm>.ttl{position:static;width:auto;height:auto;overflow:visible;clip-path:none;margin-top:12px;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.25;color:var(--ink)}
-a.trip.lm .lm-ph{position:relative;display:block;width:100%;aspect-ratio:8/5;overflow:hidden;background:#a9bfe6}
+a.trip.lm .lm-ph{position:relative;display:block;width:100%;aspect-ratio:8/5;overflow:hidden;background:#fffdf9}
 a.trip.lm .lm-ph img{display:block;width:100%;height:100%;max-width:100%;object-fit:cover;transform-origin:50% 100%;transition:transform .6s var(--ease)}
 a.trip.lm:hover .lm-ph img{transform:scale(1.03)}
 a.trip.lm .lm-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-a.trip.lm .lm-top .dday{margin:0;background:rgba(255,255,255,.88);color:#1c1c1e;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
-a.trip.lm .lm-name{font-size:12px;font-weight:600;color:#fff;background:rgba(20,28,52,.38);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:999px;padding:3px 10px}
+a.trip.lm .lm-top .dday{margin:0;background:rgba(255,255,255,.9);color:#1c1c1e;box-shadow:0 0 0 1px rgba(20,20,20,.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+a.trip.lm .lm-name{font-size:12px;font-weight:600;color:#fff;background:rgba(20,20,20,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:999px;padding:3px 10px}
 @media (prefers-reduced-motion: reduce){a.trip.lm .lm-ph img{transition:none}}
 /* 지도 불러오기 버튼: 회색 채움 위 파란 글자 대비 부족(3.5~4.5:1) → 카드색에 가까운 바탕 */
 .map-load{background:color-mix(in srgb,var(--pri) 6%,var(--card))}
