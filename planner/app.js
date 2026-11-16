@@ -972,3 +972,54 @@ document.querySelectorAll('.route').forEach(function(card){
     setTimeout(function(){ delete sec.dataset.swipe; },400);
   },{passive:true});
 })();
+
+// ---------------------------------------------------------------- 1인 비용 카드: 막대에 마우스를 올리거나(데스크톱) 누르면(휴대폰) 종류별 상세
+(function(){
+  document.querySelectorAll('.bcard').forEach(function(card){
+    var tip=card.querySelector('.btip'), wrap=card.querySelector('.sbars'), cur=null, pinned=false;
+    if(!tip||!wrap) return;
+    var bars=[].slice.call(card.querySelectorAll('.sbar')), rows=[].slice.call(card.querySelectorAll('.bud2 li'));
+    bars.forEach(function(b,i){ var s=b.querySelector('.stk'); if(s) s.style.setProperty('--i',i); });
+    function place(bar){
+      var c=card.getBoundingClientRect(), r=bar.getBoundingClientRect(), t=bar.querySelector('.track').getBoundingClientRect();
+      var w=tip.offsetWidth, h=tip.offsetHeight, left=Math.min(Math.max(t.left-c.left,12),c.width-w-12);
+      var below=r.bottom-c.top+6, above=r.top-c.top-h-6;
+      // 누른 경우(휴대폰)는 다른 막대를 가리지 않게 차트 아래에, 마우스는 막대 바로 아래에
+      if(pinned){ var wr=wrap.getBoundingClientRect(); tip.style.left=Math.min(Math.max(t.left-c.left,12),c.width-w-12)+'px'; tip.style.top=(wr.bottom-c.top+8)+'px'; return; }
+      var room=window.innerHeight-r.bottom-80;
+      tip.style.left=left+'px'; tip.style.top=(h>room&&above>0?above:below)+'px';
+    }
+    function show(bar){
+      if(cur!==bar){ tip.innerHTML=bar.querySelector('template').innerHTML; }
+      cur=bar; bars.forEach(function(x){ x.classList.toggle('on',x===bar); x.setAttribute('aria-expanded',x===bar?'true':'false'); });
+      wrap.classList.add('hl'); tip.hidden=false; place(bar);
+      requestAnimationFrame(function(){ tip.classList.add('on'); });
+    }
+    function hide(){
+      cur=null; pinned=false; wrap.classList.remove('hl'); tip.classList.remove('on');
+      bars.forEach(function(x){ x.classList.remove('on'); x.setAttribute('aria-expanded','false'); });
+      rows.forEach(function(x){ x.classList.remove('flash'); });
+      setTimeout(function(){ if(!cur) tip.hidden=true; },200);
+    }
+    function mark(cat){ tip.querySelectorAll('li').forEach(function(li){ li.classList.toggle('hit',!!cat&&li.dataset.cat===cat); }); }
+    function flash(i){ rows.forEach(function(x){ x.classList.toggle('flash',x.dataset.row===String(i)); }); }
+    bars.forEach(function(bar){
+      bar.addEventListener('pointerenter',function(ev){ if(ev.pointerType==='mouse'&&!pinned){ show(bar); flash(bar.dataset.row); } });
+      bar.addEventListener('pointermove',function(ev){ if(ev.pointerType!=='mouse'||cur!==bar) return; var sg=ev.target.closest('.sg'); mark(sg&&sg.dataset.cat); });
+      bar.addEventListener('focus',function(){ if(!pinned) show(bar); });
+      bar.addEventListener('click',function(ev){ ev.stopPropagation();
+        if(pinned&&cur===bar){ hide(); return; }
+        pinned=true; show(bar); flash(bar.dataset.row); });
+    });
+    wrap.addEventListener('pointerleave',function(ev){ if(ev.pointerType==='mouse'&&!pinned) hide(); });
+    wrap.addEventListener('focusout',function(ev){ if(!pinned&&!wrap.contains(ev.relatedTarget)) hide(); });
+    // 날짜별 구성 줄에 올리면 위 막대도 함께 표시
+    rows.forEach(function(li){
+      li.addEventListener('pointerenter',function(ev){ if(ev.pointerType==='mouse'&&!pinned){ var b=bars[+li.dataset.row]; if(b){ b.classList.add('on'); wrap.classList.add('hl'); } } });
+      li.addEventListener('pointerleave',function(ev){ if(ev.pointerType==='mouse'&&!pinned&&!cur){ bars.forEach(function(x){x.classList.remove('on')}); wrap.classList.remove('hl'); } });
+    });
+    document.addEventListener('click',function(){ if(cur) hide(); });
+    document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'&&cur) hide(); });
+    window.addEventListener('resize',function(){ if(cur) place(cur); });
+  });
+})();
