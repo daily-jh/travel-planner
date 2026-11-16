@@ -757,6 +757,10 @@ footer .wrap{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
 /* 간단 일정: 날짜별로 접고 펴기 */
 details.day>summary.dh{list-style:none;cursor:pointer;position:relative;padding:16px 44px 16px 18px;display:grid;gap:2px;justify-content:start}
 details.day>summary::-webkit-details-marker{display:none}
+/* 두 칸으로 놓일 때 접힌 날이 옆 카드 높이만큼 늘어나 빈 카드처럼 보이지 않게 */
+.days{align-items:start}
+/* 카드가 넘치는 부분을 잘라서 포커스 테두리가 아래 선 하나로만 보이던 것: 카드 안쪽에 그린다 */
+details.day>summary:focus-visible{outline-offset:-3px;border-radius:var(--r-card,16px)}
 details.day>summary::after{content:"";position:absolute;right:20px;top:50%;width:8px;height:8px;margin-top:-6px;border-right:2px solid var(--label3);border-bottom:2px solid var(--label3);transform:rotate(45deg);transition:transform .25s var(--ease)}
 details.day[open]>summary::after{transform:translateY(4px) rotate(-135deg)}
 details.day[open]>summary.dh{padding-bottom:6px}
