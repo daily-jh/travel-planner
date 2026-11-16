@@ -245,6 +245,88 @@ def page(title, body, depth, theme="hakata", font_themes=None, og=None):
             f'<body class="theme-{e(theme)}">\n{body}\n<div class="toast" role="status" aria-live="polite" hidden></div><a class="totop" href="#" aria-label="맨 위로">↑</a>\n<script src="{up}assets/app.js?v={ASSET_V['js']}"></script>\n</body>\n</html>\n')
 
 
+# ---------------------------------------------------------------- 비용 카드
+def won(n):
+    """원화 금액을 '8.3만' 처럼 짧게"""
+    if n >= 10000:
+        v = n / 10000
+        return (f"{v:.1f}".rstrip("0").rstrip(".") if v < 100 else f"{v:,.0f}") + "만"
+    return f"{round(n, -2):,.0f}"
+
+
+def budget_chart(t, b):
+    """1인 비용 카드 하나: 일차별로 종류를 쌓은 막대(올리거나 누르면 상세) → 날짜별 구성 → 종류별 합계·1인당·총 예산.
+    숫자는 모두 costs.breakdown 한 곳에서 나와서 막대·목록·합계가 늘 같다."""
+    u = b.get("unit", "")
+    data = costs.breakdown(t)
+    if not data:
+        return ""
+    top = max(r["hi"] for r in data)
+    step = 10 ** (len(str(int(top))) - 1)
+    step = step // 2 if top / step < 3 else step  # 눈금 3~6개
+    M = -(-top // step) * step
+    rate = (t.get("currency") or {}).get("fallback_krw_per_100") if u != "₩" else None
+    tl, th, cats = costs.totals(t)
+    used = [c[0] for c in cats]
+    color = {c: f"var(--{costs.CATS[c][0]})" if c in costs.CATS else f"var(--viz-{k % 6 + 1})" for k, c in enumerate(used)}
+
+    def rng(a, z):
+        return f"{u}{a:,}" if a == z else f"{u}{a:,}~{z:,}"
+
+    def krw(a, z):
+        if not rate:
+            return ""
+        return f"{won(a * rate / 100)}~{won(z * rate / 100)} 원" if a != z else f"{won(a * rate / 100)} 원"
+
+    def dot(c):
+        return f'<i style="background:{color[c]}"></i>'
+
+    out = ['<div class="card bcard"><div class="bhead"><h3>일차별 1인 비용</h3>'
+           '<p class="cap"><span class="hov">막대에 마우스를 올리면</span><span class="tap">막대를 누르면</span> 무엇에 얼마 쓰는지 보여요.</p></div>'
+           '<div class="sbars">']
+    rows = []
+    for i, r in enumerate(data):
+        mid = (r["lo"] + r["hi"]) / 2
+        segs = "".join(f'<span class="sg" data-cat="{e(s["cat"])}" style="flex-grow:{s["w"]:.0f};background:{color[s["cat"]]}"></span>' for s in r["segs"])
+        aria = ", ".join(f'{s["cat"]} {rng(s["lo"], s["hi"])}' for s in r["segs"])
+        lis = "".join(f'<li data-cat="{e(s["cat"])}">{dot(s["cat"])}<span class="c">{e(s["cat"])}</span>'
+                      f'<em>{rng(s["lo"], s["hi"])}</em><span class="pct">{s["w"] / mid * 100:.0f}%</span>'
+                      + (f'<small>{" · ".join(e(x["place"]) + " " + rng(x["lo"], x["hi"]) for x in s["items"])}</small>'
+                         if s["cat"] not in ("음료·추가 주문", "여유분") else f'<small>{e(s["items"][0]["what"])}</small>')
+                      + '</li>' for s in r["segs"])
+        det = f'<div class="bt-h"><b>{e(r["label"])}</b><span>{rng(r["lo"], r["hi"])}{" · " + krw(r["lo"], r["hi"]) if rate else ""}</span></div><ul>{lis}</ul>'
+        out.append(f'<button type="button" class="sbar" data-row="{i}" aria-label="{e(r["label"])} {rng(r["lo"], r["hi"])}: {e(aria)}">'
+                   f'<span class="lbl">{e(r["label"])}</span><span class="track">'
+                   f'<span class="band" style="left:{r["lo"] / M * 100:.2f}%;width:{max((r["hi"] - r["lo"]) / M * 100, .6):.2f}%"></span>'
+                   f'<span class="stk" style="width:{mid / M * 100:.2f}%">{segs}</span></span>'
+                   f'<span class="val">{rng(r["lo"], r["hi"])}</span><template>{det}</template></button>')
+        orig = b["rows"][i][4] if len(b["rows"][i]) > 4 else ""
+        chips = "".join(f'<span class="bk">{dot(s["cat"])}{e(s["cat"])} {rng(s["lo"], s["hi"])}</span>' for s in r["segs"])
+        rows.append(f'<li data-row="{i}"><b>{e(r["label"])}</b><em>{rng(r["lo"], r["hi"])}</em>'
+                    f'<span class="mini stk" aria-hidden="true">{segs}</span>'
+                    f'<span class="bcs">{chips}</span><span class="pl">{rich(r["text"])}</span>'
+                    f'<small>{krw(r["lo"], r["hi"]) or e(orig)}</small></li>')
+    ticks = range(0, int(M) + 1, int(step))
+    out.append('</div><div class="saxis" aria-hidden="true"><span></span><span class="ticks">'
+               + "".join(f'<span style="left:{k / M * 100:.1f}%">{(f"{k / 1000:g}k" if k >= 1000 else k)}</span>' for k in ticks) + '</span><span></span></div>')
+    out.append('<div class="viz-leg">' + "".join(f'<span>{dot(c)}{e(c)}</span>' for c in used)
+               + '<span><i class="band"></i>예상 범위</span></div>')
+    out.append('<h3 class="bsub">날짜별 구성</h3><ul class="bud bud2">' + "".join(rows) + '</ul>')
+    # 합계: 종류별 + 1인당 + 총 예산
+    n = max(len(t.get("travelers") or []), 1)
+    tw = sum(c[3] for c in cats) or 1
+    out.append('<div class="btot-wrap"><h3 class="bsub">합계</h3>'
+               '<div class="stk all" aria-hidden="true">' + "".join(f'<span class="sg" style="flex-grow:{c[3]:.0f};background:{color[c[0]]}"></span>' for c in cats) + '</div>'
+               '<ul class="bcat">' + "".join(f'<li>{dot(c)}<span>{e(c)}</span><em>{rng(lo, hi)}</em><small>{w / tw * 100:.0f}%</small></li>' for c, lo, hi, w in cats) + '</ul>'
+               '<div class="btot">'
+               f'<div><small>1인당</small><b>{rng(tl, th)}</b><span>{krw(tl, th)}</span></div>'
+               + (f'<div class="all"><small>총 필요 예산 · {n}명</small><b>{rng(tl * n, th * n)}</b><span>{krw(tl * n, th * n)}</span></div>' if n > 1 else '')
+               + '</div></div>')
+    out.append(f'<p class="lead bfoot">{rich(b.get("footnote", ""))}</p>')
+    out.append('<div class="btip" role="tooltip" hidden></div></div>')
+    return "".join(out)
+
+
 # ---------------------------------------------------------------- 여행 상세
 def render_trip(slug, t):
     P = []
@@ -548,24 +630,8 @@ def render_trip(slug, t):
     # 5. 비용
     b = t.get("budget")
     if b:
-        u = b.get("unit", "")
-        M = max(r[3] for r in b["rows"])
-        M = int(-(-M // 4000) * 4000) if M > 4000 else max(M, 1)
-        w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>'
-          f'<div class="card" style="margin-bottom:14px"><h3>일차별 범위</h3><div class="bars">')
-        for lab, _, a, z, _ in b["rows"]:
-            l, wd = a / M * 100, (z - a) / M * 100
-            pos = f"left:{l + wd:.1f}%" if l + wd < 60 else f"right:{100 - l + 1:.1f}%;padding-left:0;padding-right:6px"
-            w(f'<div class="bar"><span class="lbl">{e(lab)}</span><span class="track"><span class="rng" style="left:{l:.1f}%;width:{max(wd, 1):.1f}%"></span>'
-              f'<span class="val" style="{pos}">{u}{a:,}~{z:,}</span></span></div>')
-        ticks = [0, M / 3, M * 2 / 3, M]
-        w('</div><div class="axis" aria-hidden="true"><span></span><span class="ticks">'
-          + "".join(f'<span style="left:{k / M * 100:.1f}%">{int(k):,}</span>' for k in ticks) + '</span></div></div>')
-        w('<div class="card"><h3>날짜별 구성</h3><ul class="bud">')
-        for lab, what, a, z, krw in b["rows"] + ([b["total"]] if b.get("total") else []):
-            tot = b.get("total") and lab == b["total"][0]
-            w(f'<li{" class=tot" if tot else ""}><b>{e(lab)}</b><em>{u}{a:,}~{z:,}</em><span>{rich(what)}</span><small>{e(krw)}</small></li>')
-        w(f'</ul><p class="lead" style="margin:12px 0 0;font-size:13px">{rich(b.get("footnote", ""))}</p></div></section>')
+        w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>')
+        w(budget_chart(t, b) + '</section>')
 
     # 6. 출발 전 확인
     bf = t.get("before")
@@ -794,6 +860,7 @@ def main():
     open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 
 
+import costs  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
 

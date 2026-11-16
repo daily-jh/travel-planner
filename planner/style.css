@@ -1145,3 +1145,69 @@ a.trip.lm .lm-name{font-size:12px;font-weight:600;color:#fff;background:rgba(20,
 .map-load{background:color-mix(in srgb,var(--pri) 6%,var(--card))}
 /* 여행 목록: 사진 카드 옆 일반 카드가 늘어나도 내용은 위로 모음 */
 a.trip{align-content:start}
+
+/* 1인 비용 카드: 종류별로 쌓은 막대 + 날짜별 구성 + 합계 (build.budget_chart) */
+.bcard{position:relative}
+.bhead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px var(--sp-3);margin-bottom:var(--sp-2)}
+.bhead h3{margin:0}
+.bcard .cap{margin:0;font-size:var(--fs-cap);color:var(--label2)}
+.bcard .cap .tap{display:none}
+@media (hover:none){.bcard .cap .tap{display:inline}.bcard .cap .hov{display:none}}
+.sbars{display:grid;gap:6px}
+.sbar{display:grid;grid-template-columns:52px minmax(0,1fr) 96px;gap:10px;align-items:center;width:calc(100% + 12px);padding:4px 6px;margin:0 -6px;box-sizing:border-box;border:0;border-radius:10px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background var(--dur-1)}
+.sbar:hover,.sbar.on{background:var(--fill)}
+.sbar:focus-visible{outline:2px solid var(--pri);outline-offset:1px}
+.sbar .lbl{color:var(--label2);font-size:12.5px;font-family:var(--f-sys);white-space:nowrap}
+.sbar .track{position:relative;height:24px;border-radius:7px;background:var(--fill);overflow:hidden}
+.sbar .band{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--label3) 45%,transparent) 0 2px,transparent 2px 6px);border-left:1.5px solid var(--label3);border-right:1.5px solid var(--label3)}
+.stk{display:flex;gap:2px;height:100%;min-width:0}
+.sbar .stk{position:relative;border-radius:7px;overflow:hidden;transform-origin:left;animation:stk-in var(--dur-3) var(--ease) both;animation-delay:calc(var(--i,0) * 40ms)}
+.stk .sg{min-width:3px;flex-basis:0;transition:opacity var(--dur-1),filter var(--dur-1)}
+.sbar .val{font-family:var(--f-sys);font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap;text-align:right}
+.sbars.hl .sbar:not(.on) .stk{opacity:.45}
+@keyframes stk-in{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.sbar .stk{animation:none}}
+.saxis{display:grid;grid-template-columns:52px minmax(0,1fr) 96px;gap:10px;margin-top:4px;font-family:var(--f-sys);font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums}
+.saxis .ticks{position:relative;height:14px}
+.saxis .ticks span{position:absolute;white-space:nowrap;transform:translateX(-50%)}
+.saxis .ticks span:first-child{transform:none}.saxis .ticks span:last-child{transform:translateX(-100%)}
+.bcard .viz-leg i.band{background:repeating-linear-gradient(135deg,var(--label3) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1px var(--label3)}
+.bsub{margin:var(--sp-5,24px) 0 var(--sp-1);padding-top:var(--sp-4,16px);border-top:.5px solid var(--sep)}
+/* 날짜별 구성 */
+.bud2 li{grid-template-columns:auto 1fr auto;align-items:baseline;border-radius:10px;transition:background var(--dur-2)}
+.bud2 li>b{grid-column:1}.bud2 li>em{grid-column:3;font-style:normal;font-weight:650;font-variant-numeric:tabular-nums}
+.bud2 .mini{grid-column:2;grid-row:1;align-self:center;height:6px;margin:0 4px;border-radius:3px;overflow:hidden;opacity:.9}
+.bud2 .bcs,.bud2 .pl,.bud2 small{grid-column:1/-1}
+.bud2 .bcs{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:2px;font-variant-numeric:tabular-nums}
+.bud2 .bcs .bk{font-size:12.5px;color:var(--ink);grid-column:auto;white-space:nowrap}
+.bud2 .bk i,.bcat i,.btip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
+.bud2 .pl{font-size:var(--fs-foot);color:var(--label2)}
+.bud2 small{font-size:var(--fs-cap);color:var(--label2)}
+.bud2 li.flash{background:color-mix(in srgb,var(--pri) 10%,transparent);box-shadow:-8px 0 0 color-mix(in srgb,var(--pri) 10%,transparent),8px 0 0 color-mix(in srgb,var(--pri) 10%,transparent)}
+/* 합계 */
+.stk.all{height:10px;border-radius:5px;overflow:hidden;margin:var(--sp-2) 0}
+.bcat{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px var(--sp-4)}
+@media (min-width:760px){.bcat{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.bcat li{display:grid;grid-template-columns:auto 1fr auto;gap:0 4px;align-items:baseline;font-size:13px;min-width:0}
+.bcat em{grid-column:2/4;grid-row:2;font-style:normal;font-weight:600;font-variant-numeric:tabular-nums;font-size:12.5px}
+.bcat small{color:var(--label2);font-size:11.5px}
+.btot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2);margin-top:var(--sp-3)}
+.btot>div{background:var(--fill);border-radius:var(--r-md);padding:var(--sp-3);min-width:0}
+.btot>div.all{background:color-mix(in srgb,var(--pri) 12%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pri) 30%,transparent)}
+.btot small{display:block;font-size:var(--fs-cap);color:var(--label2)}
+.btot b{display:block;white-space:nowrap;font-size:clamp(15px,3.9vw,22px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.25;margin:2px 0}
+.btot span{font-size:var(--fs-cap);color:var(--label2)}
+.bfoot{margin:var(--sp-3) 0 0;font-size:13px}
+/* 상세 말풍선 */
+.btip{position:absolute;z-index:5;left:0;width:min(340px,calc(100% - 24px));padding:12px 14px;border-radius:14px;background:var(--card);color:var(--ink);box-shadow:0 12px 32px -8px rgba(0,0,0,.28),0 0 0 .5px var(--sep);font-size:13px;line-height:1.4;opacity:0;transform:translateY(4px);transition:opacity var(--dur-1),transform var(--dur-1);pointer-events:none}
+.btip.on{opacity:1;transform:none}
+.btip .bt-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding-bottom:6px;margin-bottom:6px;border-bottom:.5px solid var(--sep)}
+.btip .bt-h span{font-variant-numeric:tabular-nums;font-weight:600;font-size:12.5px}
+.btip ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.btip li{display:grid;grid-template-columns:auto 1fr auto auto;gap:0 6px;align-items:baseline;border-radius:6px;transition:background var(--dur-1)}
+.btip li.hit{background:var(--fill)}
+.btip li .c{font-weight:600}
+.btip li em{font-style:normal;font-variant-numeric:tabular-nums;font-weight:600}
+.btip li .pct{color:var(--label2);font-size:11.5px;min-width:30px;text-align:right}
+.btip li small{grid-column:2/-1;color:var(--label2);font-size:12px}
+@media (max-width:480px){.sbar{grid-template-columns:40px minmax(0,1fr) 92px;gap:8px}.saxis{grid-template-columns:40px minmax(0,1fr) 92px;gap:8px}.sbar .val{font-size:11.5px;letter-spacing:-.01em}.sbar .lbl{font-size:12px}}

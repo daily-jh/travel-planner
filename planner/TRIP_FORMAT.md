@@ -43,6 +43,7 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `closures` | `[[장소, 휴무, "M/D 요일", "ok"|"check"]]` | 방문 요일 휴무 점검 |
 | `candidates` | `[{"group","name","rating","category","memo","status","reason","query"}]` | 후보·배제 목록. `status`: `sel` 선정, `alt` 대안, `off` 미배치, `exc` 배제. `rating`은 `"4.2(2,873)"`처럼 쓰면 AI 추천이 계산된다 |
 | `budget` | `{"title","unit","note","rows":[[날짜, 내역, 최소, 최대, 원화]],"total":[...],"footnote"}` | 1인 비용. 날짜 줄 수 = 일수 |
+| (비용 구성) | 자동 | 준비 탭 비용 카드의 종류별 막대(식비·카페·간식·체험·입장료·음료·추가 주문·여유분)는 그날 `blocks`의 `type`과 `what`의 가격(¥1,080, ₩12,000, 1.2만 원, `A / B`는 택1, `(+C)`는 선택)에서 `planner/costs.py`가 계산해요. 메뉴 합이 계획 범위보다 크면 범위를 올리고, 남는 몫은 '음료·추가 주문'이 돼요. 종류를 바꾸려면 블록에 `"cost_cat": "간식"`(빼려면 `""`), 직접 적으려면 비용 줄 6번째 칸에 `[{"cat","place","lo","hi"}]` |
 | `before` | `{"note","lists":[[제목, [항목]]]}` | 출발 전 확인 (예약 / 전화·사이트 확인 / 꼭 챙길 것) |
 | `calendar_extra` | `[{"date","start","end","title","location","description","alarm"}]` | 시간표에 없는 캘린더 일정 (투어 집합 등) |
 | `calendar_skip` | `{"YYYY-MM-DD": [구분]}` | 그날 캘린더에서 뺄 시간표 구분 (calendar_extra로 대신할 때) |
