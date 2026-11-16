@@ -229,11 +229,18 @@ document.querySelectorAll('.route').forEach(function(card){
 
   // saved: { 장소이름: [이름, ...] }
   function load(){
-    if(!shared){ try{saved=JSON.parse(lsGet(LS)||'{}')}catch(e){saved={}} return Promise.resolve(); }
+    if(!shared){ try{saved=JSON.parse(lsGet(LS)||'{}')}catch(e){saved={}} seed(); return Promise.resolve(); }
     return fetch(sb.url+'/rest/v1/picks?select=place,person&trip=eq.'+encodeURIComponent(trip),{headers:hdr()})
       .then(function(r){if(!r.ok) throw r; return r.json();})
       .then(function(rows){saved={}; rows.forEach(function(r){(saved[r.place]=saved[r.place]||[]).push(r.person)});})
       .catch(function(){toast('픽을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.')});
+  }
+  // trip.json default_picks: 일정을 짠 사람의 픽을 처음 한 번만 채운다. 그 뒤 지우거나 고친 건 그대로 둔다
+  function seed(){
+    var dp=cfg.default_picks; if(!dp||!dp.picks) return;
+    var SK=LS+'-seed'; if(lsGet(SK)===dp.version) return;
+    Object.keys(dp.picks).forEach(function(n){ if(!tones[n]) return; (dp.picks[n]||[]).forEach(function(p){ var a=saved[p]=saved[p]||[]; if(a.indexOf(n)<0) a.push(n); }); });
+    lsSet(LS,JSON.stringify(saved)); lsSet(SK,dp.version);
   }
   function mine(){var s={}; Object.keys(saved).forEach(function(p){if(saved[p].indexOf(me)>=0) s[p]=1}); return s;}
   function persist(next){
