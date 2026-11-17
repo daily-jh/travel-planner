@@ -35,6 +35,31 @@ def parse(t):
     return sorted(out, key=lambda d: (d["day"], d["at"] or dt.datetime.combine(d["day"], dt.time(0))))
 
 
+def _words(x):
+    return {w for w in re.split(r"[\s·,()/—\-]+", B.plain(x)) if len(w) >= 2 and not re.fullmatch(r"[\d:/~]+", w)}
+
+
+def before_links(t):
+    """출발 전 확인 항목 중 예약 알림과 같은 일을 찾는다 {(목록 제목, 번호): 알림 id}.
+    알림에 before(항목 글 일부)를 쓰면 그걸로, 없으면 겹치는 낱말이 3개 이상인 항목 중 가장 많이 겹치는 것."""
+    lists = (t.get("before") or {}).get("lists") or []
+    out = {}
+    for d in parse(t):
+        raw = next((x for i, x in enumerate(t.get("deadlines") or []) if str(x.get("id") or i + 1) == d["id"]), {})
+        best, score = None, 0
+        for title, items in lists:
+            for n, it in enumerate(items):
+                if raw.get("before"):
+                    sc = 99 if raw["before"] in B.plain(it) else 0
+                else:
+                    sc = len(_words(d["what"]) & _words(it))
+                if sc > score and (title, n) not in out:
+                    best, score = (title, n), sc
+        if best and score >= 3:
+            out[best] = d["id"]
+    return out
+
+
 def _iso(d):
     """브라우저가 바로 읽을 수 있는 시각 (시차 포함). 날짜만이면 그날 0시."""
     try:

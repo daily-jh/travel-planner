@@ -1248,3 +1248,26 @@ a.trip{align-content:start}
 @keyframes dlpop{40%{transform:scale(1.08)}}
 .dlist .dl:nth-child(2){animation-delay:.06s}.dlist .dl:nth-child(3){animation-delay:.12s}.dlist .dl:nth-child(n+4){animation-delay:.16s}
 @media (prefers-reduced-motion: reduce){.dl,.dl.pop .dl-when{animation:none}}
+
+/* 이 여행에서 찾기 · 여행 도구 묶음 (기능 정리 PR) */
+.find-btn{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:color .2s,border-color .2s}
+.find-btn:hover{color:var(--acc);border-color:var(--acc)}
+.find-r{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px;max-height:min(60vh,520px);overflow:auto}
+.find-r button{font:inherit;width:100%;text-align:left;cursor:pointer;display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:2px;align-items:baseline;padding:11px 12px;border:none;border-radius:14px;background:var(--card);color:var(--ink)}
+.find-r button:hover,.find-r button:focus-visible{background:var(--surface)}
+.find-r em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted);grid-row:span 2;min-width:3.2em}
+.find-r b{font-weight:700;min-width:0}
+.find-r small{grid-column:2;color:var(--muted);font-size:12.5px}
+.find-empty{color:var(--muted);font-size:13.5px;padding:8px 2px}
+.tgroups{display:grid;gap:18px}
+.tgrp h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.01em}
+.tg-now{font-style:normal;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--pri);color:var(--on-accent,#fff)}
+.nc-fst{color:inherit;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.dl-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-style:normal;font-size:11px;font-weight:700;vertical-align:1px;background:var(--surface);color:var(--muted);white-space:nowrap}
+.dl-tag[data-st=soon],.dl-tag[data-st=now]{background:var(--pri);color:var(--on-accent)}
+.exlist .w[data-edit]{cursor:pointer}
+.exlist li.editing{outline:2px solid var(--pri);outline-offset:2px;border-radius:12px}
+.ex-editing{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;font-size:13px;color:var(--pri)}
+.ex-editing .btn{padding:4px 12px;font-size:12.5px;min-height:0}
+.dl-tag[hidden]{display:none}
+.ex-editing[hidden]{display:none}
