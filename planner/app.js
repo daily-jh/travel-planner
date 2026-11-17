@@ -461,7 +461,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var day=null, rows=[];
     ex.map(function(x,i){return [x,i]}).reverse().forEach(function(p){ var x=p[0];
       if(x.date!==day){ day=x.date; rows.push('<li class="exday"><span>'+day+'</span><b>'+s0+fmt(byDay[day])+'</b></li>'); }
-      rows.push('<li><span class="w">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+x.who+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
+      rows.push('<li'+(exf&&exf.dataset.edit===x.id?' class="editing"':'')+'><span class="w" role="button" tabindex="0" data-edit="'+x.id+'" aria-label="고치기">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+x.who+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
     exl.innerHTML=rows.join('');
     var share=names.length?tot/names.length:0, line='';
     if(names.length===2&&tot>0){ var a=names[0],b=names[1],d=paid[a]-share;
@@ -477,12 +477,28 @@ document.querySelectorAll('.route').forEach(function(card){
     exf.addEventListener('click',function(ev){ var tfb=ev.target.closest('.exf-tf'); if(tfb) tfb.setAttribute('aria-pressed',tfb.getAttribute('aria-pressed')!=='true');
       var b=ev.target.closest('[data-payer]'); if(b) exf.querySelectorAll('[data-payer]').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
       var c=ev.target.closest('[data-cat]'); if(c) exf.querySelectorAll('[data-cat]').forEach(function(x){x.setAttribute('aria-pressed',x===c)}); });
+    // 기록 고치기: 목록에서 항목을 누르면 위 입력칸에 불러와 '수정'으로 바꾼다. 고친 시각(e)이 늦은 쪽이 '일행과 공유'로 합칠 때 이긴다
+    var exBtn=exf.querySelector('button[type=submit]'), exHint=document.createElement('p'); exHint.className='ex-editing'; exHint.hidden=true;
+    exHint.innerHTML='<span>기록을 고치는 중이에요</span><button type="button" class="btn" data-exc>취소</button>'; exf.appendChild(exHint);
+    function exMode(id){ if(id) exf.dataset.edit=id; else delete exf.dataset.edit; exBtn.textContent=id?'수정':'추가'; exHint.hidden=!id; renderEx(); }
+    exHint.querySelector('[data-exc]').addEventListener('click',function(){ exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); });
+    function exLoad(id){ var x=ex.filter(function(y){return y.id===id})[0]; if(!x) return;
+      exf.querySelector('[name=what]').value=x.what; exf.querySelector('[name=amt]').value=x.amt;
+      exf.querySelectorAll('[data-payer]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.payer===x.who)});
+      exf.querySelectorAll('[data-cat]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.cat===(x.cat||'기타'))});
+      var tfb=exf.querySelector('.exf-tf'); if(tfb) tfb.setAttribute('aria-pressed',!!x.tf);
+      exMode(id); exf.scrollIntoView({block:'nearest'}); exf.querySelector('[name=amt]').focus(); }
+    exl.addEventListener('click',function(ev){ var w=ev.target.closest('[data-edit]'); if(w) exLoad(w.dataset.edit); });
+    exl.addEventListener('keydown',function(ev){ var w=ev.target.closest('[data-edit]'); if(w&&(ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); exLoad(w.dataset.edit); } });
     exf.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(exf), who=exf.querySelector('[data-payer][aria-pressed="true"]'), cat=exf.querySelector('[data-cat][aria-pressed="true"]');
       var amt=parseFloat(f.get('amt')); if(!amt) return;
+      if(exf.dataset.edit){ var y=ex.filter(function(z){return z.id===exf.dataset.edit})[0];
+        if(y){ var tfe=exf.querySelector('.exf-tf'); y.what=String(f.get('what')).slice(0,40); y.amt=amt; y.who=who?who.dataset.payer:y.who; y.cat=cat?cat.dataset.cat:y.cat; y.tf=(tfe&&tfe.getAttribute('aria-pressed')==='true')||undefined; y.e=Date.now(); if(tfe) tfe.setAttribute('aria-pressed','false'); }
+        LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); nowMode(); return; }
       var d=localNow(); var tfb=exf.querySelector('.exf-tf'), tf=tfb&&tfb.getAttribute('aria-pressed')==='true'; if(tfb) tfb.setAttribute('aria-pressed','false');
       ex.push({id:rid(),t:Date.now(),tf:tf||undefined,what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:names[0],cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
       LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); });
-    exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; var gone=ex.splice(+b.dataset.del,1)[0]; if(gone) LS.set(XK,LS.get(XK,[]).concat(gone.id)); LS.set(EK,ex); renderEx(); nowMode(); });
+    exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; var gone=ex.splice(+b.dataset.del,1)[0]; if(gone) LS.set(XK,LS.get(XK,[]).concat(gone.id)); if(gone&&exf.dataset.edit===gone.id){ exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); } LS.set(EK,ex); renderEx(); nowMode(); });
     renderEx();
   }
 
@@ -528,7 +544,13 @@ document.querySelectorAll('.route').forEach(function(card){
   var CK='tp-ck-'+slug, ck=LS.get(CK,{}), lis=document.querySelectorAll('ul.todo li[data-ck]'), pkMini=document.querySelector('.pk-mini');
   function renderCk(){ var n=0; lis.forEach(function(li){ var on=!!ck[li.dataset.ck]; li.setAttribute('aria-checked',on); li.classList.toggle('done',on); if(on) n++; });
     if(pkMini) pkMini.textContent=n+' / '+lis.length+' 완료'; }
-  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); renderCk(); nowMode(); };
+  // 예약 알림과 같은 항목(data-dlid)은 '했어요'와 한 몸: 어느 쪽을 눌러도 둘 다 바뀐다 (planner/deadlines.js)
+  var DLK='tp-dl-'+slug;
+  function dlSet(id,on){ var v=LS.get(DLK,{}); if(on) v[id]=true; else delete v[id]; LS.set(DLK,v); document.dispatchEvent(new CustomEvent('tp-dl')); }
+  (function(){ var v=LS.get(DLK,{}), ch=false; lis.forEach(function(li){ var id=li.dataset.dlid; if(!id) return; var on=!!(ck[li.dataset.ck]||v[id]);
+    if(on!==!!ck[li.dataset.ck]){ ck[li.dataset.ck]=on; ch=true; } if(on&&!v[id]) dlSet(id,true); }); if(ch) LS.set(CK,ck); })();
+  document.addEventListener('tp-dl-set',function(ev){ lis.forEach(function(li){ if(li.dataset.dlid===ev.detail.id){ ck[li.dataset.ck]=ev.detail.on; LS.set(CK,ck); renderCk(); nowMode(); } }); });
+  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); if(li.dataset.dlid) dlSet(li.dataset.dlid,ck[li.dataset.ck]); renderCk(); nowMode(); };
     li.addEventListener('click',t); li.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){e.preventDefault();t();} }); });
   renderCk();
 
@@ -662,8 +684,9 @@ document.querySelectorAll('.route').forEach(function(card){
       Object.keys(p.picks||{}).forEach(function(k){ (p.picks[k]||[]).forEach(function(n){ if(n===me2&&p.from) return; var a=mine[k]=mine[k]||[]; if(a.indexOf(n)<0) a.push(n); }); });
       Object.keys(mine).forEach(function(k){ if(!mine[k].length) delete mine[k]; });
       var tomb=LS.get(XK,[]).concat(p.exdel||[]).filter(function(v,i,a){return a.indexOf(v)===i}), seen={}, all=[];
-      ex.concat(p.ex||[]).forEach(function(x){ if(!x||!x.id||seen[x.id]||tomb.indexOf(x.id)>=0||!(+x.amt>0)) return; seen[x.id]=1;
-        all.push({id:String(x.id),t:+x.t||0,tf:x.tf?true:undefined,what:String(x.what||'').slice(0,40),amt:+x.amt,who:String(x.who||''),cat:String(x.cat||'기타'),date:String(x.date||'')}); });
+      ex.concat(p.ex||[]).forEach(function(x){ if(!x||!x.id||tomb.indexOf(x.id)>=0||!(+x.amt>0)) return;
+        var y={id:String(x.id),t:+x.t||0,e:+x.e||undefined,tf:x.tf?true:undefined,what:String(x.what||'').slice(0,40),amt:+x.amt,who:String(x.who||''),cat:String(x.cat||'기타'),date:String(x.date||'')};
+        if(y.id in seen){ var o=all[seen[y.id]]; if((y.e||y.t)>(o.e||o.t)) all[seen[y.id]]=y; return; } seen[y.id]=all.length; all.push(y); });
       all.sort(function(a,b){return a.t-b.t});
       Object.keys(p.ck||{}).forEach(function(k){ if(p.ck[k]) ck[k]=true; });
       var dl=LS.get('tp-dl-'+slug,{}); Object.keys(p.dl||{}).forEach(function(k){ if(p.dl[k]) dl[k]=true; }); LS.set('tp-dl-'+slug,dl); // 예약 '했어요'

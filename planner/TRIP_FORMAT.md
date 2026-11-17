@@ -41,7 +41,7 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `stay_query` / `stay_ja` | 문자열 | 숙소 지도 검색어 / 택시 카드용 현지어 숙소명 (국내는 `stay_ja` 없음) |
 | `pace` | `{"columns":[날짜,권역,강도,숙소 복귀], "rows":[[...]]}` | 날짜별 권역과 강도(상·중·하) |
 | `reservations` | `{"required":[[언제, 무엇]], "recommended":[...]}` | 필수 예약 / 권장 예약 |
-| `deadlines` | `[{"at":"2026-11-24 20:00","kind":"open"|"due","what","note","url","tz"}]` | 예약 오픈·마감 알림. 첫 화면 '다가오는 예약'과 여행 홈 카드에 남은 시간이 보이고, 캘린더에 하루 전·15분 전 알림으로 들어간다. `at`이 날짜만이면 하루 종일 일정(전날·당일 오전 9시 알림). `tz`를 안 쓰면 한국 시각. 날짜가 확실한 것만 넣는다 |
+| `deadlines` | `[{"at":"2026-11-24 20:00","kind":"open"|"due","what","note","url","tz","before"}]` | 예약 오픈·마감 알림. `before`(선택)에 출발 전 확인 항목 글 일부를 쓰면 그 항목과 체크가 함께 움직인다(안 쓰면 겹치는 낱말 3개 이상인 항목을 찾음). 첫 화면 '다가오는 예약'과 여행 홈 카드에 남은 시간이 보이고, 캘린더에 하루 전·15분 전 알림으로 들어간다. `at`이 날짜만이면 하루 종일 일정(전날·당일 오전 9시 알림). `tz`를 안 쓰면 한국 시각. 날짜가 확실한 것만 넣는다 |
 | `closures` | `[[장소, 휴무, "M/D 요일", "ok"|"check"]]` | 방문 요일 휴무 점검 |
 | `candidates` | `[{"group","name","rating","category","memo","status","reason","query"}]` | 후보·배제 목록. `status`: `sel` 선정, `alt` 대안, `off` 미배치, `exc` 배제. `rating`은 `"4.2(2,873)"`처럼 쓰면 AI 추천이 계산된다 |
 | `budget` | `{"title","unit","note","rows":[[날짜, 내역, 최소, 최대, 원화]],"total":[...],"footnote"}` | 1인 비용. 날짜 줄 수 = 일수 |

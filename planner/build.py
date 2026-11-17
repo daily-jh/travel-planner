@@ -664,9 +664,13 @@ def render_trip(slug, t):
     bf = t.get("before")
     if bf:
         w(f'<section id="before"><h2>출발 전 확인</h2><p class="lead">{rich(bf.get("note", ""))}</p><div class="grid2">')
+        dlk = deadlines.before_links(t)  # 예약 알림과 같은 항목은 '했어요'와 체크가 함께 움직인다
         for title, items in bf["lists"]:
             w(f'<div class="card"><h3>{e(title)}</h3><ul class="todo" role="group" aria-label="{e(title)}">'
-              + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"><span class="box"></span><span>{rich(x)}</span></li>' for n, x in enumerate(items)) + '</ul></div>')
+              + "".join(f'<li tabindex="0" role="checkbox" aria-checked="false" data-ck="{e(title)}-{n}"'
+                        + (f' data-dlid="{e(dlk[(title, n)])}"' if (title, n) in dlk else "")
+                        + f'><span class="box"></span><span>{rich(x)}'
+                        + ('<em class="dl-tag" hidden></em>' if (title, n) in dlk else "") + '</span></li>' for n, x in enumerate(items)) + '</ul></div>')
         w('</div></section>')
     w(extras.export_section(slug, t))
     w('</main>')

@@ -37,14 +37,21 @@
       if(sum) sum.textContent=soon&&soon.st==='now'?'지금 해야 해요':pend>1?'남은 '+pend+'건':!pend&&did?'모두 했어요':'';
       if(dot) dot.classList.toggle('off',!soon||(soon.st!=='soon'&&soon.st!=='now'));
     });
+    // 출발 전 확인의 같은 항목 옆에 남은 시간
+    document.querySelectorAll('ul.todo li[data-dlid]').forEach(function(t){
+      var src=document.querySelector('li.dl[data-id="'+t.dataset.dlid+'"]'), tag=t.querySelector('.dl-tag'); if(!src||!tag) return;
+      var lab=src.querySelector('.dl-left').textContent; tag.hidden=src.classList.contains('done')||!lab; tag.textContent=(src.classList.contains('k-open')?'오픈 ':'마감 ')+lab; tag.dataset.st=src.dataset.st||'';
+    });
     clearTimeout(paint.t); paint.t=setTimeout(paint,fast?1000:30000);
   }
   document.addEventListener('click',function(ev){
     var b=ev.target.closest&&ev.target.closest('.dl-done'); if(!b) return;
     var li=b.closest('li.dl'), k=li.dataset.store, v=get(k); v[li.dataset.id]=!v[li.dataset.id]; if(!v[li.dataset.id]) delete v[li.dataset.id]; put(k,v);
     li.classList.add('pop'); setTimeout(function(){ li.classList.remove('pop'); },450);
+    document.dispatchEvent(new CustomEvent('tp-dl-set',{detail:{id:li.dataset.id,on:!!v[li.dataset.id]}}));
     paint();
   });
+  document.addEventListener('tp-dl',paint);
   document.addEventListener('visibilitychange',function(){ if(!document.hidden) paint(); });
   paint();
 })();

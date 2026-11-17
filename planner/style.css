@@ -1263,3 +1263,11 @@ a.trip{align-content:start}
 .tgrp h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.01em}
 .tg-now{font-style:normal;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--pri);color:var(--on-accent,#fff)}
 .nc-fst{color:inherit;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.dl-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-style:normal;font-size:11px;font-weight:700;vertical-align:1px;background:var(--surface);color:var(--muted);white-space:nowrap}
+.dl-tag[data-st=soon],.dl-tag[data-st=now]{background:var(--pri);color:var(--on-accent)}
+.exlist .w[data-edit]{cursor:pointer}
+.exlist li.editing{outline:2px solid var(--pri);outline-offset:2px;border-radius:12px}
+.ex-editing{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;font-size:13px;color:var(--pri)}
+.ex-editing .btn{padding:4px 12px;font-size:12.5px;min-height:0}
+.dl-tag[hidden]{display:none}
+.ex-editing[hidden]{display:none}
