@@ -141,7 +141,7 @@ def main():
         "stay_query": FILL,
         "transport": [["가는 편", "{확인 필요}"], ["오는 편", "{확인 필요}"], ["공항→시내", FILL]],
         "pace": {"columns": ["날짜", "권역", "강도", "숙소 복귀"], "rows": [[md(d), FILL, FILL, FILL] for d in dates]},
-        "reservations": {"required": [], "recommended": []},
+        "reservations": {"required": [], "recommended": []}, "deadlines": [],
         "closures": [],
         "candidates": [],
         "budget": {"title": "1인 예상 식비·입장료", "unit": CURRENCY[cur][0] if cur else FILL, "note": FILL,

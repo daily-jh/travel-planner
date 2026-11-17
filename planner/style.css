@@ -1211,3 +1211,40 @@ a.trip{align-content:start}
 .btip li .pct{color:var(--label2);font-size:11.5px;min-width:30px;text-align:right}
 .btip li small{grid-column:2/-1;color:var(--label2);font-size:12px}
 @media (max-width:480px){.sbar{grid-template-columns:40px minmax(0,1fr) 92px;gap:8px}.saxis{grid-template-columns:40px minmax(0,1fr) 92px;gap:8px}.sbar .val{font-size:11.5px;letter-spacing:-.01em}.sbar .lbl{font-size:12px}}
+
+/* ---------------------------------------------------------------- 예약 오픈·마감 알림 (planner/deadlines.py·js) */
+[data-dl][hidden]{display:none}
+.dlcard{margin-bottom:16px;padding:6px}
+.dlhome{margin-bottom:8px}
+.dlist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.dlcard .dlist{padding:2px 0 0}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;background:var(--fill);border-radius:14px;padding:12px 14px;animation:rise .5s cubic-bezier(.2,.7,.2,1) both;transition:opacity .3s ease,background-color .3s ease}
+.dlhome .dl{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.dl[hidden]{display:none}
+.dl-when{display:grid;gap:2px;min-width:74px;text-align:center;padding:6px 4px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.dlhome .dl-when{background:var(--fill);border-color:transparent}
+.dl-left{font-family:var(--f-data);font-size:18px;font-weight:700;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dl-when small{font-family:var(--f-data);font-size:11px;color:var(--label2);white-space:nowrap}
+.dl-body{display:grid;gap:2px;min-width:0}
+.dl-k{font-size:12px;font-weight:600;color:var(--label2)}
+.dl.k-open .dl-k{color:var(--blue-ink)}
+.dl.k-due .dl-k{color:var(--acc)}
+.dl-body b{font-size:15.5px;letter-spacing:-.02em;line-height:1.35}
+.dl-body>span{font-size:13.5px;color:var(--label2)}
+.dl-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dl-act a,.dl-done{font:inherit;font-size:12.5px;font-weight:600;border-radius:999px;padding:5px 11px;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:transform .15s ease,background-color .2s ease,color .2s ease}
+.dl-act a:active,.dl-done:active{transform:scale(.95)}
+.dl-done[aria-pressed="true"]{background:color-mix(in srgb,#34c759 16%,transparent);border-color:transparent;color:#248a3d}
+.dl[data-st="soon"] .dl-when{background:color-mix(in srgb,var(--acc) 12%,transparent);border-color:transparent}
+.dl[data-st="soon"] .dl-left{color:var(--acc)}
+.dl[data-st="now"] .dl-when{background:var(--acc);border-color:transparent}
+.dl[data-st="now"] .dl-left,.dl[data-st="now"] .dl-when small{color:var(--on-accent,#fff)}
+.dl[data-st="now"]{box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 50%,transparent)}
+.dl[data-st="gone"]{opacity:.55}
+.dl.done{opacity:.6}
+.dl.done .dl-body b{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ink) 35%,transparent)}
+.dl.done .dl-when{background:transparent}
+.dl.pop .dl-when{animation:dlpop .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes dlpop{40%{transform:scale(1.08)}}
+.dlist .dl:nth-child(2){animation-delay:.06s}.dlist .dl:nth-child(3){animation-delay:.12s}.dlist .dl:nth-child(n+4){animation-delay:.16s}
+@media (prefers-reduced-motion: reduce){.dl,.dl.pop .dl-when{animation:none}}

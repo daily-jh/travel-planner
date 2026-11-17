@@ -8,6 +8,7 @@
 - 남은 뼈대: {채우기} 가 남아 있으면 오류
 - 개인정보: 휴대폰 번호, 이메일, 예약·확인 번호, 여권 번호가 보이면 오류 (공개 저장소라서)
 - 영업 요일: closures 의 방문일 요일이 실제 날짜와 맞는지, 장소 영업시간에 적힌 휴무 요일에 방문하는지
+- 요일 표기: 글 속 'M/D(요일)' 이 실제 달력과 맞는지, deadlines 형식
 - 캘린더: 시각(HH:MM)이 있는 시간표 줄 수. 시각이 없는 줄은 캘린더에 들어가지 않는다
 - 지도: 국내 여행(country 한국)은 네이버 지도. route.stops 의 lat·lng 좌표 형식과 한국 안인지
 """
@@ -165,6 +166,30 @@ def check(folder):
             err.append(f"후보 '{c.get('name')}' status 는 sel·alt·off·exc 중 하나예요")
         if not c.get("group"):
             err.append(f"후보 '{c.get('name')}' 에 group 이 없어요")
+
+    for i, x in enumerate(t.get("deadlines", [])):
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:[ T]\d{1,2}:\d{2})?", str(x.get("at", ""))):
+            err.append(f"deadlines[{i}] at 은 'YYYY-MM-DD HH:MM' 또는 'YYYY-MM-DD' 형식이어야 해요 ('{x.get('at')}')")
+        if x.get("kind") not in ("open", "due"):
+            err.append(f"deadlines[{i}] kind 는 open(예약 오픈)·due(마감) 중 하나예요")
+        if not x.get("what"):
+            err.append(f"deadlines[{i}] 에 what(무엇)이 없어요")
+
+    # 글 속 'M/D(요일)' 이 실제 요일과 맞는지 (여행 1년 전 ~ 마지막 날 사이의 날짜로 본다)
+    d0, d1 = s, z
+    lo, hi = d0 - dt.timedelta(days=365), d1
+    for path, sv in strings(t):
+        for m in re.finditer(r"(?<![\d/])(\d{1,2})/(\d{1,2})\s*\(([월화수목금토일])\)", sv):
+            mo, da = int(m.group(1)), int(m.group(2))
+            for y in sorted({d0.year - 1, d0.year, d1.year}, reverse=True):  # 가까운 날짜부터
+                try:
+                    cand = dt.date(y, mo, da)
+                except ValueError:
+                    continue
+                if lo <= cand <= hi:
+                    if WD[cand.weekday()] != m.group(3):
+                        err.append(f"{path}: '{m.group(0)}' 요일이 틀려요 ({cand:%Y-%m-%d} 은 {WD[cand.weekday()]}요일)")
+                    break
 
     left, chk = [], 0
     for path, sv in strings(t):
