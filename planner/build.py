@@ -179,7 +179,7 @@ TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "
 TOOL_OF = {c: g for g, cs in {
     "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx"],
     "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-coin", "t-tz", "t-sos"],
-    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-alb"],
+    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-alb", "t-cut"],
 }.items() for c in cs}
 
 
@@ -418,6 +418,11 @@ def render_trip(slug, t):
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
+        _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
+        _art = (t.get("landmark") or {}).get("art")
+        cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
+                        "art": os.path.basename(_art) if _art and os.path.isfile(os.path.join(ROOT, "trips", slug, _art)) else "",
+                        "name": t.get("short", t["title"]).replace("*", "")}
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '

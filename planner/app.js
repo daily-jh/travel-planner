@@ -900,6 +900,124 @@ document.querySelectorAll('.route').forEach(function(card){
   document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-alb"]')) load().then(function(p){ photos=p; draw(); }); });
 })();
 
+// ---------------------------------------------------------------- 네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임 (여행지 그림·흰색·검정). 사진은 휴대폰 밖으로 나가지 않음
+(function(){
+  var root=document.querySelector('.cut'), cfgEl=document.getElementById('trip-cfg'); if(!root||!cfgEl) return;
+  var C=JSON.parse(cfgEl.textContent), slug=C.trip, F=C.frame||{}, cv=root.querySelector('canvas'), ctx=cv.getContext('2d');
+  var sel=root.querySelector('select'), note=root.querySelector('.cut-note'), fin=root.querySelector('.cut-in');
+  var frame='trip', lay='strip', stk=true, seed=0, photos=[], slots=[null,null,null,null], rects=[], target=-1, art=null, gen=0;
+  var FONT='-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable","Noto Sans KR",sans-serif';
+  var PRI=F.pri||'#24346b', ACC=F.acc||'#c13d69', YEL='#f2c230', NAME=F.name||document.title.replace(/ 여행$/,'');
+  var md=function(ds){ var p=ds.split('-'), w='일월화수목금토'[new Date(ds+'T12:00:00').getDay()]; return (+p[1])+'.'+(+p[2])+' '+w; };
+  sel.innerHTML='<option value="all">여행 기록 전체</option>'+(C.days||[]).map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'일차 · '+md(d.date)+'</option>'}).join('');
+  if(F.art){ var ai=new Image(); ai.onload=function(){ art=ai; if(root.closest('dialog[open]')) draw(); }; ai.src=F.art; }
+  // 사진관처럼 같은 사진이면 늘 같은 모양이 나오도록 씨앗 있는 난수
+  function rng(s){ return function(){ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
+  function load(){ return new Promise(function(ok){ if(!window.indexedDB) return ok([]); var r=indexedDB.open('tp-photos',1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore('p',{keyPath:'id'}); };
+    r.onsuccess=function(){ try{ var q=r.result.transaction('p','readonly').objectStore('p').getAll(); q.onsuccess=function(){ ok((q.result||[]).filter(function(p){return p.trip===slug})); }; q.onerror=function(){ok([])}; }catch(e){ ok([]); } };
+    r.onerror=function(){ok([])}; }); }
+  function fileImg(b){ return new Promise(function(ok){ var i=new Image(), u=URL.createObjectURL(b); i.onload=function(){ok(i)}; i.onerror=function(){ok(null)}; i.src=u; }); }
+  var cache={};
+  function recImg(p){ return cache[p.id]||(cache[p.id]=fileImg(p.blob)); }
+  function fill(){ // 여행 기록 사진으로 네 칸 채우기 (직접 고른 칸은 그대로)
+    var day=sel.value, ps=photos.filter(function(p){ return day==='all'||p.blk.indexOf('blk-'+day+'-')===0; });
+    if(seed&&ps.length>1){ var r=rng(seed*7919+1); ps=ps.map(function(p){return [r(),p]}).sort(function(a,b){return a[0]-b[0]}).map(function(x){return x[1]}); }
+    var free=[0,1,2,3].filter(function(k){ return !(slots[k]&&slots[k].own); });
+    return Promise.all(ps.slice(0,free.length).map(recImg)).then(function(is){ free.forEach(function(k,n){ slots[k]=is[n]?{img:is[n]}:null; }); });
+  }
+  function cover(i,x,y,w,h,fx,fy){ var k=Math.max(w/i.width,h/i.height), iw=i.width*k, ih=i.height*k;
+    ctx.drawImage(i,x+(w-iw)*(fx==null?.5:fx),y+(h-ih)*(fy==null?.5:fy),iw,ih); }
+  // 떨리는 검정 펜선: 같은 선을 두 번, 조금씩 다르게 긋는다
+  function pen(pts,close,col,lw,r){ ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.lineJoin='round';
+    for(var pass=0;pass<2;pass++){ ctx.globalAlpha=pass?.55:.95; ctx.beginPath(); var all=close?pts.concat([pts[0]]):pts;
+      for(var i=0;i<all.length-1;i++){ var a=all[i], b=all[i+1], n=Math.max(2,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/(lw*9)));
+        for(var s=0;s<=n;s++){ var t=s/n, j=lw*(pass?1.1:.6); var x=a[0]+(b[0]-a[0])*t+(r()-.5)*j, y=a[1]+(b[1]-a[1])*t+(r()-.5)*j; if(i===0&&s===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } }
+      ctx.stroke(); } ctx.restore(); }
+  function box(x,y,w,h,col,lw,r){ var o=lw*.8; pen([[x-o*r(),y-o],[x+w+o,y-o*r()],[x+w+o*r(),y+h+o],[x-o,y+h+o*r()]],true,col,lw,r); }
+  // 색연필 빗금 칠하기
+  function hatch(path,col,lw,bare){ if(!bare){ ctx.save(); path(); ctx.strokeStyle='#fff'; ctx.lineWidth=lw*7; ctx.lineJoin='round'; ctx.stroke(); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore(); } // 스티커처럼 흰 테두리
+    ctx.save(); path(); ctx.clip(); ctx.fillStyle=col; ctx.globalAlpha=.4; ctx.fill(); ctx.globalAlpha=.9; ctx.strokeStyle=col; ctx.lineWidth=lw*.8;
+    var b=ctx.canvas.width; ctx.beginPath(); for(var d=-b;d<b*2;d+=lw*2.6){ ctx.moveTo(d,0); ctx.lineTo(d-b*3,b*3); } ctx.stroke(); ctx.restore(); }
+  // 낙서 스티커: 반짝 선, 하트, 매화 같은 꽃, 별
+  function spark(x,y,s,col,lw,r){ [-.9,-.45,0].forEach(function(a){ var c=Math.cos(a-1.57), d=Math.sin(a-1.57); pen([[x+c*s*.45,y+d*s*.45],[x+c*s,y+d*s]],false,col,lw,r); }); }
+  function heart(x,y,s,col,ink,lw,r){ var P=function(){ ctx.beginPath(); ctx.moveTo(x,y+s*.35); ctx.bezierCurveTo(x-s*.9,y-s*.25,x-s*.35,y-s*.85,x,y-s*.3); ctx.bezierCurveTo(x+s*.35,y-s*.85,x+s*.9,y-s*.25,x,y+s*.35); };
+    hatch(P,col,lw); var pts=[]; for(var k=0;k<=24;k++){ var t=k/24*Math.PI*2, hx=16*Math.pow(Math.sin(t),3), hy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)); pts.push([x+hx*s/30,y+hy*s/30-s*.05]); } pen(pts,true,ink,lw,r); }
+  function flower(x,y,s,col,ink,lw,r){ ctx.save(); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,s*.74+lw*3,0,7); ctx.fill(); ctx.restore(); for(var k=0;k<5;k++){ var a=k/5*Math.PI*2-1.57, px=x+Math.cos(a)*s*.42, py=y+Math.sin(a)*s*.42, rr=s*.32;
+      hatch(function(){ ctx.beginPath(); ctx.arc(px,py,rr,0,7); },col,lw,true); var pts=[]; for(var q=0;q<=14;q++){ var b=q/14*Math.PI*2; pts.push([px+Math.cos(b)*rr,py+Math.sin(b)*rr]); } pen(pts,true,ink,lw*.8,r); }
+    ctx.save(); ctx.fillStyle=YEL; ctx.beginPath(); ctx.arc(x,y,s*.13,0,7); ctx.fill(); ctx.restore(); }
+  function star(x,y,s,col,ink,lw,r){ var pts=[]; for(var k=0;k<10;k++){ var a=k/10*Math.PI*2-1.57, rr=k%2?s*.42:s; pts.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr]); }
+    hatch(function(){ ctx.beginPath(); pts.forEach(function(p,i){ i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }); ctx.closePath(); },col,lw); pen(pts,true,ink,lw,r); }
+  function line(t,x,y,size,weight,col,align,maxW){ ctx.save(); ctx.fillStyle=col; ctx.font=weight+' '+Math.round(size)+'px '+FONT; ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
+    var s=String(t); if(maxW) while(s.length>1&&ctx.measureText(s).width>maxW) s=s.slice(0,-2)+'…'; ctx.fillText(s,x,y); var w=ctx.measureText(s).width; ctx.restore(); return w; }
+  function when(){ var d=sel.value==='all'?null:C.days[+sel.value-1]; if(d) return d.date.replace(/-/g,'.');
+    return C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.'); }
+  function draw(){
+    var my=++gen, strip=lay==='strip', W=strip?900:1200, H=strip?2700:1800; cv.width=W; cv.height=H;
+    var m=48, g=24, sw, sh, r=rng(11+seed);
+    var paper=frame==='black'?'#141414':'#ffffff', ink=frame==='black'?'#f4f1ea':'#1b1b1b', sub=frame==='black'?'rgba(244,241,234,.62)':'rgba(27,27,27,.55)';
+    ctx.fillStyle=paper; ctx.fillRect(0,0,W,H);
+    if(frame==='trip'){ ctx.fillStyle='#fffdf8'; ctx.fillRect(0,0,W,H); }
+    rects=[];
+    if(strip){ sw=W-2*m; sh=520; for(var k=0;k<4;k++) rects.push([m,m+k*(sh+g),sw,sh]); }
+    else { sw=(W-2*m-g)/2; sh=720; for(var k2=0;k2<4;k2++) rects.push([m+(k2%2)*(sw+g),m+Math.floor(k2/2)*(sh+g),sw,sh]); }
+    var lw=W/300;
+    rects.forEach(function(q,k){ var s=slots[k];
+      if(s&&s.img){ ctx.save(); ctx.beginPath(); ctx.rect(q[0],q[1],q[2],q[3]); ctx.clip(); cover(s.img,q[0],q[1],q[2],q[3]); ctx.restore(); }
+      else { ctx.save(); ctx.fillStyle=frame==='black'?'#262626':'#f1efe9'; ctx.fillRect(q[0],q[1],q[2],q[3]); ctx.setLineDash([lw*4,lw*4]); ctx.strokeStyle=sub; ctx.lineWidth=lw; ctx.strokeRect(q[0]+lw*6,q[1]+lw*6,q[2]-lw*12,q[3]-lw*12); ctx.restore();
+        line('+  사진 '+(k+1),q[0]+q[2]/2,q[1]+q[3]/2+W*.016,W*.042,600,sub,'center'); }
+      if(frame==='trip') box(q[0],q[1],q[2],q[3],'#1b1b1b',lw,r);
+    });
+    var top=rects[3][1]+rects[3][3]+g, fh=H-top-m*.6;
+    // 아래 칸: 여행 이름·날짜, 여행지 프레임은 손그림 한 조각
+    if(frame==='trip'){
+      if(art){ var ax=m, ay=top+lw*2, aw=strip?W-2*m:W*.5-m, ah=strip?fh*.6:fh-lw*6;
+        ctx.save(); ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.clip(); cover(art,ax,ay,aw,ah,.45,.62); ctx.restore(); box(ax,ay,aw,ah,'#1b1b1b',lw,r); }
+      var tx=strip?m:W*.5+g, ty=strip?(art?top+fh*.6+fh*.27:top+fh*.45):top+fh*.42, tw=strip?W-2*m:W*.5-m-g;
+      var nw=line(NAME,tx,ty,W*(strip?.075:.06),800,'#1b1b1b','left',tw);
+      pen([[tx,ty+W*.018],[tx+nw*.55,ty+W*.024],[tx+nw+W*.02,ty+W*.014]],false,ACC,lw*2.2,r);
+      line(when(),strip?W-m:tx,strip?ty:ty+W*.075,W*(strip?.036:.03),600,PRI,strip?'right':'left');
+    } else {
+      var cy=top+fh*(strip?.48:.5);
+      line(NAME,W/2,cy,W*(strip?.075:.055),800,ink,'center',W-2*m);
+      line(when(),W/2,cy+W*(strip?.09:.07),W*(strip?.036:.028),600,sub,'center');
+      pen([[W/2-W*.08,cy+W*.03],[W/2+W*.08,cy+W*.034]],false,ink,lw*1.4,r);
+    }
+    if(stk){ var sc=W*(strip?.075:.06), sink=frame==='black'?'#f4f1ea':'#1b1b1b', q0=rects[0], q1=rects[1], q2=rects[2], q3=rects[3];
+      spark(q0[0]+q0[2]-sc*.4,q0[1]+sc*1.1,sc*1.1,frame==='black'?YEL:'#1b1b1b',lw,r);
+      heart(q1[0]+sc*.9,q1[1]+q1[3]-sc*.5,sc,ACC,sink,lw,r);
+      flower(q2[0]+q2[2]-sc*.9,q2[1]+sc*.9,sc*.9,frame==='trip'?ACC:'#f39ab5',sink,lw,r);
+      star(q3[0]+sc*.9,q3[1]+q3[3]-sc*.85,sc*.7,YEL,sink,lw,r);
+      if(frame==='trip'){ spark(W-m-sc*.2,top+(strip?fh*.62:fh*.25),sc*.9,YEL,lw,r); }
+    }
+    var n=slots.filter(function(s){return s&&s.img}).length;
+    note.textContent=n===4?'칸을 누르면 그 칸 사진만 바꿀 수 있어요.':(photos.length||n?'사진 '+n+'장을 담았어요. 빈 칸을 누르거나 \'앨범에서 고르기\'로 채워요.':'빈 칸을 누르거나 \'앨범에서 고르기\'로 사진을 넣어요. 여행 기록에 넣은 사진은 자동으로 담겨요.');
+  }
+  function blob(){ return new Promise(function(ok){ cv.toBlob(ok,'image/jpeg',.94); }); }
+  var name=function(){ return slug+'-네컷-'+({trip:'여행지',white:'흰색',black:'검정'})[frame]+'.jpg'; };
+  function press(sel1,b){ root.querySelectorAll(sel1).forEach(function(x){ x.setAttribute('aria-pressed',x===b); }); }
+  root.addEventListener('click',function(ev){
+    var f=ev.target.closest('[data-frame]'); if(f){ frame=f.dataset.frame; press('[data-frame]',f); draw(); return; }
+    var l=ev.target.closest('[data-lay]'); if(l){ lay=l.dataset.lay; press('[data-lay]',l); draw(); return; }
+    var s=ev.target.closest('[data-stk]'); if(s){ stk=!stk; s.setAttribute('aria-pressed',stk); draw(); return; }
+    if(ev.target===cv){ var b=cv.getBoundingClientRect(), x=(ev.clientX-b.left)*cv.width/b.width, y=(ev.clientY-b.top)*cv.height/b.height;
+      rects.forEach(function(q,k){ if(x>=q[0]&&x<=q[0]+q[2]&&y>=q[1]&&y<=q[1]+q[3]) target=k; }); if(target>=0){ fin.multiple=false; fin.click(); } return; }
+    var a=ev.target.closest('[data-cut]'); if(!a) return;
+    if(a.dataset.cut==='pick'){ target=-1; fin.multiple=true; fin.click(); return; }
+    if(a.dataset.cut==='shuffle'){ seed++; slots=slots.map(function(x){ return x&&x.own?x:null; }); fill().then(draw); return; }
+    blob().then(function(bb){ if(!bb) return; var file=new File([bb],name(),{type:'image/jpeg'});
+      if(a.dataset.cut==='share'&&navigator.canShare&&navigator.canShare({files:[file]})) return navigator.share({files:[file],title:NAME+' 네컷'}).catch(function(){});
+      var u=URL.createObjectURL(bb), k=document.createElement('a'); k.href=u; k.download=name(); document.body.appendChild(k); k.click(); k.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000); });
+  });
+  fin.addEventListener('change',function(){ var fs=[].slice.call(fin.files||[]); fin.value=''; if(!fs.length) return;
+    Promise.all(fs.slice(0,4).map(fileImg)).then(function(is){ is=is.filter(Boolean);
+      if(target>=0){ if(is[0]) slots[target]={img:is[0],own:true}; }
+      else { var k=0; is.forEach(function(i){ while(k<4&&slots[k]&&slots[k].own&&is.length<4) k++; if(k<4) slots[k++]={img:i,own:true}; }); }
+      target=-1; draw(); }); });
+  sel.addEventListener('change',function(){ slots=slots.map(function(x){ return x&&x.own?x:null; }); fill().then(draw); });
+  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-cut"]')){ draw(); load().then(function(p){ photos=p; return fill(); }).then(draw); } });
+})();
+
 // ---------------------------------------------------------------- 쇼핑 리스트: 분류 걸러 보기, 담기·합계 (이 휴대폰에 저장)
 (function(){
   var cfgEl=document.getElementById('shop-cfg'); if(!cfgEl) return;
