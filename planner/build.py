@@ -34,7 +34,7 @@ def asset_ver(*paths):
 
 _P = os.path.dirname(os.path.abspath(__file__))
 ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js")))}
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -447,7 +447,7 @@ def render_trip(slug, t):
             tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         else:
             tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
-    w('<section id="tools" class="tools-sec"><div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tools">' + "".join(tl) + '</div></section>')
+    w('<section id="tools" class="tools-sec">' + deadlines.trip_card(slug, t) + '<div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tools">' + "".join(tl) + '</div></section>')
     w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행 날짜는 출발 16일 전부터 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요. 자료: Open-Meteo</p>'))
     if cur:
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
@@ -760,14 +760,18 @@ def render_ics(slug, t):
     cal = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//travel-planner//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
            "X-WR-CALNAME:" + ics_escape(t.get("short", t["title"]) + " 여행"), "X-WR-TIMEZONE:" + tz]
     cal += vtimezone(tz, d_of(t["start"]))
-    cal += ev + ["END:VCALENDAR"]
-    return "\r\n".join(ics_fold(x) for x in cal) + "\r\n", ev.count("BEGIN:VEVENT")
+    dl, dtz = deadlines.ics_events(slug, t)  # 예약 오픈·마감 (한국 시각이 많아 시간대를 따로 넣는다)
+    for z in dtz:
+        if z != tz:
+            cal += vtimezone(z, d_of(t["start"]))
+    cal += ev + dl + ["END:VCALENDAR"]
+    return "\r\n".join(ics_fold(x) for x in cal) + "\r\n", (ev + dl).count("BEGIN:VEVENT")
 
 
 # ---------------------------------------------------------------- 여행 목록
 def render_home(trips):
     cards = []
-    for slug, t in sorted(trips, key=lambda x: x[1]["start"], reverse=True):
+    for slug, t in sorted(trips, key=lambda x: x[1]["start"]):  # 다녀온 여행은 deadlines.js 가 맨 아래로 옮긴다
         s, z = d_of(t["start"]), d_of(t["end"])
         n = (z - s).days
         color = t["days"][0]["color"] if t.get("days") else "hakata"
@@ -801,6 +805,7 @@ def render_home(trips):
 <div class="cta"><button class="btn share" type="button" data-title="{SITE_NAME}">일행에게 공유</button></div>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
+{deadlines.home_section(trips)}
 <section><h2>여행 {len(trips)}개</h2><p class="lead">가까운 여행부터 보여요.</p><div class="trips">{"".join(cards)}</div></section>
 <section class="howto"><button type="button" class="gchip ov wide" data-open="howto"><span class="k">관리자용</span><span class="nm">새 여행 추가하는 방법</span><small>여행 파일을 하나 만들면 이 목록과 캘린더가 자동으로 바뀌어요</small></button></section>
 </main>
@@ -816,7 +821,7 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
@@ -844,6 +849,8 @@ def main():
             shutil.copy(os.path.join(tdir, slug, lmi), os.path.join(od, os.path.basename(lmi)))
         ics, n = render_ics(slug, t)
         open(os.path.join(od, "calendar.ics"), "w", encoding="utf-8", newline="").write(ics)
+        for fn, body in deadlines.remind_files(slug, t).items():
+            open(os.path.join(od, fn), "w", encoding="utf-8", newline="").write(body)
         extra_pre += extras.write_trip_files(od, slug, t)
         print(f"{slug}: {len(t['days'])}일, 캘린더 {n}건")
     open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(render_home(trips))
@@ -861,6 +868,7 @@ def main():
 
 
 import costs  # noqa: E402
+import deadlines  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
 
