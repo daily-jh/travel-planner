@@ -64,15 +64,16 @@ def sheets(slug, t):
 
 def cut_sheet():
     """네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임. 여행지 그림·흰색·검정 프레임 (그림은 app.js 가 canvas 로)."""
-    return B.sheet("tool-cut", "네컷 사진", "사진 네 장을 스티커 사진 프레임에 담아요", '''<div class="cut">
+    return B.sheet("tool-cut", "네컷 사진", "칸을 고르고 사진을 골라 넣어요", '''<div class="cut">
 <div class="seg cut-frame" role="group" aria-label="프레임"><button type="button" data-frame="trip" aria-pressed="true">여행지</button><button type="button" data-frame="theme" aria-pressed="false">테마</button><button type="button" data-frame="pastel" aria-pressed="false">파스텔</button><button type="button" data-frame="white" aria-pressed="false">흰색</button><button type="button" data-frame="black" aria-pressed="false">검정</button></div>
 <div class="cut-opts"><div class="seg cut-lay" role="group" aria-label="모양"><button type="button" data-lay="strip" aria-pressed="true">세로 네컷</button><button type="button" data-lay="grid" aria-pressed="false">2×2</button></div>
 <button type="button" class="cut-stk" data-stk aria-pressed="true">낙서 스티커</button></div>
-<label class="alb-day"><span>사진</span><select aria-label="어느 날 사진"></select></label>
-<div class="cut-stage"><canvas width="900" height="2700" aria-label="네컷 사진 미리보기. 칸을 누르면 그 칸 사진을 바꿔요"></canvas></div>
+<div class="cut-stage" data-noswipe><canvas width="900" height="2700" aria-label="네컷 사진 미리보기. 칸을 눌러 고르고, 사진을 끌어 위치를 맞춰요"></canvas></div>
+<div class="cut-bar" hidden><span class="cut-n"></span><button type="button" data-slot="outz" aria-label="작게">−</button><button type="button" data-slot="in" aria-label="크게">+</button><button type="button" data-slot="fit">맞춤</button><button type="button" data-slot="up" aria-label="앞 칸과 자리 바꾸기">↑</button><button type="button" data-slot="down" aria-label="뒤 칸과 자리 바꾸기">↓</button><button type="button" data-slot="clear">비우기</button></div>
 <p class="alb-note lead cut-note"></p>
+<div class="cut-tray" data-noswipe aria-label="넣을 사진"></div>
 <input type="file" accept="image/*" multiple hidden class="cut-in">
-<div class="row"><button type="button" class="btn primary" data-cut="save">이미지 저장</button><button type="button" class="btn" data-cut="share">공유</button><button type="button" class="btn" data-cut="pick">앨범에서 고르기</button><button type="button" class="btn" data-cut="shuffle">사진 섞기</button></div>
+<div class="row"><button type="button" class="btn primary" data-cut="save">이미지 저장</button><button type="button" class="btn" data-cut="share">공유</button><button type="button" class="btn" data-cut="auto">빈 칸 채우기</button></div>
 </div>''')
 
 

@@ -900,33 +900,35 @@ document.querySelectorAll('.route').forEach(function(card){
   document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-alb"]')) load().then(function(p){ photos=p; draw(); }); });
 })();
 
-// ---------------------------------------------------------------- 네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임 (여행지 그림·흰색·검정). 사진은 휴대폰 밖으로 나가지 않음
+// ---------------------------------------------------------------- 네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임. 칸은 비워 두고, 아래 사진 목록에서 골라 넣고, 끌어서 위치·핀치로 크기를 맞춘다. 사진은 휴대폰 밖으로 나가지 않음
 (function(){
   var root=document.querySelector('.cut'), cfgEl=document.getElementById('trip-cfg'); if(!root||!cfgEl) return;
   var C=JSON.parse(cfgEl.textContent), slug=C.trip, F=C.frame||{}, cv=root.querySelector('canvas'), ctx=cv.getContext('2d');
-  var sel=root.querySelector('select'), note=root.querySelector('.cut-note'), fin=root.querySelector('.cut-in');
-  var frame='trip', lay='strip', stk=true, seed=0, photos=[], slots=[null,null,null,null], rects=[], target=-1, art=null, gen=0;
+  var note=root.querySelector('.cut-note'), fin=root.querySelector('.cut-in'), tray=root.querySelector('.cut-tray'), bar=root.querySelector('.cut-bar');
+  var frame='trip', lay='strip', stk=true, seed=0, pool=[], slots=[null,null,null,null], rects=[], cur=0, art=null, gen=0, exporting=false, loaded=false;
   var FONT='-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable","Noto Sans KR",sans-serif';
   var PRI=F.pri||'#24346b', ACC=F.acc||'#c13d69', YEL='#f2c230', NAME=F.name||document.title.replace(/ 여행$/,'');
-  var md=function(ds){ var p=ds.split('-'), w='일월화수목금토'[new Date(ds+'T12:00:00').getDay()]; return (+p[1])+'.'+(+p[2])+' '+w; };
-  sel.innerHTML='<option value="all">여행 기록 전체</option>'+(C.days||[]).map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'일차 · '+md(d.date)+'</option>'}).join('');
   if(F.art){ var ai=new Image(); ai.onload=function(){ art=ai; if(root.closest('dialog[open]')) draw(); }; ai.src=F.art; }
-  // 사진관처럼 같은 사진이면 늘 같은 모양이 나오도록 씨앗 있는 난수
   function rng(s){ return function(){ s=(s*16807)%2147483647; return (s-1)/2147483646; }; }
   function load(){ return new Promise(function(ok){ if(!window.indexedDB) return ok([]); var r=indexedDB.open('tp-photos',1);
     r.onupgradeneeded=function(){ r.result.createObjectStore('p',{keyPath:'id'}); };
     r.onsuccess=function(){ try{ var q=r.result.transaction('p','readonly').objectStore('p').getAll(); q.onsuccess=function(){ ok((q.result||[]).filter(function(p){return p.trip===slug})); }; q.onerror=function(){ok([])}; }catch(e){ ok([]); } };
     r.onerror=function(){ok([])}; }); }
-  function fileImg(b){ return new Promise(function(ok){ var i=new Image(), u=URL.createObjectURL(b); i.onload=function(){ok(i)}; i.onerror=function(){ok(null)}; i.src=u; }); }
-  var cache={};
-  function recImg(p){ return cache[p.id]||(cache[p.id]=fileImg(p.blob)); }
-  function fill(){ // 여행 기록 사진으로 네 칸 채우기 (직접 고른 칸은 그대로)
-    var day=sel.value, ps=photos.filter(function(p){ return day==='all'||p.blk.indexOf('blk-'+day+'-')===0; });
-    if(seed&&ps.length>1){ var r=rng(seed*7919+1); ps=ps.map(function(p){return [r(),p]}).sort(function(a,b){return a[0]-b[0]}).map(function(x){return x[1]}); }
-    var free=[0,1,2,3].filter(function(k){ return !(slots[k]&&slots[k].own); });
-    return Promise.all(ps.slice(0,free.length).map(recImg)).then(function(is){ free.forEach(function(k,n){ slots[k]=is[n]?{img:is[n]}:null; }); });
+  function fileImg(b){ return new Promise(function(ok){ var i=new Image(), u=URL.createObjectURL(b); i.onload=function(){ok({img:i,url:u})}; i.onerror=function(){ok(null)}; i.src=u; }); }
+  // 사진 목록(인생네컷의 '찍은 사진들'): 여행 기록 사진 + 앨범에서 고른 사진. 칸에는 직접 골라 넣는다
+  function addPool(list){ list.filter(Boolean).forEach(function(p){ pool.push(p); }); paintTray(); }
+  function used(p){ return slots.some(function(s){ return s&&s.p===p; }); }
+  function paintTray(){
+    tray.innerHTML='<button type="button" class="cut-add" data-cut="pick"><b>+</b><span>사진 추가</span></button>'+pool.map(function(p,i){
+      return '<button type="button" class="cut-th'+(used(p)?' on':'')+'" data-pool="'+i+'" aria-label="사진 '+(i+1)+(used(p)?', 칸에 들어감':'')+'"><img src="'+p.url+'" alt=""></button>'; }).join('');
   }
-  function cover(i,x,y,w,h,fx,fy){ var k=Math.max(w/i.width,h/i.height), iw=i.width*k, ih=i.height*k;
+  function put(p,k){ // 같은 사진이 다른 칸에 있으면 자리를 맞바꾼다
+    var was=slots.map(function(s){return s&&s.p}).indexOf(p);
+    if(was>=0&&was!==k){ var t=slots[k]; slots[k]=slots[was]; slots[was]=t; }
+    else if(was<0) slots[k]={p:p,img:p.img,fx:.5,fy:.5,z:1};
+    var nx=[0,1,2,3].map(function(d){return (k+1+d)%4}).filter(function(j){return !slots[j]})[0]; cur=nx==null?k:nx;
+    paintTray(); draw(); }
+  function cover(i,x,y,w,h,fx,fy,z){ var k=Math.max(w/i.width,h/i.height)*(z||1), iw=i.width*k, ih=i.height*k;
     ctx.drawImage(i,x+(w-iw)*(fx==null?.5:fx),y+(h-ih)*(fy==null?.5:fy),iw,ih); }
   // 떨리는 검정 펜선: 같은 선을 두 번, 조금씩 다르게 긋는다
   function pen(pts,close,col,lw,r){ ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.lineJoin='round';
@@ -950,8 +952,7 @@ document.querySelectorAll('.route').forEach(function(card){
     hatch(function(){ ctx.beginPath(); pts.forEach(function(p,i){ i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }); ctx.closePath(); },col,lw); pen(pts,true,ink,lw,r); }
   function line(t,x,y,size,weight,col,align,maxW){ ctx.save(); ctx.fillStyle=col; ctx.font=weight+' '+Math.round(size)+'px '+FONT; ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
     var s=String(t); if(maxW) while(s.length>1&&ctx.measureText(s).width>maxW) s=s.slice(0,-2)+'…'; ctx.fillText(s,x,y); var w=ctx.measureText(s).width; ctx.restore(); return w; }
-  function when(){ var d=sel.value==='all'?null:C.days[+sel.value-1]; if(d) return d.date.replace(/-/g,'.')+' · '+(+sel.value)+'일차';
-    var n=Math.round((new Date(C.end)-new Date(C.start))/864e5); return C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.')+' · '+n+'박 '+(n+1)+'일'; }
+  function when(){ var n=Math.round((new Date(C.end)-new Date(C.start))/864e5); return C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.')+' · '+n+'박 '+(n+1)+'일'; }
   // 프레임: 사이트 디자인 토큰(테마 색·시스템 글꼴·둥근 모서리)을 그대로 쓴다. 여행지만 손그림 펜선
   var FR={
     trip:{bg:'#fffdf8',ink:'#1b1b1b',sub:PRI,empty:'#f1efe9',r:0,pen:true},
@@ -975,9 +976,9 @@ document.querySelectorAll('.route').forEach(function(card){
     rects=[]; for(var k=0;k<4;k++) rects.push(strip?[m,m+k*(sh+g),sw,sh]:[m+(k%2)*(sw+g),m+Math.floor(k/2)*(sh+g),sw,sh]);
     var rad=W*f.r;
     rects.forEach(function(q,k){ var s=slots[k];
-      if(s&&s.img){ ctx.save(); rr(q[0],q[1],q[2],q[3],rad); ctx.clip(); cover(s.img,q[0],q[1],q[2],q[3]); ctx.restore(); }
-      else { ctx.save(); ctx.fillStyle=f.empty; rr(q[0],q[1],q[2],q[3],rad); ctx.fill(); ctx.setLineDash([lw*4,lw*4]); ctx.strokeStyle=f.sub; ctx.globalAlpha=.6; ctx.lineWidth=lw; rr(q[0]+lw*6,q[1]+lw*6,q[2]-lw*12,q[3]-lw*12,Math.max(0,rad-lw*6)); ctx.stroke(); ctx.restore();
-        line('+  사진 '+(k+1),q[0]+q[2]/2,q[1]+q[3]/2+W*.016,W*.042,600,f.sub,'center'); }
+      if(s&&s.img){ ctx.save(); rr(q[0],q[1],q[2],q[3],rad); ctx.clip(); cover(s.img,q[0],q[1],q[2],q[3],s.fx,s.fy,s.z); ctx.restore(); }
+      else { ctx.save(); ctx.fillStyle=f.empty; rr(q[0],q[1],q[2],q[3],rad); ctx.fill(); if(!exporting){ ctx.setLineDash([lw*4,lw*4]); ctx.strokeStyle=f.sub; ctx.globalAlpha=.6; ctx.lineWidth=lw; rr(q[0]+lw*6,q[1]+lw*6,q[2]-lw*12,q[3]-lw*12,Math.max(0,rad-lw*6)); ctx.stroke(); } ctx.restore();
+        line(exporting?'':(k+1)+'',q[0]+q[2]/2,q[1]+q[3]/2+W*.005,W*.07,700,f.sub,'center'); if(!exporting) line('여기에 사진',q[0]+q[2]/2,q[1]+q[3]/2+W*.07,W*.034,600,f.sub,'center'); }
       if(f.pen) box(q[0],q[1],q[2],q[3],'#1b1b1b',lw,r);
     });
     var top=photosH+g;
@@ -1007,32 +1008,54 @@ document.querySelectorAll('.route').forEach(function(card){
       star(q3[0]+sc*.9,q3[1]+q3[3]-sc*.85,sc*.7,YEL,sink,lw,r);
       if(frame==='trip'&&art) spark(W-m-sc*.3,top+sc*.2,sc*.9,YEL,lw,r);
     }
-    var n=slots.filter(function(s){return s&&s.img}).length;
-    note.textContent=n===4?'칸을 누르면 그 칸 사진만 바꿀 수 있어요.':(photos.length||n?'사진 '+n+'장을 담았어요. 빈 칸을 누르거나 \'앨범에서 고르기\'로 채워요.':'빈 칸을 누르거나 \'앨범에서 고르기\'로 사진을 넣어요. 여행 기록에 넣은 사진은 자동으로 담겨요.');
+    if(!exporting&&rects[cur]){ var q=rects[cur]; ctx.save(); ctx.strokeStyle='#0a84ff'; ctx.lineWidth=lw*3; rr(q[0]-lw*2,q[1]-lw*2,q[2]+lw*4,q[3]+lw*4,rad?rad+lw*2:0); ctx.stroke(); ctx.restore(); }
+    var n=slots.filter(Boolean).length;
+    note.textContent=!pool.length?'\'사진 추가\'로 사진을 고른 뒤, 칸을 고르고 아래 사진을 눌러 넣어요.':(n<4?(cur+1)+'번 칸이 골라져 있어요. 아래 사진을 누르면 이 칸에 들어가요.':'사진을 끌어서 위치를, 두 손가락으로 크기를 맞춰요. 들어간 사진을 다른 칸에서 누르면 자리가 바뀌어요.');
+    var s0=slots[cur]; bar.hidden=!s0; if(s0) bar.querySelector('.cut-n').textContent=(cur+1)+'번 칸';
   }
-  function blob(){ return new Promise(function(ok){ cv.toBlob(ok,'image/jpeg',.94); }); }
   var name=function(){ return slug+'-네컷-'+({trip:'여행지',theme:'테마',pastel:'파스텔',white:'흰색',black:'검정'})[frame]+'.jpg'; };
   function press(sel1,b){ root.querySelectorAll(sel1).forEach(function(x){ x.setAttribute('aria-pressed',x===b); }); }
+  function out(){ exporting=true; draw(); return new Promise(function(ok){ cv.toBlob(function(b){ exporting=false; draw(); ok(b); },'image/jpeg',.94); }); }
+  function slotAt(ev){ var b=cv.getBoundingClientRect(), x=(ev.clientX-b.left)*cv.width/b.width, y=(ev.clientY-b.top)*cv.height/b.height, hit=-1;
+    rects.forEach(function(q,k){ if(x>=q[0]&&x<=q[0]+q[2]&&y>=q[1]&&y<=q[1]+q[3]) hit=k; }); return {k:hit,x:x,y:y}; }
+  function clampS(s){ s.z=Math.min(4,Math.max(1,s.z)); s.fx=Math.min(1,Math.max(0,s.fx)); s.fy=Math.min(1,Math.max(0,s.fy)); }
+  // 끌기: 사진 위치, 두 손가락: 크기. 움직이지 않고 떼면 칸 고르기
+  var pts={}, drag=null;
+  cv.addEventListener('pointerdown',function(ev){ var h=slotAt(ev); pts[ev.pointerId]={x:ev.clientX,y:ev.clientY}; try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
+    if(Object.keys(pts).length===1) drag={k:h.k,x:ev.clientX,y:ev.clientY,moved:false};
+    else if(drag&&slots[drag.k]){ var ids=Object.keys(pts), a=pts[ids[0]], b=pts[ids[1]]; drag.pinch=Math.hypot(a.x-b.x,a.y-b.y); drag.z0=slots[drag.k].z; drag.moved=true; } });
+  cv.addEventListener('pointermove',function(ev){ if(!pts[ev.pointerId]||!drag) return; pts[ev.pointerId]={x:ev.clientX,y:ev.clientY}; var s=slots[drag.k]; if(!s) return;
+    var ids=Object.keys(pts);
+    if(ids.length>1&&drag.pinch){ var a=pts[ids[0]], b=pts[ids[1]]; s.z=drag.z0*Math.hypot(a.x-b.x,a.y-b.y)/drag.pinch; clampS(s); draw(); return; }
+    var dx=ev.clientX-drag.x, dy=ev.clientY-drag.y; if(!drag.moved&&Math.hypot(dx,dy)<6) return; drag.moved=true; drag.x=ev.clientX; drag.y=ev.clientY;
+    var bb=cv.getBoundingClientRect(), sc=cv.width/bb.width, q=rects[drag.k], k0=Math.max(q[2]/s.img.width,q[3]/s.img.height)*s.z, ex=s.img.width*k0-q[2], ey=s.img.height*k0-q[3];
+    if(ex>1) s.fx-=dx*sc/ex; if(ey>1) s.fy-=dy*sc/ey; clampS(s); cur=drag.k; draw(); });
+  function up(ev){ delete pts[ev.pointerId]; if(Object.keys(pts).length) return; var d=drag; drag=null; if(!d||d.moved||d.k<0) return;
+    cur=d.k; draw(); if(!slots[d.k]&&!pool.length){ fin.click(); } }
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',function(ev){ delete pts[ev.pointerId]; drag=null; });
+  cv.addEventListener('wheel',function(ev){ var h=slotAt(ev), s=slots[h.k]; if(!s) return; ev.preventDefault(); s.z*=ev.deltaY<0?1.08:1/1.08; clampS(s); cur=h.k; draw(); },{passive:false});
   root.addEventListener('click',function(ev){
     var f=ev.target.closest('[data-frame]'); if(f){ frame=f.dataset.frame; press('[data-frame]',f); draw(); return; }
     var l=ev.target.closest('[data-lay]'); if(l){ lay=l.dataset.lay; press('[data-lay]',l); draw(); return; }
-    var s=ev.target.closest('[data-stk]'); if(s){ stk=!stk; s.setAttribute('aria-pressed',stk); draw(); return; }
-    if(ev.target===cv){ var b=cv.getBoundingClientRect(), x=(ev.clientX-b.left)*cv.width/b.width, y=(ev.clientY-b.top)*cv.height/b.height;
-      rects.forEach(function(q,k){ if(x>=q[0]&&x<=q[0]+q[2]&&y>=q[1]&&y<=q[1]+q[3]) target=k; }); if(target>=0){ fin.multiple=false; fin.click(); } return; }
+    var st=ev.target.closest('[data-stk]'); if(st){ stk=!stk; st.setAttribute('aria-pressed',stk); draw(); return; }
+    var pb=ev.target.closest('[data-pool]'); if(pb){ put(pool[+pb.dataset.pool],cur); return; }
+    var sb=ev.target.closest('[data-slot]'); if(sb){ var s=slots[cur], op=sb.dataset.slot;
+      if(op==='in'&&s){ s.z*=1.2; clampS(s); } else if(op==='outz'&&s){ s.z/=1.2; clampS(s); }
+      else if(op==='fit'&&s){ s.z=1; s.fx=.5; s.fy=.5; }
+      else if(op==='up'||op==='down'){ var j=(cur+(op==='up'?3:1))%4, t=slots[j]; slots[j]=slots[cur]; slots[cur]=t; cur=j; }
+      else if(op==='clear'){ slots[cur]=null; paintTray(); }
+      draw(); return; }
     var a=ev.target.closest('[data-cut]'); if(!a) return;
-    if(a.dataset.cut==='pick'){ target=-1; fin.multiple=true; fin.click(); return; }
-    if(a.dataset.cut==='shuffle'){ seed++; slots=slots.map(function(x){ return x&&x.own?x:null; }); fill().then(draw); return; }
-    blob().then(function(bb){ if(!bb) return; var file=new File([bb],name(),{type:'image/jpeg'});
+    if(a.dataset.cut==='pick'){ fin.click(); return; }
+    if(a.dataset.cut==='auto'){ var free=pool.filter(function(p){return !used(p)}); [0,1,2,3].forEach(function(k){ if(!slots[k]&&free.length){ var p=free.shift(); slots[k]={p:p,img:p.img,fx:.5,fy:.5,z:1}; } }); paintTray(); draw(); return; }
+    out().then(function(bb){ if(!bb) return; var file=new File([bb],name(),{type:'image/jpeg'});
       if(a.dataset.cut==='share'&&navigator.canShare&&navigator.canShare({files:[file]})) return navigator.share({files:[file],title:NAME+' 네컷'}).catch(function(){});
       var u=URL.createObjectURL(bb), k=document.createElement('a'); k.href=u; k.download=name(); document.body.appendChild(k); k.click(); k.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000); });
   });
   fin.addEventListener('change',function(){ var fs=[].slice.call(fin.files||[]); fin.value=''; if(!fs.length) return;
-    Promise.all(fs.slice(0,4).map(fileImg)).then(function(is){ is=is.filter(Boolean);
-      if(target>=0){ if(is[0]) slots[target]={img:is[0],own:true}; }
-      else { var k=0; is.forEach(function(i){ while(k<4&&slots[k]&&slots[k].own&&is.length<4) k++; if(k<4) slots[k++]={img:i,own:true}; }); }
-      target=-1; draw(); }); });
-  sel.addEventListener('change',function(){ slots=slots.map(function(x){ return x&&x.own?x:null; }); fill().then(draw); });
-  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-cut"]')){ draw(); load().then(function(p){ photos=p; return fill(); }).then(draw); } });
+    Promise.all(fs.slice(0,12).map(fileImg)).then(function(ps){ var empty=!slots[cur]; addPool(ps); if(empty&&ps[0]) put(ps[0],cur); else draw(); }); });
+  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-cut"]')){ paintTray(); draw();
+    if(!loaded){ loaded=true; load().then(function(rs){ return Promise.all(rs.sort(function(a,b){return a.t-b.t}).map(function(r){ return fileImg(r.blob); })); }).then(function(ps){ addPool(ps); draw(); }); } } });
 })();
 
 // ---------------------------------------------------------------- 쇼핑 리스트: 분류 걸러 보기, 담기·합계 (이 휴대폰에 저장)
