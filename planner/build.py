@@ -418,6 +418,10 @@ def render_trip(slug, t):
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
+        if t.get("budget"):
+            _tl, _th, _ = costs.totals(t)
+            _n = max(len(trav), 1)
+            cfg["need"] = [_tl * _n, _th * _n]  # 총 필요 예산 (현지 통화), 공금 카드에서 비교
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
@@ -504,8 +508,8 @@ def render_trip(slug, t):
     w(sheet("tool-ex", "함께 쓴 돈", "이 휴대폰에 저장돼요", '<form class="exf"><input name="what" placeholder="무엇에 썼나요 (예: 라멘)" required>'
             '<div class="exf-cat seg" role="group" aria-label="분류">' + "".join(f'<button type="button" data-cat="{c}" aria-pressed="{str(k == 0).lower()}">{c}</button>' for k, c in enumerate(cats)) + '</div>'
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
-            '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
-            '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
+            '<div class="exf-who" role="group" aria-label="낸 곳">' + '<button type="button" class="tone-pool" data-payer="공금카드" aria-pressed="true">공금 카드</button><button type="button" class="tone-pool" data-payer="공금현금" aria-pressed="false">공금 현금</button>' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="false">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
+            '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="pool" data-pool></div><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
     w(sheet("tool-sync", "일행과 공유", "일정 링크, 또는 내 픽·지출·체크를 링크 하나로",
             '<ol class="steps"><li><b>내 기록 보내기</b><span>아래 버튼을 누르면 내 픽, 함께 쓴 돈, 출발 전 체크가 담긴 링크가 만들어져요. 카카오톡이나 문자로 보내요.</span></li>'
             '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
@@ -663,7 +667,7 @@ def render_trip(slug, t):
     b = t.get("budget")
     if b:
         w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>')
-        w(budget_chart(t, b) + '</section>')
+        w(budget_chart(t, b) + '<div class="card pool pool-card" data-pool></div></section>')
 
     # 6. 출발 전 확인
     bf = t.get("before")
