@@ -42,7 +42,8 @@ def site_url(slug, f=""):
 def tiles(t):
     """(클래스, 팝업 id 또는 'href:주소', 아이콘, 이름, 부제)."""
     x = [("t-rep", "tool-rep", "▥", "여행 리포트", '<small>지출·픽·기록 차트</small>'),
-         ("t-alb", "tool-alb", "▣", "앨범 카드", '<small>사진으로 SNS 카드</small>')]
+         ("t-alb", "tool-alb", "▣", "앨범 카드", '<small>사진으로 SNS 카드</small>'),
+         ("t-cut", "tool-cut", "▤", "네컷 사진", '<small>스티커 사진 프레임</small>')]
     if t.get("_shopping"):
         x.append(("t-shop", "href:shopping/", "¥", "쇼핑 리스트", f'<small>{len(t["_shopping"]["items"])}개 · 가격·생김새</small>'))
     return x
@@ -58,7 +59,22 @@ def sheets(slug, t):
 <p class="alb-note lead"></p>
 <div class="row"><button type="button" class="btn primary" data-alb="save">이미지 저장</button><button type="button" class="btn" data-alb="share">공유</button><button type="button" class="btn" data-alb="shuffle">사진 섞기</button></div>
 </div>''')
-    return rep + alb
+    return rep + alb + cut_sheet()
+
+
+def cut_sheet():
+    """네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임. 여행지 그림·흰색·검정 프레임 (그림은 app.js 가 canvas 로)."""
+    return B.sheet("tool-cut", "네컷 사진", "칸을 고르고 사진을 골라 넣어요", '''<div class="cut">
+<div class="seg cut-frame" role="group" aria-label="프레임"><button type="button" data-frame="trip" aria-pressed="true">여행지</button><button type="button" data-frame="theme" aria-pressed="false">테마</button><button type="button" data-frame="pastel" aria-pressed="false">파스텔</button><button type="button" data-frame="white" aria-pressed="false">흰색</button><button type="button" data-frame="black" aria-pressed="false">검정</button></div>
+<div class="cut-opts"><div class="seg cut-lay" role="group" aria-label="모양"><button type="button" data-lay="strip" aria-pressed="true">세로 네컷</button><button type="button" data-lay="grid" aria-pressed="false">2×2</button></div>
+<button type="button" class="cut-stk" data-stk aria-pressed="true">낙서 스티커</button></div>
+<div class="cut-stage" data-noswipe><canvas width="900" height="2700" aria-label="네컷 사진 미리보기. 칸을 눌러 고르고, 사진을 끌어 위치를 맞춰요"></canvas></div>
+<div class="cut-bar" hidden><span class="cut-n"></span><button type="button" data-slot="outz" aria-label="작게">−</button><button type="button" data-slot="in" aria-label="크게">+</button><button type="button" data-slot="fit">맞춤</button><button type="button" data-slot="up" aria-label="앞 칸과 자리 바꾸기">↑</button><button type="button" data-slot="down" aria-label="뒤 칸과 자리 바꾸기">↓</button><button type="button" data-slot="clear">비우기</button></div>
+<p class="alb-note lead cut-note"></p>
+<div class="cut-tray" data-noswipe aria-label="넣을 사진"></div>
+<input type="file" accept="image/*" multiple hidden class="cut-in">
+<div class="row"><button type="button" class="btn primary" data-cut="save">이미지 저장</button><button type="button" class="btn" data-cut="share">공유</button><button type="button" class="btn" data-cut="auto">빈 칸 채우기</button></div>
+</div>''')
 
 
 def export_section(slug, t):
@@ -461,7 +477,7 @@ def design_page():
 <section><h2>컴포넌트</h2><div class="card ds-comp">
 <h3>버튼</h3><div class="row"><button class="btn primary" type="button">주 버튼</button><button class="btn" type="button">보조 버튼</button></div>
 <h3>세그먼트</h3><div class="seg" role="group"><button type="button" aria-pressed="true">전체</button><button type="button" aria-pressed="false">기내</button><button type="button" aria-pressed="false">위탁</button></div>
-<h3>여행 도구 타일</h3><div class="tools"><span class="tool t-rep"><span class="ti">▥</span><b>여행 리포트</b><small>지출·픽·기록 차트</small></span><span class="tool t-alb"><span class="ti">▣</span><b>앨범 카드</b><small>사진으로 SNS 카드</small></span><span class="tool t-shop"><span class="ti">¥</span><b>쇼핑 리스트</b><small>가격·생김새</small></span></div>
+<h3>여행 도구 타일</h3><div class="tools"><span class="tool t-rep"><span class="ti">▥</span><b>여행 리포트</b><small>지출·픽·기록 차트</small></span><span class="tool t-alb"><span class="ti">▣</span><b>앨범 카드</b><small>사진으로 SNS 카드</small></span><span class="tool t-cut"><span class="ti">▤</span><b>네컷 사진</b><small>스티커 사진 프레임</small></span><span class="tool t-shop"><span class="ti">¥</span><b>쇼핑 리스트</b><small>가격·생김새</small></span></div>
 <h3>내려받기 줄</h3><div class="dls"><span class="dl"><span class="dl-ic xls">X</span><span class="dl-t"><b>엑셀 일정표</b><small>일정·정산 시트</small></span><span class="dl-go">↓</span></span></div>
 <h3>배지</h3><p><span class="chk">확인 필요</span> <span class="ai">AI 추천</span></p>
 <h3>차트 색 (dataviz 기본 팔레트)</h3><div class="ds-row">{"".join(f'<span class="ds-sw" style="background:var(--viz-{n})"><small>--viz-{n}</small></span>' for n in range(1, 7))}</div>
