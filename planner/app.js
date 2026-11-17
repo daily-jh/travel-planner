@@ -950,51 +950,68 @@ document.querySelectorAll('.route').forEach(function(card){
     hatch(function(){ ctx.beginPath(); pts.forEach(function(p,i){ i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }); ctx.closePath(); },col,lw); pen(pts,true,ink,lw,r); }
   function line(t,x,y,size,weight,col,align,maxW){ ctx.save(); ctx.fillStyle=col; ctx.font=weight+' '+Math.round(size)+'px '+FONT; ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
     var s=String(t); if(maxW) while(s.length>1&&ctx.measureText(s).width>maxW) s=s.slice(0,-2)+'…'; ctx.fillText(s,x,y); var w=ctx.measureText(s).width; ctx.restore(); return w; }
-  function when(){ var d=sel.value==='all'?null:C.days[+sel.value-1]; if(d) return d.date.replace(/-/g,'.');
-    return C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.'); }
+  function when(){ var d=sel.value==='all'?null:C.days[+sel.value-1]; if(d) return d.date.replace(/-/g,'.')+' · '+(+sel.value)+'일차';
+    var n=Math.round((new Date(C.end)-new Date(C.start))/864e5); return C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.')+' · '+n+'박 '+(n+1)+'일'; }
+  // 프레임: 사이트 디자인 토큰(테마 색·시스템 글꼴·둥근 모서리)을 그대로 쓴다. 여행지만 손그림 펜선
+  var FR={
+    trip:{bg:'#fffdf8',ink:'#1b1b1b',sub:PRI,empty:'#f1efe9',r:0,pen:true},
+    theme:{bg:'grad',ink:'#ffffff',sub:'rgba(255,255,255,.72)',empty:'rgba(255,255,255,.1)',r:.024},
+    pastel:{bg:'soft',ink:PRI,sub:'rgba(60,60,67,.78)',empty:'rgba(255,255,255,.6)',r:.024},
+    white:{bg:'#ffffff',ink:'#1b1b1b',sub:'rgba(60,60,67,.78)',empty:'#f2f2f7',r:.016},
+    black:{bg:'#111111',ink:'#f5f5f7',sub:'rgba(235,235,245,.62)',empty:'#1c1c1e',r:.016}
+  };
+  function rr(x,y,w,h,rad){ ctx.beginPath(); if(rad&&ctx.roundRect) ctx.roundRect(x,y,w,h,rad); else ctx.rect(x,y,w,h); }
   function draw(){
-    var my=++gen, strip=lay==='strip', W=strip?900:1200, H=strip?2700:1800; cv.width=W; cv.height=H;
-    var m=48, g=24, sw, sh, r=rng(11+seed);
-    var paper=frame==='black'?'#141414':'#ffffff', ink=frame==='black'?'#f4f1ea':'#1b1b1b', sub=frame==='black'?'rgba(244,241,234,.62)':'rgba(27,27,27,.55)';
-    ctx.fillStyle=paper; ctx.fillRect(0,0,W,H);
-    if(frame==='trip'){ ctx.fillStyle='#fffdf8'; ctx.fillRect(0,0,W,H); }
-    rects=[];
-    if(strip){ sw=W-2*m; sh=520; for(var k=0;k<4;k++) rects.push([m,m+k*(sh+g),sw,sh]); }
-    else { sw=(W-2*m-g)/2; sh=720; for(var k2=0;k2<4;k2++) rects.push([m+(k2%2)*(sw+g),m+Math.floor(k2/2)*(sh+g),sw,sh]); }
-    var lw=W/300;
+    var my=++gen, strip=lay==='strip', f=FR[frame], W=strip?900:1200, m=48, g=24, sw, sh=strip?520:720, r=rng(11+seed), lw=W/300;
+    sw=strip?W-2*m:(W-2*m-g)/2;
+    var photosH=m+(strip?4*sh+3*g:2*sh+g);
+    // 아래 칸 높이: 흰색·검정 등은 이름·날짜만이라 짧게, 여행지는 손그림이 크게 보이도록 넉넉히
+    var fh=frame==='trip'&&art?(strip?(sw/1.5)*.82+150:sw/1.5*.95+g):(strip?210:170);
+    var H=Math.round(photosH+g+fh+m*.5); cv.width=W; cv.height=H;
+    if(f.bg==='grad'){ var gr=ctx.createLinearGradient(0,0,W*.4,H); gr.addColorStop(0,PRI); gr.addColorStop(1,'#0b0f1c'); ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
+      var rg=ctx.createRadialGradient(W*.9,H*.04,0,W*.9,H*.04,W*.9); rg.addColorStop(0,ACC+'88'); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+    else if(f.bg==='soft'){ var gs=ctx.createLinearGradient(0,0,0,H); gs.addColorStop(0,F.pri_soft||'#e2e6f3'); gs.addColorStop(1,F.acc_soft||'#f7e2ea'); ctx.fillStyle=gs; ctx.fillRect(0,0,W,H); }
+    else { ctx.fillStyle=f.bg; ctx.fillRect(0,0,W,H); }
+    rects=[]; for(var k=0;k<4;k++) rects.push(strip?[m,m+k*(sh+g),sw,sh]:[m+(k%2)*(sw+g),m+Math.floor(k/2)*(sh+g),sw,sh]);
+    var rad=W*f.r;
     rects.forEach(function(q,k){ var s=slots[k];
-      if(s&&s.img){ ctx.save(); ctx.beginPath(); ctx.rect(q[0],q[1],q[2],q[3]); ctx.clip(); cover(s.img,q[0],q[1],q[2],q[3]); ctx.restore(); }
-      else { ctx.save(); ctx.fillStyle=frame==='black'?'#262626':'#f1efe9'; ctx.fillRect(q[0],q[1],q[2],q[3]); ctx.setLineDash([lw*4,lw*4]); ctx.strokeStyle=sub; ctx.lineWidth=lw; ctx.strokeRect(q[0]+lw*6,q[1]+lw*6,q[2]-lw*12,q[3]-lw*12); ctx.restore();
-        line('+  사진 '+(k+1),q[0]+q[2]/2,q[1]+q[3]/2+W*.016,W*.042,600,sub,'center'); }
-      if(frame==='trip') box(q[0],q[1],q[2],q[3],'#1b1b1b',lw,r);
+      if(s&&s.img){ ctx.save(); rr(q[0],q[1],q[2],q[3],rad); ctx.clip(); cover(s.img,q[0],q[1],q[2],q[3]); ctx.restore(); }
+      else { ctx.save(); ctx.fillStyle=f.empty; rr(q[0],q[1],q[2],q[3],rad); ctx.fill(); ctx.setLineDash([lw*4,lw*4]); ctx.strokeStyle=f.sub; ctx.globalAlpha=.6; ctx.lineWidth=lw; rr(q[0]+lw*6,q[1]+lw*6,q[2]-lw*12,q[3]-lw*12,Math.max(0,rad-lw*6)); ctx.stroke(); ctx.restore();
+        line('+  사진 '+(k+1),q[0]+q[2]/2,q[1]+q[3]/2+W*.016,W*.042,600,f.sub,'center'); }
+      if(f.pen) box(q[0],q[1],q[2],q[3],'#1b1b1b',lw,r);
     });
-    var top=rects[3][1]+rects[3][3]+g, fh=H-top-m*.6;
-    // 아래 칸: 여행 이름·날짜, 여행지 프레임은 손그림 한 조각
-    if(frame==='trip'){
-      if(art){ var ax=m, ay=top+lw*2, aw=strip?W-2*m:W*.5-m, ah=strip?fh*.6:fh-lw*6;
-        ctx.save(); ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.clip(); cover(art,ax,ay,aw,ah,.45,.62); ctx.restore(); box(ax,ay,aw,ah,'#1b1b1b',lw,r); }
-      var tx=strip?m:W*.5+g, ty=strip?(art?top+fh*.6+fh*.27:top+fh*.45):top+fh*.42, tw=strip?W-2*m:W*.5-m-g;
-      var nw=line(NAME,tx,ty,W*(strip?.075:.06),800,'#1b1b1b','left',tw);
-      pen([[tx,ty+W*.018],[tx+nw*.55,ty+W*.024],[tx+nw+W*.02,ty+W*.014]],false,ACC,lw*2.2,r);
-      line(when(),strip?W-m:tx,strip?ty:ty+W*.075,W*(strip?.036:.03),600,PRI,strip?'right':'left');
+    var top=photosH+g;
+    if(frame==='trip'&&art){
+      if(strip){ var ah=fh-150, ax=m, aw=W-2*m;
+        ctx.save(); ctx.beginPath(); ctx.rect(ax,top,aw,ah); ctx.clip(); cover(art,ax,top,aw,ah,.45,.55); ctx.restore(); box(ax,top,aw,ah,'#1b1b1b',lw,r);
+        var ty=top+ah+W*.1, nw=line(NAME,m,ty,W*.072,800,f.ink,'left',W*.5);
+        pen([[m,ty+W*.02],[m+nw*.55,ty+W*.026],[m+nw+W*.02,ty+W*.016]],false,ACC,lw*2.2,r);
+        line(when(),W-m,ty,W*.03,600,f.sub,'right',W*.45); }
+      else { var aw2=sw, ah2=fh-g;
+        ctx.save(); ctx.beginPath(); ctx.rect(m,top,aw2,ah2); ctx.clip(); cover(art,m,top,aw2,ah2,.45,.55); ctx.restore(); box(m,top,aw2,ah2,'#1b1b1b',lw,r);
+        var tx=m+sw+g, ty2=top+ah2*.45, nw2=line(NAME,tx,ty2,W*.06,800,f.ink,'left',sw);
+        pen([[tx,ty2+W*.018],[tx+nw2*.55,ty2+W*.024],[tx+nw2+W*.02,ty2+W*.014]],false,ACC,lw*2.2,r);
+        line(when(),tx,ty2+W*.07,W*.026,600,f.sub,'left',sw); }
     } else {
-      var cy=top+fh*(strip?.48:.5);
-      line(NAME,W/2,cy,W*(strip?.075:.055),800,ink,'center',W-2*m);
-      line(when(),W/2,cy+W*(strip?.09:.07),W*(strip?.036:.028),600,sub,'center');
-      pen([[W/2-W*.08,cy+W*.03],[W/2+W*.08,cy+W*.034]],false,ink,lw*1.4,r);
+      // 사이트 표지처럼: 굵은 제목 + 작은 날짜 줄, 왼쪽 정렬
+      var by=top+fh*.42;
+      line(NAME,m+lw,by,W*(strip?.064:.05),800,f.ink,'left',W*.6);
+      line(when(),m+lw,by+W*(strip?.058:.044),W*(strip?.03:.024),600,f.sub,'left',W-2*m);
+      ctx.save(); ctx.fillStyle=frame==='white'||frame==='pastel'?PRI:ACC;
+      var dot=W*(strip?.022:.017); ctx.beginPath(); ctx.arc(W-m-dot,by-dot*1.2,dot,0,7); ctx.fill(); ctx.globalAlpha=.55; ctx.beginPath(); ctx.arc(W-m-dot*3.4,by-dot*1.2,dot,0,7); ctx.fill(); ctx.restore();
     }
-    if(stk){ var sc=W*(strip?.075:.06), sink=frame==='black'?'#f4f1ea':'#1b1b1b', q0=rects[0], q1=rects[1], q2=rects[2], q3=rects[3];
-      spark(q0[0]+q0[2]-sc*.4,q0[1]+sc*1.1,sc*1.1,frame==='black'?YEL:'#1b1b1b',lw,r);
+    if(stk){ var sc=W*(strip?.075:.06), dark=frame==='black'||frame==='theme', sink=dark?'#f5f5f7':'#1b1b1b', q0=rects[0], q1=rects[1], q2=rects[2], q3=rects[3];
+      spark(q0[0]+q0[2]-sc*.4,q0[1]+sc*1.1,sc*1.1,dark?YEL:'#1b1b1b',lw,r);
       heart(q1[0]+sc*.9,q1[1]+q1[3]-sc*.5,sc,ACC,sink,lw,r);
-      flower(q2[0]+q2[2]-sc*.9,q2[1]+sc*.9,sc*.9,frame==='trip'?ACC:'#f39ab5',sink,lw,r);
+      flower(q2[0]+q2[2]-sc*.9,q2[1]+sc*.9,sc*.9,frame==='trip'||frame==='pastel'?ACC:'#f39ab5',sink,lw,r);
       star(q3[0]+sc*.9,q3[1]+q3[3]-sc*.85,sc*.7,YEL,sink,lw,r);
-      if(frame==='trip'){ spark(W-m-sc*.2,top+(strip?fh*.62:fh*.25),sc*.9,YEL,lw,r); }
+      if(frame==='trip'&&art) spark(W-m-sc*.3,top+sc*.2,sc*.9,YEL,lw,r);
     }
     var n=slots.filter(function(s){return s&&s.img}).length;
     note.textContent=n===4?'칸을 누르면 그 칸 사진만 바꿀 수 있어요.':(photos.length||n?'사진 '+n+'장을 담았어요. 빈 칸을 누르거나 \'앨범에서 고르기\'로 채워요.':'빈 칸을 누르거나 \'앨범에서 고르기\'로 사진을 넣어요. 여행 기록에 넣은 사진은 자동으로 담겨요.');
   }
   function blob(){ return new Promise(function(ok){ cv.toBlob(ok,'image/jpeg',.94); }); }
-  var name=function(){ return slug+'-네컷-'+({trip:'여행지',white:'흰색',black:'검정'})[frame]+'.jpg'; };
+  var name=function(){ return slug+'-네컷-'+({trip:'여행지',theme:'테마',pastel:'파스텔',white:'흰색',black:'검정'})[frame]+'.jpg'; };
   function press(sel1,b){ root.querySelectorAll(sel1).forEach(function(x){ x.setAttribute('aria-pressed',x===b); }); }
   root.addEventListener('click',function(ev){
     var f=ev.target.closest('[data-frame]'); if(f){ frame=f.dataset.frame; press('[data-frame]',f); draw(); return; }
