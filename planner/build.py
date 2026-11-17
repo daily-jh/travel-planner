@@ -174,6 +174,27 @@ def flags(b):
     return f
 
 
+# 여행 도구를 쓰는 때에 따라 셋으로 묶는다. app.js가 출발 전·여행 중·다녀온 뒤에 맞춰 순서를 바꾼다
+TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "함께·기록")]
+TOOL_OF = {c: g for g, cs in {
+    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx"],
+    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-coin", "t-tz", "t-sos"],
+    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-alb"],
+}.items() for c in cs}
+
+
+def tz_gap(t):
+    """여행지와 한국의 시차(분). 시차가 없으면 현지 시각 도구를 숨긴다."""
+    try:
+        from zoneinfo import ZoneInfo
+        d = dt.datetime.fromisoformat(t["start"] + "T12:00")
+        a = d.replace(tzinfo=ZoneInfo(t.get("timezone") or "Asia/Seoul")).utcoffset()
+        b = d.replace(tzinfo=ZoneInfo("Asia/Seoul")).utcoffset()
+        return int((a - b).total_seconds() // 60)
+    except Exception:
+        return 1
+
+
 def sheet(did, title, sub, inner):
     """팝업(아래에서 올라오는 시트). data-open 버튼으로 연다."""
     return (f'<dialog class="sheet" id="{did}" aria-labelledby="{did}-t"><div class="sheet-h"><div><b id="{did}-t">{title}</b>'
@@ -353,10 +374,14 @@ def render_trip(slug, t):
         url = l.get("url") or gmap(l["query"])
         links.append(f'<a class="btn{" primary" if l.get("primary") else ""}" href="{e(url)}" target="_blank" rel="noopener">{e(l["label"])}</a>')
     links.append('<a class="btn" href="calendar.ics">캘린더에 추가</a>')
-    links.append(f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일행에게 공유</button>')
+    if len(t.get("travelers", [])) > 1:
+        # 일정 링크 보내기와 내 기록 보내기(#sync)를 한 팝업으로 모았다
+        links.append('<button class="btn" type="button" data-open="tool-sync">일행과 공유</button>')
+    else:
+        links.append(f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일행에게 공유</button>')
     title_html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", e(t["title"]))
     w(f'''<header class="hero"><div class="wrap">
-<div class="topbar">{brand("../../")}<a class="back" href="../../">여행 목록</a><button type="button" class="help" data-open="welcome" aria-label="사용법">?</button></div>
+<div class="topbar">{brand("../../")}<a class="back" href="../../">여행 목록</a><button type="button" class="find-btn" data-open="find" aria-label="이 여행에서 찾기"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button><button type="button" class="help" data-open="welcome" aria-label="사용법">?</button></div>
 <div class="eyebrow">{e(t.get("eyebrow", ""))} · {start:%Y.%m.%d} — {end:%m.%d} · {nights}박 {nights + 1}일</div>
 <h1>{title_html}</h1>
 <p>{rich(t.get("intro", ""))}</p>
@@ -420,34 +445,34 @@ def render_trip(slug, t):
         ("t-bag", "tool-bag", "⌸", "캐리어 짐", f'<small class="bag-mini">{npk}개 챙기기</small>') if pk else None,
         ("t-ex", "tool-ex", "÷", "함께 쓴 돈", '<small class="ex-mini">기록하고 나눠요</small>'),
         ("t-go", "", "➚", "다음 장소 길찾기", f'<small class="go-mini">{MAP["name"]}로 열기</small>'),
-        ("t-pk", "", "✓", "출발 전 확인", '<small class="pk-mini">예약·확인 체크</small>'),
         ("t-sos", "tool-sos", "!", "비상 연락", '<small>경찰·구급' + ('·병원' if DOM else '·영사콜센터') + '</small>') if t.get("emergency") else None,
         ("t-taxi", "", "⛟", "택시 카드", '<small>기사님께 보여 주기</small>') if t.get("stay_ja") and not DOM else None,
         ("t-log", "tool-log", "✎", "여행 기록", '<small class="log-mini">다녀온 곳·사진·한 줄</small>'),
-        ("t-sync", "tool-sync", "⇄", "일행과 맞추기", '<small>픽·지출을 링크로 보내기</small>') if len(trav) > 1 else None,
-        ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>') if not DOM else None,
+        ("t-sync", "tool-sync", "⇄", "일행과 공유", '<small>일정 링크·내 기록 보내기</small>') if len(trav) > 1 else None,
+        ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>') if not DOM and tz_gap(t) else None,
     ]
     at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
     tiles[at:at] = live.tiles(t)
     tiles += extras.tiles(t)
-    tl = []
+    groups = {g: [] for g, _ in TOOL_GROUPS}
     for x in tiles:
         if not x:
             continue
         cls, did, ic, name, sub = x
+        tl = groups[TOOL_OF.get(cls, "local")]
         if cls == "t-taxi":
             tl.append(f'<button type="button" class="tool {cls}" data-big="{e(lang(t)["taxi"].replace("{stay}", t["stay_ja"]))}" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
             continue
         if did.startswith("href:"):
             ext = ' target="_blank" rel="noopener"' if did.startswith("href:http") else ""
             tl.append(f'<a class="tool {cls}" href="{e(did[5:])}"{ext}><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
-        elif cls == "t-pk":
-            tl.append(f'<a class="tool {cls}" href="#before"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         elif cls == "t-go":
             tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
         else:
             tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
-    w('<section id="tools" class="tools-sec">' + deadlines.trip_card(slug, t) + '<div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tools">' + "".join(tl) + '</div></section>')
+    w('<section id="tools" class="tools-sec">' + deadlines.trip_card(slug, t) + '<div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tgroups">' + "".join(
+        f'<div class="tgrp" data-g="{g}"><h3>{lab}<em class="tg-now" hidden>지금</em></h3><div class="tools">' + "".join(groups[g]) + '</div></div>'
+        for g, lab in TOOL_GROUPS if groups[g]) + '</div></section>')
     w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행 날짜는 출발 16일 전부터 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요. 자료: Open-Meteo</p>'))
     if cur:
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
@@ -476,11 +501,13 @@ def render_trip(slug, t):
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
             '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
             '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
-    w(sheet("tool-sync", "일행과 맞추기", "서버 없이 링크 하나로 픽과 지출을 합쳐요",
+    w(sheet("tool-sync", "일행과 공유", "일정 링크, 또는 내 픽·지출·체크를 링크 하나로",
             '<ol class="steps"><li><b>내 기록 보내기</b><span>아래 버튼을 누르면 내 픽, 함께 쓴 돈, 출발 전 체크가 담긴 링크가 만들어져요. 카카오톡이나 문자로 보내요.</span></li>'
             '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
             '<li><b>서로 한 번씩</b><span>둘이 한 번씩 보내면 양쪽이 같아져요. 기록은 링크 안에만 담기고 어디에도 올라가지 않아요.</span></li></ol>'
-            '<div class="sync-me"></div><div class="row"><button type="button" class="btn primary" data-sync="send">내 기록 보내기</button></div>'))
+            '<div class="sync-me"></div><div class="row"><button type="button" class="btn primary" data-sync="send">내 기록 보내기</button>'
+            f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일정 링크만 보내기</button></div>'))
+    w(sheet("find", "이 여행에서 찾기", "장소·일정·도구·준비물을 한 번에", '<label class="search"><input class="find-q" type="search" placeholder="예: 라멘, 면세, 택시, 3일차" aria-label="찾을 말" autocomplete="off" enterkeyhint="search"></label><ul class="find-r" aria-live="polite"></ul>'))
     w(sheet("sync-in", "기록을 받았어요", "", '<div class="sync-body"></div><div class="row"><button type="button" class="btn primary" data-sync="merge">내 기록과 합치기</button><button type="button" class="btn" data-close>나중에</button></div>'))
     w('<dialog class="photoview" aria-label="사진 보기"><img alt=""><div class="pv-bar"><button type="button" data-pv="del">삭제</button><button type="button" data-pv="close">닫기</button></div></dialog>')
     if t.get("emergency"):
@@ -651,7 +678,8 @@ def render_trip(slug, t):
     steps = [("아래 탭 4개", "홈은 지금 일정과 여행 도구, 일정은 날짜별 동선과 지도, 장소는 픽과 후보, 준비는 예약·비용·체크예요."),
              ("누르면 팝업", "시간표 한 줄, 장소, 숙소·예약 칩을 누르면 자세한 내용이 아래에서 올라와요. 바깥을 누르거나 ✕로 닫아요."),
              ("우리의 픽", "가고 싶은 곳에 하트를 눌러 저장하면 누가 고른 곳인지" + (f"({names})" if names else "") + " 장소마다 보여요. 나중에 '픽 수정'으로 바꿀 수 있어요."),
-             ("일행과 맞추기", "여행 도구의 '일행과 맞추기'에서 링크를 보내면 서로의 픽과 지출이 합쳐져요.")]
+             ("찾기", "맨 위 돋보기를 누르면 장소·일정·도구·준비물을 한 번에 찾아요."),
+             ("일행과 공유", "맨 위 '일행과 공유'에서 '내 기록 보내기'를 누르면 서로의 픽과 지출이 합쳐져요.")]
     w(sheet("welcome", "이렇게 보면 돼요", e(t.get("short", "")) + " 여행 페이지 사용법",
             '<div class="fan" aria-hidden="true">' + "".join(f'<div class="fc c-{e(d["color"])}" style="--i:{k - (min(len(t["days"]), 5) - 1) / 2}"><small>{k + 1}일차 · {md(d["date"])}</small><b>{e(d["theme"])}</b><span>{len(d["route"]["stops"])}곳</span></div>' for k, d in enumerate(t["days"][:5])) + '</div>'
             '<ol class="steps">' + "".join(f'<li><b>{e(a)}</b><span>{e(b)}</span></li>' for a, b in steps) + '</ol>'

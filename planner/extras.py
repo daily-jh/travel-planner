@@ -45,7 +45,6 @@ def tiles(t):
          ("t-alb", "tool-alb", "▣", "앨범 카드", '<small>사진으로 SNS 카드</small>')]
     if t.get("_shopping"):
         x.append(("t-shop", "href:shopping/", "¥", "쇼핑 리스트", f'<small>{len(t["_shopping"]["items"])}개 · 가격·생김새</small>'))
-    x.append(("t-dl", "href:#export", "↓", "내려받기", '<small>엑셀·PDF·구글</small>'))
     return x
 
 

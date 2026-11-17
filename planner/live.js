@@ -1,6 +1,6 @@
 // ================================================================ 현지 실전 기능 (planner/live.py 가 그린 화면을 움직인다)
 // 여행 중 퀵 바·카운트다운, 건너뛰기·대안 교체, 주변 대안, QR·바우처 보관함, 식당 카드, 동전 털기, 오프라인 알림
-// 모든 기록은 이 휴대폰(localStorage·IndexedDB)에만 저장된다. QR·바우처는 '일행과 맞추기' 링크에도 담지 않는다.
+// 모든 기록은 이 휴대폰(localStorage·IndexedDB)에만 저장된다. QR·바우처는 '일행과 공유' 링크에도 담지 않는다.
 (function(){
   var cfgEl=document.getElementById('trip-cfg'); if(!cfgEl) return;
   var C=JSON.parse(cfgEl.textContent), slug=C.trip;

@@ -540,6 +540,8 @@ document.querySelectorAll('.route').forEach(function(card){
   var hm=function(m){ return (m>=60?Math.floor(m/60)+'시간 ':'')+(m%60)+'분'; };
   function spentOn(d){ var k=(d.getMonth()+1)+'/'+d.getDate(), t=0; ex.forEach(function(x){ if(x.date===k) t+=x.amt; }); return t; }
   function chip(cls,txt,open){ return '<span class="bc '+cls+'"'+(open?' data-open="'+open+'" role="button" tabindex="0"':'')+'>'+txt+'</span>'; }
+  // 운항 상태(지연·게이트)는 항공편 번호로 Flightradar24에서 바로 확인 (트립잇의 항공편 알림 대신)
+  function fst(f){ var no=String(f.no||'').replace(/^([A-Za-z]+)0+/,'$1').toLowerCase(); return no?' · <a class="nc-fst" href="https://www.flightradar24.com/data/flights/'+encodeURIComponent(no)+'" target="_blank" rel="noopener">운항 상태 ↗</a>':''; }
   function flightFor(ds){ return (C.flights||[]).filter(function(f){return f.date===ds})[0]; }
   function nowMode(){
     if(!nc) return; var n=localNow(), ds=ymd(n), today0=new Date(ds+'T00:00:00'), st=new Date(C.start+'T00:00:00'), en=new Date(C.end+'T00:00:00');
@@ -551,8 +553,8 @@ document.querySelectorAll('.route').forEach(function(card){
       var bagAll=bagItems().length, bagDone=[].filter.call(bagItems(),function(li){return li.classList.contains('done')}).length;
       var f=(C.flights||[])[0];
       h='<div class="nc-h"><span class="live off"></span>'+(left===1?'내일 출발해요':'출발 D-'+left+' 준비')+'</div><div class="bcs">'
-        +chip(ckLeft?'warn':'ok','출발 전 확인 '+(ckLeft?ckLeft+'개 남음':'완료'))+chip(bagDone<bagAll?'':'ok','캐리어 '+(bagAll?Math.round(bagDone/bagAll*100):0)+'%','tool-bag')+'</div>';
-      if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요</span></div>'; }
+        +chip(ckLeft?'warn':'ok','출발 전 확인 '+(ckLeft?ckLeft+'개 남음':'완료')).replace('<span ','<span data-goto="before" role="button" tabindex="0" ')+chip(bagDone<bagAll?'':'ok','캐리어 '+(bagAll?Math.round(bagDone/bagAll*100):0)+'%','tool-bag')+'</div>';
+      if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요'+fst(f)+'</span></div>'; }
       nc.innerHTML=h; nc.hidden=false; return;
     }
     if(di<0){ nc.hidden=true; document.dispatchEvent(new CustomEvent('tp-now',{detail:{di:-1}})); return; }
@@ -571,7 +573,7 @@ document.querySelectorAll('.route').forEach(function(card){
       +(RAIN[ds]>=50&&C.days[di].alt?chip('rain','비 올 확률 '+RAIN[ds]+'% · 플랜 B','alt-'+(di+1)):'')
       +(cs.length?chip('cash','현금 필요 '+cs.length+'곳'):'')
       +(bg?chip(sp>bg[1]?'warn':'','오늘 '+sym+fmt(sp)+' / 예산 '+sym+fmt(bg[0])+'~'+fmt(bg[1]),'tool-ex'):'')+'</div>';
-    var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준</span></div>'; }
+    var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준'+fst(f)+'</span></div>'; }
     h+=row(ci,'지금',di)+row(nx,'다음',di)+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
     var nb=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
     if(nb&&C.near&&C.near.length) h+='<button type="button" class="nc-near" data-open="tool-near" data-area="'+esc(nb.area||'')+'"><b>줄이 길거나 문을 닫았나요?</b><span>'+(nb.area?esc(nb.area)+' 근처 ':'')+'지금 열었을 만한 대안 보기 ›</span></button>';
@@ -1030,4 +1032,56 @@ document.querySelectorAll('.route').forEach(function(card){
     document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'&&cur) hide(); });
     window.addEventListener('resize',function(){ if(cur) place(cur); });
   });
+})();
+
+
+// 여행 도구 묶음: 출발 전에는 '떠나기 전', 여행 중에는 '현지에서', 다녀온 뒤에는 '함께·기록'을 맨 앞에
+(function(){
+  var box=document.querySelector('.tgroups'), cf=document.getElementById('trip-cfg'); if(!box||!cf) return; var C=JSON.parse(cf.textContent);
+  var q=new URLSearchParams(location.search).get('now'), n=q?new Date(q):new Date(), p=function(d){return String(d).padStart(2,'0')};
+  var ds=n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate()), ph=!C.start||ds<C.start?'prep':(ds>C.end?'share':'local');
+  var order={prep:['prep','local','share'],local:['local','share','prep'],share:['share','local','prep']}[ph];
+  order.forEach(function(g){ var el=box.querySelector('[data-g="'+g+'"]'); if(el) box.appendChild(el); });
+  var first=box.querySelector('[data-g="'+ph+'"] .tg-now'); if(first) first.hidden=false;
+})();
+
+// 이 여행에서 찾기: 팝업(장소·시간표·후보·도구)과 화면 제목을 한 번에 찾아 바로 연다
+(function(){
+  var dlg=document.getElementById('find'); if(!dlg) return;
+  var inp=dlg.querySelector('.find-q'), out=dlg.querySelector('.find-r'), idx=null;
+  var esc=function(x){ return String(x||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); };
+  var norm=function(x){ return String(x||'').toLowerCase().replace(/\s+/g,' ').trim(); };
+  var KIND={blk:'일정',pl:'장소',cg:'후보',alt:'플랜 B',tool:'도구',ov:'준비'};
+  function build(){
+    idx=[];
+    document.querySelectorAll('dialog.sheet[id]').forEach(function(d){
+      if(/^(find|welcome|sync-in|picks-all)$/.test(d.id)) return;
+      var t=d.querySelector('.sheet-h b'), sub=d.querySelector('.sheet-h small'); if(!t) return;
+      var k=d.id.split('-')[0];
+      idx.push({open:d.id,kind:KIND[k]||'보기',t:t.textContent.trim(),s:sub?sub.textContent.trim():'',b:norm(d.querySelector('.sheet-b').textContent).slice(0,1500)});
+    });
+    document.querySelectorAll('main section[id] > h2, main section[id] .card > h3').forEach(function(h){
+      var sec=h.closest('section[id]'); idx.push({go:sec.id,kind:'화면',t:h.textContent.trim(),s:'',b:''});
+    });
+    document.querySelectorAll('.daytabs button[data-pane]').forEach(function(b){ idx.push({go:b.dataset.pane,kind:'날짜',t:b.textContent.replace(/\s+/g,' ').trim(),s:'',b:''}); });
+    // 팝업이 없는 도구(택시 카드·길찾기·쇼핑 리스트)는 타일을 대신 눌러 준다
+    document.querySelectorAll('.tools .tool:not([data-open])').forEach(function(el,i){ var b=el.querySelector('b'), sm=el.querySelector('small'); el.dataset.fi=i; idx.push({tile:i,kind:'도구',t:b?b.textContent:'',s:sm?sm.textContent:'',b:''}); });
+  }
+  function run(){
+    if(!idx) build();
+    var q=norm(inp.value); if(!q){ out.innerHTML='<li class="find-empty">장소 이름, 음식, 도구 이름, "2일차"처럼 써 보세요.</li>'; return; }
+    var ws=q.split(' '), hits=[];
+    idx.forEach(function(x){ var tt=norm(x.t+' '+x.s), score=0;
+      for(var i=0;i<ws.length;i++){ var w=ws[i]; if(tt.indexOf(w)>=0) score+=tt.indexOf(w)===0?3:2; else if(x.b.indexOf(w)>=0) score+=1; else return; }
+      hits.push([score,x]); });
+    hits.sort(function(a,b){return b[0]-a[0]});
+    out.innerHTML=hits.length?hits.slice(0,40).map(function(h){ var x=h[1],
+      attr=x.open?'data-open="'+esc(x.open)+'"':x.go?'data-goto="'+esc(x.go)+'"':'data-tile="'+x.tile+'"';
+      return '<li><button type="button" '+attr+'><em>'+esc(x.kind)+'</em><b>'+esc(x.t)+'</b>'+(x.s?'<small>'+esc(x.s)+'</small>':'')+'</button></li>'; }).join('')
+      :'<li class="find-empty">찾는 게 없어요. 다른 말로 써 보세요.</li>';
+  }
+  inp.addEventListener('input',run);
+  out.addEventListener('click',function(ev){ var b=ev.target.closest('[data-tile]'); if(!b) return; dlg.close(); document.body.classList.remove('sheet-open');
+    var el=document.querySelector('.tools .tool[data-fi="'+b.dataset.tile+'"]'); if(el) el.click(); });
+  new MutationObserver(function(){ if(dlg.open){ run(); setTimeout(function(){inp.focus()},60); } }).observe(dlg,{attributes:true,attributeFilter:['open']});
 })();
