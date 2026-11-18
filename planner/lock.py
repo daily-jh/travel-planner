@@ -155,8 +155,8 @@ if(/[?&]lock(=|&|$)/.test(location.search)){{drop();history.replaceState(null,''
 var saved=get();
 if(saved)open_(saved).then(write,function(){{drop();show()}});else show();
 f.addEventListener('submit',function(ev){{
-  ev.preventDefault();if(!pw.value)return;go.disabled=true;go.textContent='여는 중…';err.textContent='';
-  crypto.subtle.importKey('raw',new TextEncoder().encode(pw.value),'PBKDF2',false,['deriveBits'])
+  ev.preventDefault();var v=pw.value.trim();if(!v)return;go.disabled=true;go.textContent='여는 중…';err.textContent='';
+  crypto.subtle.importKey('raw',new TextEncoder().encode(v),'PBKDF2',false,['deriveBits'])
     .then(function(k){{return crypto.subtle.deriveBits({{name:'PBKDF2',hash:'SHA-256',salt:b(D.salt),iterations:D.it}},k,256)}})
     .then(function(bits){{var raw=e(new Uint8Array(bits));return open_(raw).then(function(h){{put(raw,document.getElementById('keep').checked);write(h)}})}})
     .catch(function(){{go.disabled=false;go.textContent='열기';err.textContent='비밀번호가 맞지 않아요.';pw.select();
@@ -185,7 +185,7 @@ def lock_pages(key, site):
 
 
 def main():
-    pw = os.environ.get("SITE_PASSWORD", "")
+    pw = os.environ.get("SITE_PASSWORD", "").strip()  # 시크릿에 붙여 넣다 따라온 공백·줄바꿈은 뺀다
     if not pw:
         print("lock: SITE_PASSWORD 가 없어서 잠그지 않아요 (사이트가 누구에게나 열려 있어요).")
         return
