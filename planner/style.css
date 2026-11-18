@@ -757,12 +757,12 @@ main.wrap>*{min-width:0}
 #tools{order:-2}
 body.views [data-view]{display:none}
 body.views[data-view="home"] [data-view="home"],body.views[data-view="plan"] [data-view="plan"],
-body.views[data-view="places"] [data-view="places"],body.views[data-view="prep"] [data-view="prep"]{display:block;animation:viewin .32s var(--ease) both}
+body.views[data-view="places"] [data-view="places"],body.views[data-view="prep"] [data-view="prep"],body.views[data-view="money"] [data-view="money"]{display:block;animation:viewin .32s var(--ease) both}
 body.views header.hero[data-view]{animation:none}
 @keyframes viewin{from{opacity:0;transform:translateY(8px)}}
 body.views:not([data-view="home"]) main.wrap{padding-top:env(safe-area-inset-top,0px)}
 body.views main.wrap>section:not([hidden]){padding-top:26px}
-.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;gap:2px;padding:5px;width:min(360px,calc(100% - 32px));border-radius:999px;
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;gap:2px;padding:5px;width:min(400px,calc(100% - 24px));border-radius:999px;
  background:color-mix(in srgb,var(--card) 78%,transparent);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:0 10px 34px rgba(0,0,0,.16),0 0 0 .5px var(--sep)}
 .tabbar button{flex:1;min-width:0;font:inherit;cursor:pointer;border:none;background:transparent;color:var(--label2);border-radius:999px;padding:6px 4px 5px;display:grid;justify-items:center;gap:1px;transition:background .25s var(--ease),color .2s,transform .12s}
 .tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -1313,6 +1313,26 @@ a.trip{align-content:start}
 .cut-th.on::after{content:"✓";position:absolute;right:4px;top:4px;width:20px;height:20px;border-radius:50%;background:#0a84ff;color:#fff;font-size:12px;line-height:20px;text-align:center}
 .cut-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink);font:inherit;font-size:var(--fs-cap)}
 .cut-add b{font-size:24px;line-height:1}
+/* 공금 */
+.tone-pool{--tone:var(--pri)}
+.exf-who{flex-wrap:wrap}
+.pool{margin-bottom:12px}
+.pool-card{margin-top:14px}
+.pool-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.pool-h h3{margin:0;font-size:var(--fs-body)} .pool-h span{font-size:var(--fs-foot);color:var(--label2)} .pool-h b{font-size:var(--fs-t3);color:var(--ink);letter-spacing:-.02em;margin-left:4px}
+.pool-w{display:grid;gap:8px}
+.pw{background:var(--fill);border-radius:var(--r-md);padding:12px}
+.pw-t{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pw-t b{font-size:var(--fs-sub)}
+.pw-t label{display:flex;align-items:center;gap:6px;font-size:var(--fs-foot);color:var(--label2)}
+.pw-t input{font:inherit;font-size:16px;font-weight:700;width:120px;text-align:right;padding:6px 10px;border:none;border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
+.pw-bar{height:6px;border-radius:999px;background:color-mix(in srgb,var(--pri) 14%,transparent);margin:10px 0 8px;overflow:hidden}
+.pw-bar i{display:block;height:100%;border-radius:999px;background:var(--pri);transition:width var(--dur-2) var(--ease)}
+.pw-cash .pw-bar i{background:var(--acc)}
+.pw-n{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-foot);color:var(--label2)} .pw-n b{color:var(--ink);font-size:var(--fs-sub)}
+.pw.over .pw-n b{color:#d70015}
+.pool-need{margin:10px 0 0;font-size:var(--fs-foot);padding:8px 12px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--acc) 10%,transparent)}
+.pool-foot{margin:8px 0 0;font-size:var(--fs-cap);color:var(--label2)}
 
 /* ================================================================ 여행지 안내 (planner/guide.py · guide.js): 면세 환급 · 에티켓 · 역사·문화 */
 .t-tf .ti{background:linear-gradient(160deg,#ffd60a,#ff375f)} .t-etq .ti{background:linear-gradient(160deg,#34c759,#0a84ff)} .t-his .ti{background:linear-gradient(160deg,#c7a26b,#8e4b3a)}
@@ -1478,3 +1498,6 @@ a.trip{align-content:start}
 .mem-days{margin-bottom:var(--sp-3)}
 @media (prefers-reduced-motion: reduce){.mem-hero,.mem-q,.mem-list li,.ch-o.won{animation:none}}
 .chl-sum .tf-bar i{background:var(--ok)}
+
+.pool-go{display:flex;justify-content:flex-end;margin-top:10px}
+#money .pool-card{margin-top:0}

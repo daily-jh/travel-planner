@@ -456,18 +456,38 @@ document.querySelectorAll('.route').forEach(function(card){
   var exf=document.querySelector('.exf'), exl=document.querySelector('.exlist'), exs=document.querySelector('.exsum'), exc=document.querySelector('.excat'), exMini=document.querySelector('.ex-mini');
   var krw=function(v){ return rate&&cur.symbol?' <small>₩'+fmt(v*rate)+'</small>':''; };
   ex.forEach(function(x){ if(!x.id) x.id=rid(); });
+  // 공금: 커플통장·트래블카드(원)와 현금(현지 돈) 두 지갑. 넣은 돈에서 '공금 카드/현금'으로 낸 지출을 뺀다
+  var POOLK='tp-pool-'+slug, pool=LS.get(POOLK,{card:0,cash:0}), POOL={'공금카드':'card','공금현금':'cash'};
+  var isPool=function(w){ return !!POOL[w]; }, whoName=function(w){ return w==='공금카드'?'공금 카드':w==='공금현금'?'공금 현금':w; };
+  var toKrw=function(v){ return cur.symbol&&cur.symbol!=='₩'?(rate?v*rate:0):v; };
+  function renderPool(){
+    var s0=cur.symbol||'₩', local=s0!=='₩', sp={card:0,cash:0}; ex.forEach(function(x){ var k=POOL[x.who]; if(k) sp[k]+=x.amt; });
+    var W=[{k:'card',name:'커플통장·트래블카드',unit:'₩',put:pool.card||0,used:toKrw(sp.card),usedL:sp.card},{k:'cash',name:'현금'+(local?' ('+(cur.name||s0)+')':''),unit:s0,put:pool.cash||0,used:sp.cash,usedL:sp.cash}];
+    var allPut=(pool.card||0)+toKrw(pool.cash||0), allLeft=allPut-toKrw(sp.card)-toKrw(sp.cash);
+    var need=C.need&&rate&&local?[C.need[0]*rate,C.need[1]*rate]:(C.need&&!local?C.need:null);
+    var h='<div class="pool-h"><h3>공금</h3><span>남은 돈 <b>₩'+fmt(allLeft)+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
+      return '<div class="pw pw-'+w.k+(left<0?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><label><span>넣은 돈 '+w.unit+'</span><input type="number" inputmode="numeric" min="0" step="1000" data-pool-in="'+w.k+'" value="'+(w.put||'')+'" placeholder="0" aria-label="'+w.name+' 넣은 돈"></label></div>'
+        +'<div class="pw-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'
+        +'<div class="pw-n"><span>쓴 돈 '+(w.k==='card'&&local?s0+fmt(w.usedL)+' ≈ ₩'+fmt(w.used):w.unit+fmt(w.used))+'</span><b>'+(left<0?'모자람 ':'남음 ')+w.unit+fmt(Math.abs(left))+'</b></div></div>'; }).join('')+'</div>';
+    if(need) h+='<p class="pool-need">총 필요 예산(식비·입장료) ₩'+fmt(need[0])+'~'+fmt(need[1])+' · 공금 '+(allPut?(allPut>=need[1]?'넉넉해요':allPut>=need[0]?'예상 범위 안이에요':'₩'+fmt(need[0]-allPut)+' 더 있으면 최소 예산이에요'):'금액을 넣으면 비교해 드려요')+'</p>';
+    h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드는 현지 돈으로 적어도 환율(₩'+fmt(rate*100)+'/'+s0+'100)로 바꿔 빼요.':'')+' 이 휴대폰에 저장돼요.</p>';
+    document.querySelectorAll('[data-pool]').forEach(function(box){ var fo=box.contains(document.activeElement)?document.activeElement.dataset.poolIn:null; box.innerHTML=h; if(fo){ var i=box.querySelector('[data-pool-in="'+fo+'"]'); if(i){ i.focus(); var v=i.value; i.value=''; i.value=v; } } });
+  }
+  document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(!i) return; pool[i.dataset.poolIn]=Math.max(0,parseFloat(i.value)||0); LS.set(POOLK,pool); renderPool(); });
   function renderEx(){
-    if(!exl) return; var s0=cur.symbol||'₩', tot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
-    ex.forEach(function(x){ tot+=x.amt; paid[x.who]=(paid[x.who]||0)+x.amt; byCat[x.cat||'기타']=(byCat[x.cat||'기타']||0)+x.amt; byDay[x.date]=(byDay[x.date]||0)+x.amt; });
+    renderPool();
+    if(!exl) return; var s0=cur.symbol||'₩', tot=0, ptot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
+    ex.forEach(function(x){ tot+=x.amt; if(isPool(x.who)) ptot+=x.amt; else paid[x.who]=(paid[x.who]||0)+x.amt; byCat[x.cat||'기타']=(byCat[x.cat||'기타']||0)+x.amt; byDay[x.date]=(byDay[x.date]||0)+x.amt; });
     var day=null, rows=[];
     ex.map(function(x,i){return [x,i]}).reverse().forEach(function(p){ var x=p[0];
       if(x.date!==day){ day=x.date; rows.push('<li class="exday"><span>'+day+'</span><b>'+s0+fmt(byDay[day])+'</b></li>'); }
-      rows.push('<li'+(exf&&exf.dataset.edit===x.id?' class="editing"':'')+'><span class="w" role="button" tabindex="0" data-edit="'+x.id+'" aria-label="고치기">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+x.who+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
+      rows.push('<li'+(exf&&exf.dataset.edit===x.id?' class="editing"':'')+'><span class="w" role="button" tabindex="0" data-edit="'+x.id+'" aria-label="고치기">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+whoName(x.who)+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
     exl.innerHTML=rows.join('');
-    var share=names.length?tot/names.length:0, line='';
-    if(names.length===2&&tot>0){ var a=names[0],b=names[1],d=paid[a]-share;
+    var share=names.length?tot/names.length:0, own=tot-ptot, oshare=names.length?own/names.length:0, line='';
+    if(names.length===2&&own>0){ var a=names[0],b=names[1],d=paid[a]-oshare;
       line=Math.abs(d)<1?'딱 반반이에요':(d>0?b+' → '+a:a+' → '+b)+' <b>'+s0+fmt(Math.abs(d))+'</b>'+krw(Math.abs(d)); }
-    exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+s0+fmt(tot)+'</b>'+krw(tot)+'</div><div><small>1인당</small><b>'+s0+fmt(share)+'</b>'+krw(share)+'</div><div class="settle"><small>정산</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
+    else if(names.length===2) line='공금으로만 써서 나눌 돈이 없어요';
+    exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+s0+fmt(tot)+'</b>'+krw(tot)+'</div><div><small>1인당</small><b>'+s0+fmt(share)+'</b>'+krw(share)+'</div><div class="settle"><small>개인 돈 정산'+(ptot?' (공금 '+s0+fmt(ptot)+' 제외)':'')+'</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
     var cs=Object.keys(byCat).sort(function(x,y){return byCat[y]-byCat[x]});
     exc.innerHTML=cs.length?'<div class="catbar">'+cs.map(function(c,i){return '<i style="flex:'+byCat[c]+'" class="cb'+i+'"></i>'}).join('')+'</div><div class="catleg">'+cs.map(function(c,i){return '<span><i class="cb'+i+'"></i>'+c+' '+s0+fmt(byCat[c])+'</span>'}).join('')+'</div>':'';
     var tfs=ex.filter(function(x){return x.tf}), tft=0; tfs.forEach(function(x){tft+=x.amt});
@@ -497,8 +517,8 @@ document.querySelectorAll('.route').forEach(function(card){
         if(y){ var tfe=exf.querySelector('.exf-tf'); y.what=String(f.get('what')).slice(0,40); y.amt=amt; y.who=who?who.dataset.payer:y.who; y.cat=cat?cat.dataset.cat:y.cat; y.tf=(tfe&&tfe.getAttribute('aria-pressed')==='true')||undefined; y.e=Date.now(); if(tfe) tfe.setAttribute('aria-pressed','false'); }
         LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); nowMode(); return; }
       var d=localNow(); var tfb=exf.querySelector('.exf-tf'), tf=tfb&&tfb.getAttribute('aria-pressed')==='true'; if(tfb) tfb.setAttribute('aria-pressed','false');
-      ex.push({id:rid(),t:Date.now(),tf:tf||undefined,what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:names[0],cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
-      LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); });
+      ex.push({id:rid(),t:Date.now(),tf:tf||undefined,what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:'공금카드',cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
+      LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); nowMode(); });
     exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; var gone=ex.splice(+b.dataset.del,1)[0]; if(gone) LS.set(XK,LS.get(XK,[]).concat(gone.id)); if(gone&&exf.dataset.edit===gone.id){ exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); } LS.set(EK,ex); renderEx(); nowMode(); });
     renderEx();
   }
@@ -750,7 +770,7 @@ document.querySelectorAll('.route').forEach(function(card){
     if(!ex.length){ say('아직 함께 쓴 돈 기록이 없어요. 여행 도구의 \'함께 쓴 돈\'에서 적어 보세요.'); return; }
     var q=function(v){ v=String(v==null?'':v); if(/^[=+\-@\t\r]/.test(v)) v="'"+v; return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
     var sym=(C.currency&&C.currency.symbol)||'';
-    var rows=[['날짜','내용','분류','낸 사람','금액('+sym+')','면세']].concat(ex.map(function(x){ return [x.date,x.what,x.cat||'기타',x.who,x.amt,x.tf?'면세':'']; }));
+    var rows=[['날짜','내용','분류','낸 사람','금액('+sym+')','면세']].concat(ex.map(function(x){ return [x.date,x.what,x.cat||'기타',x.who==='공금카드'?'공금 카드':x.who==='공금현금'?'공금 현금':x.who,x.amt,x.tf?'면세':'']; }));
     var blob=new Blob(['﻿'+rows.map(function(r){return r.map(q).join(',')}).join('\r\n')],{type:'text/csv;charset=utf-8'});
     var u=URL.createObjectURL(blob), l=document.createElement('a'); l.href=u; l.download=C.trip+'-지출.csv'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000);
     say('지출 '+ex.length+'건을 CSV로 저장했어요. 엑셀 일정표의 정산 시트에 붙여 넣어도 돼요.');
@@ -824,7 +844,7 @@ document.querySelectorAll('.route').forEach(function(card){
     h+='<div><h4>날짜별 1인 지출</h4><p class="cap">회색 띠는 계획한 1인 식비·입장료 범위예요. 막대를 누르면 금액이 보여요.</p>'+dayChart(rows)+'</div>';
     var cats=Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a]});
     h+='<div><h4>어디에 썼나</h4>'+(cats.length?hbars(cats.map(function(c){return {label:c,v:byCat[c],sub:Math.round(byCat[c]/tot*100)+'%'}}),sym):'<p class="empty">함께 쓴 돈을 기록하면 분류별로 보여요.</p>')+'</div>';
-    if(names.length>1&&tot) h+='<div><h4>누가 냈나</h4>'+hbars(names.map(function(n,i){return {label:n,v:paid[n]||0,c:i?'var(--viz-2)':'var(--viz-1)'}}),sym)+'</div>';
+    var pv=(paid['공금카드']||0)+(paid['공금현금']||0); if(names.length>1&&tot) h+='<div><h4>누가 냈나</h4>'+hbars((pv?[{label:'공금',v:pv,c:'var(--viz-3)'}]:[]).concat(names.map(function(n,i){return {label:n,v:paid[n]||0,c:i?'var(--viz-2)':'var(--viz-1)'}})),sym)+'</div>';
     var tones=['var(--viz-3)','var(--viz-1)','var(--viz-2)'];
     var parts=[{label:'둘 다',v:both,c:tones[0]}].concat(names.slice(0,2).map(function(n,i){return {label:n+'만',v:solo[n]||0,c:tones[i+1]}}));
     h+='<div><h4>픽 나눔</h4>'+(npick?stack(parts):'<p class="empty">장소 탭에서 하트를 누르면 누가 고른 곳인지 나뉘어 보여요.</p>')+'</div>';

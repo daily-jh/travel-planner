@@ -419,6 +419,10 @@ def render_trip(slug, t):
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
+        if t.get("budget"):
+            _tl, _th, _ = costs.totals(t)
+            _n = max(len(trav), 1)
+            cfg["need"] = [_tl * _n, _th * _n]  # 총 필요 예산 (현지 통화), 공금 카드에서 비교
         cfg.update(guide.cfg(t, G))
         cfg.update(together.cfg(t))
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
@@ -511,8 +515,8 @@ def render_trip(slug, t):
     w(sheet("tool-ex", "함께 쓴 돈", "이 휴대폰에 저장돼요", '<form class="exf"><input name="what" placeholder="무엇에 썼나요 (예: 라멘)" required>'
             '<div class="exf-cat seg" role="group" aria-label="분류">' + "".join(f'<button type="button" data-cat="{c}" aria-pressed="{str(k == 0).lower()}">{c}</button>' for k, c in enumerate(cats)) + '</div>'
             f'<div class="exf-row"><label class="fx-row sm"><span>{e(sym or "₩")}</span><input name="amt" type="number" inputmode="decimal" placeholder="금액" required></label>'
-            '<div class="exf-who" role="group" aria-label="낸 사람">' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="{str(n == 0).lower()}">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
-            '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
+            '<div class="exf-who" role="group" aria-label="낸 곳">' + '<button type="button" class="tone-pool" data-payer="공금카드" aria-pressed="true">공금 카드</button><button type="button" class="tone-pool" data-payer="공금현금" aria-pressed="false">공금 현금</button>' + "".join(f'<button type="button" class="tone-{e(x.get("tone", "pri"))}" data-payer="{e(x["name"])}" aria-pressed="false">{e(x["name"])}</button>' for n, x in enumerate(trav)) + '</div></div>'
+            '<div class="exf-row">' + ("" if DOM else '<button type="button" class="exf-tf" aria-pressed="false">면세로 샀어요</button>') + '<button class="btn primary" type="submit">추가</button></div></form><div class="pool" data-pool></div><div class="exsum"></div><div class="excat"></div><div class="extf"></div><ul class="exlist"></ul>'))
     w(sheet("tool-sync", "일행과 공유", "일정 링크, 또는 내 픽·지출·체크를 링크 하나로",
             '<ol class="steps"><li><b>내 기록 보내기</b><span>아래 버튼을 누르면 내 픽, 함께 쓴 돈, 출발 전 체크가 담긴 링크가 만들어져요. 카카오톡이나 문자로 보내요.</span></li>'
             '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
@@ -671,7 +675,9 @@ def render_trip(slug, t):
         w('<div class="gchips">' + "".join(chips) + '</div>' + "".join(dlgs))
         w('</section>')
 
-    # 5. 비용
+    # 5. 예산 탭: 맨 위 공금(넣은 돈 → 지출 차감), 아래 예상 비용
+    w('<section id="money"><h2>공금</h2><p class="lead">커플통장·트래블카드와 현금에 넣은 돈을 적어 두면, 함께 쓴 돈에서 공금으로 낸 만큼 빠져요. 이 휴대폰에 기억돼요.</p>'
+      '<div class="card pool pool-card" data-pool></div><div class="pool-go"><button type="button" class="btn primary" data-open="tool-ex">지출 적기</button></div></section>')
     b = t.get("budget")
     if b:
         w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>')
@@ -710,17 +716,18 @@ def render_trip(slug, t):
           "desc": f'{nights}박 {nights + 1}일 일정과 지도: {days_txt}', "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/"}
     body = "\n".join(P)
     views = {"simple": "home", "tools": "home", "detail": "plan", "picks": "places", "cands": "places",
-             "overview": "prep", "budget": "prep", "before": "prep", "export": "prep", "feedback": "prep"}
+             "overview": "prep", "money": "money", "budget": "money", "before": "prep", "export": "prep", "feedback": "prep"}
     for sid, v in views.items():
         body = body.replace(f'<section id="{sid}"', f'<section data-view="{v}" id="{sid}"', 1)
     body = body.replace('<header class="hero">', '<header class="hero" data-view="home">', 1)
     icons = {"home": '<path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
              "plan": '<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
              "places": '<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+             "money": '<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17"/><circle cx="16" cy="14.5" r="1.3"/>',
              "prep": '<path d="M5 6.5h14M5 12h14M5 17.5h9"/><path d="m16.5 17.5 1.8 1.8 3-3.4"/>'}
     body += ('<nav class="tabbar" aria-label="화면 바꾸기">' + "".join(
         f'<button type="button" data-tab="{k}"><svg viewBox="0 0 24 24" aria-hidden="true">{icons[k]}</svg><span>{lab}</span></button>'
-        for k, lab in (("home", "홈"), ("plan", "일정"), ("places", "장소"), ("prep", "준비"))) + '</nav>')
+        for k, lab in (("home", "홈"), ("plan", "일정"), ("places", "장소"), ("money", "예산"), ("prep", "준비"))) + '</nav>')
     return page(t.get("short", t["title"]) + " 여행", body, 2, t.get("theme", "hakata"), og=og)
 
 
