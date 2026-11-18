@@ -1,4 +1,4 @@
-"""여행자 편의 기능: 오늘 챙길 것, 둘이 고르기, 다음 여행 메모.
+"""여행자 편의 기능: 오늘 챙길 것, 쉼표(쉬어 갈 때 알림), 다음 여행 메모.
 
 build.py가 부른다. 표준 라이브러리만 쓴다. 화면 동작은 planner/comfort.js.
 기록(체크·고른 곳·메모)은 각자 휴대폰 localStorage 에만 저장된다.
@@ -7,14 +7,18 @@ build.py가 부른다. 표준 라이브러리만 쓴다. 화면 동작은 planne
 - 오늘 챙길 것: 여행 당일 정보를 휴대폰으로 받고 싶다는 사람이 대부분(MTT 93%)이고,
   호텔에 두고 가는 물건 1위는 충전기·보조배터리(Hotels.com 2024, Choice Hotels 유럽 약 2/3).
   일본은 단기 여행자도 여권을 늘 가지고 다녀야 한다(출입국관리법 23조).
-- 둘이 고르기: 커플은 '여행 가서 뭘 할지'를 정할 때 가장 많이 부딪히고(College of Charleston, 25쌍),
-  한쪽이 늘 정하는 불균형이 여행 만족도를 낮춘다(Journal of Quality Assurance in Hospitality & Tourism).
+- 쉼표: 피곤하면 감정 조절이 떨어져 여행 중 다툼이 늘고, 일정을 꽉 채우는 것이 그 원인으로 꼽힌다.
+  커플 다툼 1위 원인은 낯선 곳에서 길 찾기(Shane & Co. 1,000명). 쉬는 줄 없이 2시간 반을 넘기면 지금 카드에서
+  근처 카페를 권한다. ('택1' 함께 고르기는 planner/together.py 에 있다)
 - 다음 여행 메모: 같은 플래너를 계속 쓰니, 한 번 겪은 시행착오를 다음 여행 준비 화면에 다시 보여 준다.
 """
 import re
 import zlib
 
-import build as B
+# build.TOOL_OF 에 더한다 (여행 도구 묶음). build 와 서로 부르므로 import 보다 먼저 둔다
+TOOL_OF = {"t-carry": "local", "t-les": "prep"}
+
+import build as B  # noqa: E402
 
 # 마지막 날(체크아웃) 방 나가기 전 확인. 앞쪽일수록 많이 두고 가는 물건
 CHECKOUT = [
@@ -26,6 +30,9 @@ CHECKOUT = [
     ("co-bed", "침대 밑·이불 속·베개 옆 휴대폰", ""),
     ("co-key", "카드키 반납·짐 맡기기", ""),
 ]
+
+# 쉬는 줄로 보는 종류
+REST = ["카페", "아침", "점심", "저녁", "숙소", "간식"]
 
 LESSON_CATS = ["짐", "돈", "일정", "음식", "이동", "기타"]
 
@@ -103,33 +110,13 @@ def _carry_day(t, di, d):
     return items
 
 
-def choices(t):
-    """'택1' 줄: 둘이 고르기. [{id, day, time, slot, opts}]"""
-    out = []
-    for di, d in enumerate(t["days"]):
-        for i, b in enumerate(d["blocks"]):
-            place = B.plain(b["place"])
-            if "택1" not in place:
-                continue
-            head, _, rest = place.partition("·")
-            if rest.strip():
-                opts = [x.strip() for x in rest.split("/")]
-            else:  # '유후인 점심 택1' 처럼 가게 이름이 설명 칸에만 있으면 값은 빼고 이름만
-                opts = [re.split(r"\s+[¥₩\d]", x.strip())[0] for x in B.plain(b.get("what", "")).split("/")]
-            opts = [o for o in opts if o][:6]
-            if len(opts) >= 2:
-                out.append({"id": _bid(di, i), "day": di, "date": d["date"], "time": b["time"],
-                            "slot": head.replace("택1", "").strip() or b["type"], "opts": opts})
-    return out
-
-
 def cfg(t):
     """trip-cfg 에 더할 것."""
     return {
         "carry": [_carry_day(t, di, d) for di, d in enumerate(t["days"])],
         "checkout": [{"id": i, "t": x, "why": w} for i, x, w in CHECKOUT] if t.get("stay") else [],
-        "choices": choices(t),
         "day_theme": [B.plain(d.get("theme", "")) for d in t["days"]],
+        "rest_types": REST,
         "lesson_cats": LESSON_CATS,
         "short": B.plain(t.get("short") or t["title"]),
     }
@@ -137,9 +124,6 @@ def cfg(t):
 
 def tiles(t):
     x = [("t-carry", "tool-carry", "✓", "오늘 챙길 것", '<small class="carry-mini">나가기 전 한 번 보기</small>')]
-    n = len(choices(t))
-    if n and len(t.get("travelers") or []) > 1:
-        x.append(("t-duo", "tool-duo", "♡", "둘이 고르기", f'<small class="duo-mini">고를 곳 {n}군데 · 양보 저울</small>'))
     x.append(("t-les", "tool-les", "✐", "다음 여행 메모", '<small class="les-mini">이번에 배운 것 남기기</small>'))
     return x
 
@@ -150,10 +134,6 @@ def sheets(t):
              '<div class="carry"><div class="seg carry-days" role="tablist"></div><p class="carry-head"></p>'
              '<ul class="bag carry-list"></ul><div class="carry-co" hidden><h4>방 나가기 전</h4><ul class="bag carry-out"></ul></div>'
              '<form class="bag-add carry-add"><input name="it" placeholder="이날 챙길 것 직접 추가" required><button class="btn primary" type="submit">추가</button></form></div>')]
-    if choices(t) and len(t.get("travelers") or []) > 1:
-        out.append(S("tool-duo", "둘이 고르기", "'택1' 줄을 한 사람씩 몰래 골라요 · 이 휴대폰에 저장돼요",
-                     '<div class="duo"><div class="duo-scale"></div><div class="duo-stage" hidden></div><div class="duo-list"></div>'
-                     '<p class="lead duo-why">커플 여행에서 가장 자주 부딪히는 건 \'가서 뭘 할지\' 정할 때래요. 한 사람씩 몰래 고르고, 다르면 양보를 덜 한 사람이 이번엔 양보해요.</p></div>'))
     out.append(S("tool-les", "다음 여행 메모", "이번 여행에서 배운 것 · 다음 여행 준비 때 다시 보여 줘요",
                  '<div class="les"><form class="les-add"><div class="seg les-cat" role="group"></div>'
                  '<div class="bag-add" style="margin-top:0"><input name="it" placeholder="예: 보조배터리 하나 더 · 첫날 저녁은 예약" required><button class="btn primary" type="submit">남기기</button></div></form>'

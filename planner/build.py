@@ -33,8 +33,8 @@ def asset_ver(*paths):
 
 
 _P = os.path.dirname(os.path.abspath(__file__))
-ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py", "comfort.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "comfort.js")))}
+ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py"))),
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -177,9 +177,9 @@ def flags(b):
 # 여행 도구를 쓰는 때에 따라 셋으로 묶는다. app.js가 출발 전·여행 중·다녀온 뒤에 맞춰 순서를 바꾼다
 TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "함께·기록")]
 TOOL_OF = {c: g for g, cs in {
-    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx", "t-etq", "t-his", "t-les"],
-    "local": ["t-carry", "t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-tf", "t-coin", "t-tz", "t-sos"],
-    "share": ["t-ex", "t-sync", "t-duo", "t-log", "t-rep", "t-cut"],
+    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx", "t-etq", "t-his"],
+    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-tf", "t-coin", "t-tz", "t-sos"],
+    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-cut"],
 }.items() for c in cs}
 
 
@@ -420,12 +420,12 @@ def render_trip(slug, t):
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
         cfg.update(guide.cfg(t, G))
-        cfg.update(comfort.cfg(t))
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
                         "art": os.path.basename(_art) if _art and os.path.isfile(os.path.join(ROOT, "trips", slug, _art)) else "",
                         "name": t.get("short", t["title"]).replace("*", "")}
+        cfg.update(comfort.cfg(t))  # 여행자 편의: 오늘 챙길 것·쉼표·다음 여행 메모
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -459,10 +459,10 @@ def render_trip(slug, t):
         ("t-sync", "tool-sync", "⇄", "일행과 공유", '<small>일정 링크·내 기록 보내기</small>') if len(trav) > 1 else None,
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>') if not DOM and tz_gap(t) else None,
     ]
+    tiles += comfort.tiles(t)
     at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
     tiles[at:at] = live.tiles(t)
     tiles += guide.tiles(t, G)
-    tiles += comfort.tiles(t)
     tiles += extras.tiles(t)
     groups = {g: [] for g, _ in TOOL_GROUPS}
     for x in tiles:
@@ -526,10 +526,10 @@ def render_trip(slug, t):
             for nm, num in t["emergency"]) + '</ul>' + ("" if DOM else '<p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>')))
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
+    w(comfort.sheets(t))
     w(extras.sheets(slug, t))
     w(live.sheets(t))
     w(guide.sheets(slug, t, G))
-    w(comfort.sheets(t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -866,10 +866,12 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "comfort.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
+    with open(os.path.join(OUT, "assets", "app.js"), "a", encoding="utf-8") as fp:  # 여행자 편의 스크립트는 맨 뒤에
+        fp.write("\n" + open(os.path.join(here, "comfort.js"), encoding="utf-8").read())
     manifest = {"name": SITE_NAME, "short_name": SITE_NAME, "lang": "ko", "start_url": "../", "scope": "../", "display": "standalone",
                 "background_color": "#f5f6f9", "theme_color": "#24346b",
                 "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
@@ -912,12 +914,16 @@ def main():
     open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 
 
+import comfort  # noqa: E402  (여행자 편의: planner/comfort.py)
+# 다른 모듈 목록 줄을 건드리지 않고 여기서 더한다: 도구 묶음, 스타일·스크립트 버전
+TOOL_OF.update(comfort.TOOL_OF)
+_CV = asset_ver(os.path.join(_P, "comfort.py"), os.path.join(_P, "comfort.js"))
+ASSET_V = {k: v[:4] + _CV[:4] for k, v in ASSET_V.items()}
 import costs  # noqa: E402
 import deadlines  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
 import guide  # noqa: E402
-import comfort  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())

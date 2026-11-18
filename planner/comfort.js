@@ -1,5 +1,5 @@
 // ================================================================ 여행자 편의 (planner/comfort.py 가 그린 화면을 움직인다)
-// 오늘 챙길 것 · 둘이 고르기(양보 저울) · 다음 여행 메모. 모든 기록은 이 휴대폰 localStorage 에만 저장된다.
+// 오늘 챙길 것 · 쉼표(쉬어 갈 때) · 다음 여행 메모. ('택1' 함께 고르기는 planner/together.js) 모든 기록은 이 휴대폰 localStorage 에만 저장된다.
 (function(){
   var cfgEl=document.getElementById('trip-cfg'); if(!cfgEl) return;
   var C=JSON.parse(cfgEl.textContent), slug=C.trip;
@@ -13,8 +13,6 @@
   var WK='일월화수목금토';
   var wk=function(ds){ return WK[new Date(ds+'T12:00:00').getDay()]; };
   var days=C.days||[];
-  // 받침에 따라 조사 고르기: j('지훈','이','가') → '지훈이'
-  var j=function(w,a,b){ var c=String(w).charCodeAt(String(w).length-1); return w+((c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28)?a:b); };
 
   // ---------------------------------------------------------- 오늘 챙길 것
   var CK='tp-carry-'+slug, cs=LS.get(CK,{c:{},a:{}}); cs.c=cs.c||{}; cs.a=cs.a||{};
@@ -65,74 +63,33 @@
     renderCarry();
   }
 
-  // ---------------------------------------------------------- 둘이 고르기 + 양보 저울
-  var DK='tp-duo-'+slug, ds0=LS.get(DK,{d:{},y:{}}); ds0.d=ds0.d||{}; ds0.y=ds0.y||{};
-  var duo=document.querySelector('.duo'), TR=(C.travelers||[]).slice(0,2).map(function(x){return x.name}), CH=C.choices||[];
-  var chOf=function(id){ return CH.filter(function(c){return c.id===id})[0]; };
-  function ylen(n){ return ds0.y[n]||0; }
-  // 양보를 더 많이 한 사람의 픽이 먼저. 같으면 제비뽑기
-  function favored(){ var a=ylen(TR[0]), b=ylen(TR[1]); return a>b?TR[0]:b>a?TR[1]:''; }
-  function scale(){ if(!duo) return; var a=ylen(TR[0]), b=ylen(TR[1]), t=a+b, f=favored(), tilt=t?Math.max(-4,Math.min(4,(b-a)*1.5)):0;
-    duo.querySelector('.duo-scale').innerHTML='<div class="sc-beam" style="--tilt:'+tilt+'deg"><span><b>'+esc(TR[0])+'</b> 양보 '+a+'</span><i aria-hidden="true">♡</i><span><b>'+esc(TR[1])+'</b> 양보 '+b+'</span></div>'
-      +'<p>'+(f?'다음에 서로 다르면 <b>'+esc(f)+'</b> 픽으로 해요 (양보를 더 했으니까요)':'지금은 똑같아요. 다음에 다르면 제비뽑기')+'</p>'; }
-  function decided(id){ return ds0.d[id]; }
-  function listDuo(){ if(!duo) return; var by={}, h='';
-    CH.forEach(function(c){ (by[c.day]=by[c.day]||[]).push(c); });
-    Object.keys(by).forEach(function(di){ var d=days[+di]; h+='<h4>'+(+di+1)+'일차 · '+md(d.date)+'('+wk(d.date)+')</h4><ul class="duo-ch">';
-      by[di].forEach(function(c){ var r=decided(c.id);
-        h+='<li><div><small>'+esc(c.time)+' · '+esc(c.slot)+'</small><b>'+(r?'♡ '+esc(r.pick):esc(c.opts.join(' / ')))+'</b>'+(r?'<span>'+esc(how(r))+'</span>':'')+'</div>'
-          +'<button type="button" class="btn'+(r?'':' primary')+'" data-duo="'+esc(c.id)+'">'+(r?'다시':'고르기')+'</button></li>'; });
-      h+='</ul>'; });
-    duo.querySelector('.duo-list').innerHTML=h; scale();
-    var m=document.querySelector('.duo-mini'), n=CH.filter(function(c){return !decided(c.id)}).length; if(m) m.textContent=n?'고를 곳 '+n+'군데 · 양보 저울':'다 골랐어요 ♡';
-  }
-  function how(r){ return r.how==='same'?'둘 다 같은 곳!':r.how==='any'?'한 사람이 아무거나 좋다고 해서':r.how==='rand'?'제비뽑기로':r.who?j(r.who,'이','가')+' 양보했어요':''; }
-  var st=null, stage=duo&&duo.querySelector('.duo-stage');
-  function optBtns(c){ return '<div class="duo-opts">'+c.opts.map(function(o,k){return '<button type="button" class="btn" data-dpick="'+k+'">'+esc(o)+'</button>'}).join('')+'<button type="button" class="btn ghost" data-dpick="-1">아무거나 좋아</button></div>'; }
-  function paintStage(){ if(!stage) return; if(!st){ stage.hidden=true; duo.querySelector('.duo-list').hidden=false; return; }
-    duo.querySelector('.duo-list').hidden=true; stage.hidden=false; var c=chOf(st.id), h='<p class="duo-q"><small>'+esc(c.time)+' · '+esc(c.slot)+'</small></p>';
-    if(st.step===0||st.step===2){ var me=TR[st.step/2], other=TR[1-st.step/2];
-      h+='<div class="duo-turn"><b>'+esc(me)+' 차례</b><span>'+esc(j(other,'은','는'))+' 화면을 보지 말아 주세요</span></div>'+optBtns(c); }
-    else if(st.step===1){ h+='<div class="duo-hand"><span aria-hidden="true">🤲</span><b>휴대폰을 '+esc(TR[1])+'에게 건네주세요</b><button type="button" class="btn primary" data-dnext>'+esc(j(TR[1],'이','가'))+' 받았어요</button></div>'; }
-    else { var a=st.p[0], b=st.p[1], A=a<0?null:c.opts[a], B=b<0?null:c.opts[b];
-      if(A&&B&&A===B) h+=reveal(true,A,'둘 다 '+A+'!');
-      else if(!A&&!B) h+=reveal(false,'','둘 다 아무거나 좋대요')+'<div class="duo-opts"><button type="button" class="btn primary" data-dset="rand">제비뽑기</button></div>';
-      else if(!A||!B) h+=reveal(true,A||B,j(A?TR[1]:TR[0],'은','는')+' 아무거나 좋대요 → '+(A||B));
-      else { var f=favored();
-        h+='<div class="duo-diff"><div><small>'+esc(TR[0])+'</small><b>'+esc(A)+'</b></div><i>vs</i><div><small>'+esc(TR[1])+'</small><b>'+esc(B)+'</b></div></div>'
-          +'<p class="lead" style="margin:10px 0">'+(f?'양보 저울로는 <b>'+esc(f)+'</b> 차례예요.':'양보 저울이 똑같아요. 제비뽑기 어때요?')+'</p>'
-          +'<div class="duo-opts">'+[0,1].map(function(k){ var by=TR[k], y=TR[1-k]; return '<button type="button" class="btn'+(f===by?' primary':'')+'" data-dset="'+k+'">'+esc(st.p[k]<0?'':c.opts[st.p[k]])+' <small>('+esc(y)+' 양보)</small></button>'; }).join('')
-          +'<button type="button" class="btn'+(f?'':' primary')+'" data-dset="rand">제비뽑기</button></div>'; } }
-    h+='<button type="button" class="btn ghost duo-cancel" data-dcancel>그만두기</button>';
-    stage.innerHTML=h; var fb=stage.querySelector('.btn'); if(fb) fb.focus({preventScroll:true}); }
-  function reveal(ok,pick,msg){ if(ok){ st.res={pick:pick,how:/아무거나/.test(msg)?'any':'same'}; }
-    return '<div class="duo-reveal'+(ok?' ok':'')+'"><span aria-hidden="true">♡</span><b>'+esc(msg)+'</b></div>'+(ok?'<div class="duo-opts"><button type="button" class="btn primary" data-dsave>이걸로 정하기</button></div>':''); }
-  function save(r){ ds0.d[st.id]=Object.assign({at:Date.now()},r); if(r.who) ds0.y[r.who]=(ds0.y[r.who]||0)+1; LS.set(DK,ds0); say('♡ '+r.pick+'(으)로 정했어요'); st=null; paintStage(); listDuo(); paintDecided(); }
-  if(duo){
-    duo.addEventListener('click',function(ev){ var b;
-      if((b=ev.target.closest('[data-duo]'))){ var id=b.dataset.duo, old=ds0.d[id]; if(old&&old.who&&ds0.y[old.who]) ds0.y[old.who]--; delete ds0.d[id]; LS.set(DK,ds0); st={id:id,step:0,p:[]}; paintStage(); return; }
-      if((b=ev.target.closest('[data-dpick]'))){ st.p.push(+b.dataset.dpick); st.step++; paintStage(); return; }
-      if(ev.target.closest('[data-dnext]')){ st.step=2; paintStage(); return; }
-      if(ev.target.closest('[data-dcancel]')){ st=null; paintStage(); listDuo(); return; }
-      if(ev.target.closest('[data-dsave]')){ save(st.res); return; }
-      if((b=ev.target.closest('[data-dset]'))){ var c=chOf(st.id), v=b.dataset.dset;
-        if(v==='rand'){ var pool=st.p.filter(function(x){return x>=0}).map(function(x){return c.opts[x]}); if(!pool.length) pool=c.opts; var pk=pool[Math.floor(Math.random()*pool.length)];
-          stage.querySelector('.duo-opts').innerHTML='<div class="duo-reveal ok spin"><span aria-hidden="true">♧</span><b>'+esc(pk)+'</b></div>';
-          setTimeout(function(){ save({pick:pk,how:'rand'}); },900); return; }
-        var k=+v; save({pick:c.opts[st.p[k]],how:'yield',who:TR[1-k]}); }
-    });
-    var dd=document.getElementById('tool-duo'); if(dd) new MutationObserver(function(){ if(!dd.open){ st=null; paintStage(); } }).observe(dd,{attributes:true,attributeFilter:['open']});
-    listDuo();
-  }
-  // 고른 곳을 시간표·지금 카드에 표시
-  function paintDecided(){ CH.forEach(function(c){ var r=decided(c.id);
-    document.querySelectorAll('tr[data-open="'+c.id+'"] td.place').forEach(function(td){ var t=td.querySelector('.duo-tag'); if(!r){ if(t) t.remove(); return; }
-      if(!t){ t=document.createElement('span'); t.className='fl duo-tag'; td.appendChild(t); } t.textContent='♡ '+r.pick; });
-    document.querySelectorAll('.nowcard .nc-row[data-open="'+c.id+'"] b').forEach(function(b){ if(r&&!b.querySelector('.swp')) b.innerHTML=esc(c.slot)+' · '+esc(r.pick)+' <i class="swp">고름</i>'; }); }); }
-  paintDecided();
+  // ---------------------------------------------------------- 쉼표: 쉬는 줄 없이 오래 움직이면 근처 카페를 권한다
+  // 피곤하면 다투기 쉽다는 조사에서. 카페·식사·숙소 줄을 쉼으로 보고, 마지막 쉼 뒤 150분이 넘었는데 다음 쉼이 45분 넘게 남았을 때만
+  var tm=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; };
+  var endOf=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/); return m?(+m[3])*60+(+m[4]):tm(s); };
+  var REST=C.rest_types||[], RK='tp-rest-'+slug, rested=LS.get(RK,{});
+  // 시각 없는 줄('점심', '오후')이 끼어 있으면 언제 쉬었는지 알 수 없으니 알리지 않는다
+  function restInfo(di,mins){ var bl=days[di].blocks, ci=-1, next=null;
+    bl.forEach(function(b,i){ var st=tm(b.time); if(st!==null&&st<=mins) ci=i; });
+    if(ci<0) return null;
+    for(var k=ci+1;k<bl.length;k++){ var s2=tm(bl[k].time); if(s2===null) return null; if(REST.indexOf(bl[k].type)>=0){ next=s2-mins; break; } }
+    var last=null; for(var j=ci;j>=0;j--){ var b=bl[j], s1=tm(b.time); if(s1===null) return null; if(REST.indexOf(b.type)>=0){ last=Math.min(mins,endOf(b.time)||s1); break; } }
+    if(last===null) last=tm(bl[0].time);
+    var mine=rested[days[di].date]; if(mine&&mine<=mins&&mine>last) last=mine;
+    return {since:mins-last,next:next,cur:bl[ci]}; }
+  function hm(m){ return (m>=60?Math.floor(m/60)+'시간 ':'')+(m%60?m%60+'분':''); }
+  function paintRest(d){ var nc=document.querySelector('.nowcard'); if(!nc||nc.hidden||nc.querySelector('.nc-rest')) return;
+    if(d.mins<9*60||d.mins>21*60) return;
+    var r=restInfo(d.di,d.mins); if(!r||r.since<150||(r.next!==null&&r.next<=45)||REST.indexOf(r.cur.type)>=0||r.cur.type==='이동') return;
+    var area=r.cur&&r.cur.area||'', box=document.createElement('div'); box.className='nc-rest';
+    box.innerHTML='<span class="nc-rest-i" aria-hidden="true">☕︎</span><div><b>쉼표 · '+hm(r.since)+' 동안 쉬지 않았어요</b><span>'+(r.next!==null?'다음 쉬는 곳까지 '+hm(r.next)+' · ':'')+'다리 쉬고 물 한 잔 하고 가요</span>'
+      +'<div class="nc-rest-b"><button type="button" class="btn primary" data-open="tool-near" data-area="'+esc(area)+'" data-kind="cafe">'+(area?esc(area)+' 근처 ':'근처 ')+'카페</button><button type="button" class="btn ghost" data-rested>쉬었어요</button></div></div>';
+    var near=nc.querySelector('.nc-near'); nc.insertBefore(box,near||null); }
+  document.addEventListener('click',function(ev){ if(!ev.target.closest('[data-rested]')) return; var n=localNow(), ds=ymd(n); rested[ds]=n.getHours()*60+n.getMinutes(); LS.set(RK,rested);
+    var x=document.querySelector('.nc-rest'); if(x) x.remove(); say('좋아요. 다시 힘내서 가요!'); });
 
   // 지금 카드에 '챙길 것' 칩
-  document.addEventListener('tp-now',function(ev){ var d=ev.detail; paintDecided(); if(!d||d.di<0||!carry) return;
+  document.addEventListener('tp-now',function(ev){ var d=ev.detail; if(!d||d.di<0) return; paintRest(d); if(!carry) return;
     var nc=document.querySelector('.nowcard .bcs'); if(!nc||nc.querySelector('.bc.carry-chip')) return;
     var p=pickDay(), L=left(p.di), s=document.createElement('span');
     s.className='bc carry-chip'+(L.left?' warn':' ok'); s.dataset.open='tool-carry'; s.setAttribute('role','button'); s.tabIndex=0;
