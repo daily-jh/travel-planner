@@ -670,6 +670,29 @@ ul.bag .del{border:none;background:none;color:var(--label3);cursor:pointer;paddi
 .bag-add input,.bag-add select{font:inherit;border:none;background:var(--fill);border-radius:12px;padding:10px 12px;color:var(--ink);min-width:0}
 .bag-add input{flex:1}
 .bag-reset{margin-top:14px;font-size:13px;padding:7px 12px;background:transparent;color:#ff3b30}
+/* ---------------------------------------------------------------- 여행자 편의 (planner/comfort.py · comfort.js) */
+.carry-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:15px}
+.carry-head span{margin-left:auto;font-size:13px;color:var(--label2)}
+.carry-tmr{font-style:normal;font-size:11.5px;font-weight:700;border-radius:6px;padding:1px 7px;background:var(--acc-soft);color:var(--acc)}
+ul.bag li .nm small{display:block;font-size:12.5px;color:var(--label2);margin-top:2px}
+ul.bag li .wh[data-open]{border:none;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600}
+.carry-co h4,.les h4{font-size:13px;font-weight:600;color:var(--label2);margin:18px 0 6px}
+.carry-co h4::before{content:"⌂ "}
+.les-cat{margin-bottom:8px}
+.les-list li{cursor:default}
+.les-list .lc{flex:none;font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--pri-soft);color:var(--pri)}
+.les-bag{margin:0 0 14px;padding:12px 14px;border:1.5px dashed var(--acc);border-radius:16px 12px 18px 12px/12px 18px 12px 16px;background:var(--acc-soft)}
+.les-bag b{font-size:13px;color:var(--acc)}
+.les-bag ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.les-bag small{color:var(--label2)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--label2)}
+.nc-rest{display:flex;gap:12px;align-items:flex-start;margin-top:8px;padding:12px 14px;border:1.5px dashed color-mix(in srgb,var(--lantern) 60%,transparent);border-radius:16px 12px 18px 12px/12px 18px 12px 16px;background:var(--lantern-soft);animation:rise .35s ease both}
+.nc-rest-i{font-size:24px;line-height:1;color:var(--lantern);animation:steam 2.4s ease-in-out infinite}
+.nc-rest>div{flex:1;min-width:0;display:grid;gap:2px}
+.nc-rest b{font-size:14.5px;color:var(--ink)} .nc-rest>div>span{font-size:12.5px;color:var(--label2)}
+.nc-rest-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.nc-rest-b .btn{padding:6px 12px;font-size:13px}
+@keyframes steam{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px) rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){.nc-rest,.nc-rest-i{animation:none}}
 /* 환율 v2 */
 .fx-dir{margin-bottom:12px}
 .fx-tax{font-size:13px;color:var(--label2);background:var(--fill);border-radius:12px;padding:10px 12px;margin:14px 0 0}

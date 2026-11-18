@@ -87,7 +87,7 @@
       ||'<li class="empty">고른 종류의 후보가 없어요.</li>';
   }
   document.addEventListener('click',function(ev){
-    var o=ev.target.closest('[data-open="tool-near"]'); if(o&&!o.closest('.plan-ctl')){ swapFor=null; nearRef=null; nearArea=o.dataset.area||nearArea||''; setTimeout(renderNear,0); }
+    var o=ev.target.closest('[data-open="tool-near"]'); if(o&&!o.closest('.plan-ctl')){ swapFor=null; nearRef=null; nearArea=o.dataset.area||nearArea||''; if(o.dataset.kind) setNf(o.dataset.kind); setTimeout(renderNear,0); }
     var f=ev.target.closest('[data-nf]'); if(f){ setNf(f.dataset.nf); renderNear(); }
     if(ev.target.closest('.near-gps')){ if(!navigator.geolocation){ say('이 브라우저는 위치를 쓸 수 없어요.'); return; }
       say('위치를 찾는 중이에요…');
