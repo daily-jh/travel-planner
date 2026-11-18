@@ -55,6 +55,7 @@
       x.querySelector('.plan-st').innerHTML=w?'<b>'+esc(w)+'</b>(으)로 바꿨어요 <button type="button" data-pl="undo">원래대로</button>':(PL.s[id]?'남은 동선과 "다음" 카드에서 빠져요':''); });
   }
   function savePlan(){ LS.set(PK,PL); paintPlan(); document.dispatchEvent(new Event('tp-plan')); }
+  window.TPPlan={get:function(id){ return PL.w[id]; }, set:function(id,w){ if(w) PL.w[id]=w; else delete PL.w[id]; delete PL.s[id]; savePlan(); }}; // together.js(함께 고르기)가 정한 곳을 시간표에 반영
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-pl]'); if(!b) return; var id=b.closest('.plan-ctl').dataset.plan;
     if(b.dataset.pl==='skip'){ if(PL.s[id]) delete PL.s[id]; else PL.s[id]=1; savePlan(); }
     if(b.dataset.pl==='undo'){ delete PL.w[id]; savePlan(); }
