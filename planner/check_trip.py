@@ -204,6 +204,31 @@ def check(folder):
     for x in t.get("emergency", []):
         if re.search(PRIVATE[0][0], x[1] if len(x) > 1 else ""):
             err.append(f"비상 연락 '{x[0]}' 에 개인 휴대폰 번호가 있어요. 공공 번호(경찰·영사콜센터 등)만 넣어요")
+    gp = os.path.join(folder, "guide.json")  # 여행지 안내 (에티켓·역사·문화)
+    if os.path.isfile(gp):
+        try:
+            g = json.load(open(gp, encoding="utf-8"))
+        except Exception as x:
+            err.append(f"guide.json 을 읽을 수 없어요: {x}")
+            g = {}
+        for path, sv in strings(g):
+            if "{채우기}" in sv:
+                left.append("guide." + path)
+            chk += sv.count("{확인 필요}")
+            for pat, what in PRIVATE:
+                if re.search(pat, sv, re.I):
+                    err.append(f"개인정보로 보이는 {what}: guide.{path} = '{sv[:40]}' (공개 저장소에는 넣지 않아요)")
+        for c in g.get("etiquette", []):
+            for it in c.get("items", []):
+                if it.get("lv", "tip") not in ("must", "warn", "tip"):
+                    err.append(f"guide.json 에티켓 '{it.get('t')}' 의 lv 는 must·warn·tip 중 하나예요")
+                if it.get("match"):
+                    try:
+                        re.compile(it["match"])
+                    except re.error:
+                        err.append(f"guide.json 에티켓 '{it.get('t')}' 의 match 가 올바른 정규식이 아니에요")
+    elif not t.get("domestic") and str(t.get("country", "")) not in ("한국", "대한민국"):
+        warn.append("guide.json(도시 에티켓·역사·문화)이 없어요. 나라 공통 에티켓만 보여요 (TRIP_FORMAT.md '여행지 안내')")
     if left:
         err.append(f"{{채우기}} 가 {len(left)}군데 남았어요: " + ", ".join(left[:8]) + (" …" if len(left) > 8 else ""))
     if not os.path.isfile(os.path.join(folder, "og.png")):

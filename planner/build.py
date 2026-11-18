@@ -33,8 +33,8 @@ def asset_ver(*paths):
 
 
 _P = os.path.dirname(os.path.abspath(__file__))
-ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js")))}
+ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py"))),
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -177,9 +177,9 @@ def flags(b):
 # 여행 도구를 쓰는 때에 따라 셋으로 묶는다. app.js가 출발 전·여행 중·다녀온 뒤에 맞춰 순서를 바꾼다
 TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "함께·기록")]
 TOOL_OF = {c: g for g, cs in {
-    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx"],
-    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-coin", "t-tz", "t-sos"],
-    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-alb", "t-cut"],
+    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx", "t-etq", "t-his"],
+    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-tf", "t-coin", "t-tz", "t-sos"],
+    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-cut"],
 }.items() for c in cs}
 
 
@@ -354,6 +354,7 @@ def render_trip(slug, t):
     w = P.append
     use_map(t)
     DOM = domestic(t)  # 국내 여행: 환율·면세·회화·택시 카드·현지 시각처럼 해외에서만 쓰는 도구를 숨긴다
+    G = guide.load(slug, t)  # 여행지 안내: 나라 자료(planner/countries) + 도시 자료(trips/<폴더>/guide.json)
     start, end = d_of(t["start"]), d_of(t["end"])
     nights = (end - start).days
     AI = {}
@@ -418,6 +419,7 @@ def render_trip(slug, t):
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
+        cfg.update(guide.cfg(t, G))
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
@@ -458,6 +460,7 @@ def render_trip(slug, t):
     ]
     at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
     tiles[at:at] = live.tiles(t)
+    tiles += guide.tiles(t, G)
     tiles += extras.tiles(t)
     groups = {g: [] for g, _ in TOOL_GROUPS}
     for x in tiles:
@@ -523,6 +526,7 @@ def render_trip(slug, t):
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
     w(extras.sheets(slug, t))
     w(live.sheets(t))
+    w(guide.sheets(slug, t, G))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -604,6 +608,7 @@ def render_trip(slug, t):
                 btns.append(f'<button type="button" class="btn primary" data-open="{pid}">장소 상세 보기</button>')
             if pname and pname not in ("미정", "-"):
                 btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">{MAP["name"]}</a>')
+            inner += guide.block_tips(t, G, b, i)
             inner += '<div class="row">' + "".join(btns) + "</div>" + live.plan_ctl(bid, b.get("area"), b["type"])
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
                       '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
@@ -858,7 +863,7 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
@@ -908,6 +913,7 @@ import costs  # noqa: E402
 import deadlines  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
+import guide  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -108,6 +108,35 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 - 비용·정산은 원화(₩) 그대로. `budget.unit`은 `₩`
 - `eyebrow`는 "강원 강릉 · KTX"처럼 지역과 교통
 
+## 여행지 안내 (`guide.json`, 선택)
+
+여행 도구의 **에티켓·주의**, **역사·문화**, 시간표 줄 팝업의 '알아 두기'·'이곳의 이야기'가 이 파일로 만들어져요 (`planner/guide.py`, `planner/guide.js`).
+자료는 두 군데에 나눠요. 나라 공통은 한 번만 쓰고, 여행마다 `trips/<폴더>/guide.json`에는 그 도시 것만 써요.
+
+| 파일 | 담는 것 |
+|---|---|
+| `planner/countries/<코드>.json` | 나라 공통. `name`(trip.json `country`와 같게, 국내는 `한국`), `etiquette`, `taxfree`(면세 환급 제도, 있으면 '면세 환급' 도구가 생김) |
+| `trips/<폴더>/guide.json` | 도시. `city`, `checked`(기준일), `etiquette`, `history`, `culture`, `taxfree_note`, `sources` |
+
+```json
+{
+ "city": "후쿠오카", "checked": "2026-11-18",
+ "etiquette": [{"cat": "포장마차(야타이)", "items": [
+   {"lv": "must", "t": "한 사람이 한 접시 이상", "d": "설명", "match": "포장마차|나카스"}]}],
+ "history": {"lead": "도시 소개 두세 문장",
+   "eras": [{"y": "903년", "t": "학문의 신이 된 미치자네", "d": "설명", "places": ["다자이후"]}]},
+ "culture": [{"t": "하카타 라멘", "d": "설명", "try": "해 볼 것 (선택)", "places": ["이치란"]}],
+ "taxfree_note": "그 도시 공항의 면세 확인 메모 (선택)",
+ "sources": [{"label": "출처 이름", "url": "https://…"}]
+}
+```
+
+- `lv`: `must`(꼭 지켜요) · `warn`(조심해요) · `tip`(알아 두면 좋아요)
+- `match`(선택, 정규식): 시간표 장소·종류·내용에 맞으면 그 줄 팝업 '알아 두기'에 나오고(같은 날 한 번), 에티켓 목록에 '2일차 ○○' 버튼이 붙어요
+- `places`: 시간표 장소 이름에 들어 있는 낱말. 맞으면 '이번 일정에서 만나는 이야기'와 그 줄 팝업 '이곳의 이야기'에 이어져요. 이동 줄(→)에는 붙지 않아요
+- 연도·사실은 확인한 것만 쓰고, 모르면 `{확인 필요}`를 붙여요. 전화번호는 쓰지 않아요 (`check_trip.py`가 점검)
+- 해외 여행에 guide.json이 없으면 나라 공통 에티켓만 보여요
+
 ## 랜드마크 그림 (`landmark`)
 
 첫 화면 여행 목록 카드 위쪽의 랜드마크 그림이에요. 없으면 `og.png` 썸네일로 보여요.
