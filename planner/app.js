@@ -675,7 +675,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var w=ev.target.closest('[data-syncme]'); if(w){ var pb=document.querySelector('.pp-who [data-me="'+w.dataset.syncme+'"]'); if(pb) pb.click(); paintSync(); return; }
     var b=ev.target.closest('[data-sync]'); if(!b) return;
     if(b.dataset.sync==='send'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
-      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{})}).then(function(code){
+      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{})}).then(function(code){
         var url=location.origin+location.pathname+'#sync='+code, title=me+'의 여행 기록';
         if(navigator.share){ navigator.share({title:title,text:title+' (열면 내 휴대폰 기록과 합쳐져요)',url:url}).catch(function(){}); return; }
         if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ say('링크를 복사했어요. 카카오톡이나 문자에 붙여 넣어 보내세요.'); },function(){ prompt('이 링크를 복사해서 보내세요',url); });
@@ -692,6 +692,13 @@ document.querySelectorAll('.route').forEach(function(card){
       Object.keys(p.ck||{}).forEach(function(k){ if(p.ck[k]) ck[k]=true; });
       var dl=LS.get('tp-dl-'+slug,{}); Object.keys(p.dl||{}).forEach(function(k){ if(p.dl[k]) dl[k]=true; }); LS.set('tp-dl-'+slug,dl); // 예약 '했어요'
       LS.set(PK,mine); LS.set(XK,tomb); LS.set(EK,all); LS.set(CK,ck);
+      // 함께 고르기: 보낸 사람의 표는 그 사람 것으로, 정한 곳은 내가 아직 안 정한 줄만 / 돌아보기: 보낸 사람의 답
+      var chm=LS.get('tp-ch-'+slug,{v:{},f:{},n:{}}), chi=p.ch||{}; chm.v=chm.v||{}; chm.f=chm.f||{}; chm.n=chm.n||{};
+      Object.keys(chi.v||{}).forEach(function(k){ var o=chi.v[k]||{}; if(p.from&&o[p.from]!=null) (chm.v[k]=chm.v[k]||{})[p.from]=+o[p.from]; });
+      Object.keys(chi.f||{}).forEach(function(k){ var f=chi.f[k]; if(f&&!chm.f[k]) chm.f[k]={i:+f.i,by:String(f.by||''),t:+f.t||0}; });
+      Object.keys(chi.n||{}).forEach(function(k){ chm.n[k]=Math.max(+chm.n[k]||0,+chi.n[k]||0); }); LS.set('tp-ch-'+slug,chm);
+      var mm=LS.get('tp-mem-'+slug,{a:{}}), mi=p.mem||{}; mm.a=mm.a||{};
+      Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); LS.set('tp-mem-'+slug,mm);
       try{sessionStorage.setItem('tp-toast',(p.from||'일행')+'의 기록과 합쳤어요.')}catch(e){}
       history.replaceState(null,'',location.pathname+location.search); location.reload(); }
   });
