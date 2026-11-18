@@ -2,7 +2,7 @@
 
 build.py가 부른다. 표준 라이브러리만 쓴다 (QR 코드는 segno가 있으면 그리고, 없으면 건너뛴다).
   - 테마 토큰 CSS (themes.json → .theme-<이름>)
-  - 준비 탭의 '내려받기·연동' 칸, 여행 도구 타일·팝업 (리포트, 앨범 카드, 쇼핑, 내려받기)
+  - 준비 탭의 '내려받기·연동' 칸, 여행 도구 타일·팝업 (리포트, 네컷 사진, 쇼핑, 내려받기)
   - trips/<폴더>/schedule.csv   구글 시트 IMPORTDATA·엑셀용 일정
   - trips/<폴더>/booklet.html   인쇄·PDF용 여행 책자 (planner/tools/render-pdf.js 가 booklet.pdf 로 저장)
   - trips/<폴더>/shopping/      쇼핑 리스트 (trips/<폴더>/shopping.json 이 있을 때)
@@ -42,7 +42,6 @@ def site_url(slug, f=""):
 def tiles(t):
     """(클래스, 팝업 id 또는 'href:주소', 아이콘, 이름, 부제)."""
     x = [("t-rep", "tool-rep", "▥", "여행 리포트", '<small>지출·픽·기록 차트</small>'),
-         ("t-alb", "tool-alb", "▣", "앨범 카드", '<small>사진으로 SNS 카드</small>'),
          ("t-cut", "tool-cut", "▤", "네컷 사진", '<small>스티커 사진 프레임</small>')]
     if t.get("_shopping"):
         x.append(("t-shop", "href:shopping/", "¥", "쇼핑 리스트", f'<small>{len(t["_shopping"]["items"])}개 · 가격·생김새</small>'))
@@ -52,14 +51,7 @@ def tiles(t):
 def sheets(slug, t):
     rep = B.sheet("tool-rep", "여행 리포트", "이 휴대폰에 쌓인 지출·픽·기록으로 그려요",
                   '<div class="rep" aria-live="polite"></div>')
-    alb = B.sheet("tool-alb", "앨범 카드", "여행 기록 사진으로 카드를 만들어 저장해요", '''<div class="alb">
-<div class="seg alb-fmt" role="group" aria-label="크기"><button type="button" data-fmt="post" aria-pressed="true">피드 4:5</button><button type="button" data-fmt="story" aria-pressed="false">스토리 9:16</button><button type="button" data-fmt="cover" aria-pressed="false">포토북 표지</button></div>
-<label class="alb-day"><span>어느 날</span><select aria-label="날짜"></select></label>
-<div class="alb-stage"><canvas width="1080" height="1350" aria-label="앨범 카드 미리보기"></canvas></div>
-<p class="alb-note lead"></p>
-<div class="row"><button type="button" class="btn primary" data-alb="save">이미지 저장</button><button type="button" class="btn" data-alb="share">공유</button><button type="button" class="btn" data-alb="shuffle">사진 섞기</button></div>
-</div>''')
-    return rep + alb + cut_sheet()
+    return rep + cut_sheet()
 
 
 def cut_sheet():
@@ -70,7 +62,7 @@ def cut_sheet():
 <button type="button" class="cut-stk" data-stk aria-pressed="true">낙서 스티커</button></div>
 <div class="cut-stage" data-noswipe><canvas width="900" height="2700" aria-label="네컷 사진 미리보기. 칸을 눌러 고르고, 사진을 끌어 위치를 맞춰요"></canvas></div>
 <div class="cut-bar" hidden><span class="cut-n"></span><button type="button" data-slot="outz" aria-label="작게">−</button><button type="button" data-slot="in" aria-label="크게">+</button><button type="button" data-slot="fit">맞춤</button><button type="button" data-slot="up" aria-label="앞 칸과 자리 바꾸기">↑</button><button type="button" data-slot="down" aria-label="뒤 칸과 자리 바꾸기">↓</button><button type="button" data-slot="clear">비우기</button></div>
-<p class="alb-note lead cut-note"></p>
+<p class="lead cut-note"></p>
 <div class="cut-tray" data-noswipe aria-label="넣을 사진"></div>
 <input type="file" accept="image/*" multiple hidden class="cut-in">
 <div class="row"><button type="button" class="btn primary" data-cut="save">이미지 저장</button><button type="button" class="btn" data-cut="share">공유</button><button type="button" class="btn" data-cut="auto">빈 칸 채우기</button></div>
@@ -477,7 +469,7 @@ def design_page():
 <section><h2>컴포넌트</h2><div class="card ds-comp">
 <h3>버튼</h3><div class="row"><button class="btn primary" type="button">주 버튼</button><button class="btn" type="button">보조 버튼</button></div>
 <h3>세그먼트</h3><div class="seg" role="group"><button type="button" aria-pressed="true">전체</button><button type="button" aria-pressed="false">기내</button><button type="button" aria-pressed="false">위탁</button></div>
-<h3>여행 도구 타일</h3><div class="tools"><span class="tool t-rep"><span class="ti">▥</span><b>여행 리포트</b><small>지출·픽·기록 차트</small></span><span class="tool t-alb"><span class="ti">▣</span><b>앨범 카드</b><small>사진으로 SNS 카드</small></span><span class="tool t-cut"><span class="ti">▤</span><b>네컷 사진</b><small>스티커 사진 프레임</small></span><span class="tool t-shop"><span class="ti">¥</span><b>쇼핑 리스트</b><small>가격·생김새</small></span></div>
+<h3>여행 도구 타일</h3><div class="tools"><span class="tool t-rep"><span class="ti">▥</span><b>여행 리포트</b><small>지출·픽·기록 차트</small></span><span class="tool t-cut"><span class="ti">▤</span><b>네컷 사진</b><small>스티커 사진 프레임</small></span><span class="tool t-shop"><span class="ti">¥</span><b>쇼핑 리스트</b><small>가격·생김새</small></span></div>
 <h3>내려받기 줄</h3><div class="dls"><span class="dl"><span class="dl-ic xls">X</span><span class="dl-t"><b>엑셀 일정표</b><small>일정·정산 시트</small></span><span class="dl-go">↓</span></span></div>
 <h3>배지</h3><p><span class="chk">확인 필요</span> <span class="ai">AI 추천</span></p>
 <h3>차트 색 (dataviz 기본 팔레트)</h3><div class="ds-row">{"".join(f'<span class="ds-sw" style="background:var(--viz-{n})"><small>--viz-{n}</small></span>' for n in range(1, 7))}</div>
