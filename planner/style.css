@@ -1501,3 +1501,11 @@ a.trip{align-content:start}
 
 .pool-go{display:flex;justify-content:flex-end;margin-top:10px}
 #money .pool-card{margin-top:0}
+.pw-v{display:flex;align-items:center;gap:8px;margin-left:auto}
+.pw-in{display:flex;align-items:center;gap:6px;font-size:var(--fs-foot);color:var(--label2)}
+.pw-in input{font:inherit;font-size:16px;font-weight:700;width:120px;text-align:right;padding:7px 10px;border:none;border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}
+.pw-save,.pw-edit{padding:7px 12px;font-size:14px}
+.pw-amt{display:grid;justify-items:end;line-height:1.2}
+.pw-amt small{font-size:var(--fs-cap);color:var(--label2)} .pw-amt b{font-size:var(--fs-t3);letter-spacing:-.02em}
+.pw-amt em{font-style:normal;font-size:var(--fs-cap);font-weight:700;color:#248a3d}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pw-amt em{color:#30d158}}

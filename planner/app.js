@@ -457,7 +457,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var krw=function(v){ return rate&&cur.symbol?' <small>₩'+fmt(v*rate)+'</small>':''; };
   ex.forEach(function(x){ if(!x.id) x.id=rid(); });
   // 공금: 커플통장·트래블카드(원)와 현금(현지 돈) 두 지갑. 넣은 돈에서 '공금 카드/현금'으로 낸 지출을 뺀다
-  var POOLK='tp-pool-'+slug, pool=LS.get(POOLK,{card:0,cash:0}), POOL={'공금카드':'card','공금현금':'cash'};
+  var POOLK='tp-pool-'+slug, pool=LS.get(POOLK,{card:0,cash:0}), editing={}, POOL={'공금카드':'card','공금현금':'cash'};
   var isPool=function(w){ return !!POOL[w]; }, whoName=function(w){ return w==='공금카드'?'공금 카드':w==='공금현금'?'공금 현금':w; };
   var toKrw=function(v){ return cur.symbol&&cur.symbol!=='₩'?(rate?v*rate:0):v; };
   function renderPool(){
@@ -466,14 +466,23 @@ document.querySelectorAll('.route').forEach(function(card){
     var allPut=(pool.card||0)+toKrw(pool.cash||0), allLeft=allPut-toKrw(sp.card)-toKrw(sp.cash);
     var need=C.need&&rate&&local?[C.need[0]*rate,C.need[1]*rate]:(C.need&&!local?C.need:null);
     var h='<div class="pool-h"><h3>공금</h3><span>남은 돈 <b>₩'+fmt(allLeft)+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
-      return '<div class="pw pw-'+w.k+(left<0?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><label><span>넣은 돈 '+w.unit+'</span><input type="number" inputmode="numeric" min="0" step="1000" data-pool-in="'+w.k+'" value="'+(w.put||'')+'" placeholder="0" aria-label="'+w.name+' 넣은 돈"></label></div>'
+      var ed=editing[w.k]||!w.put, val=ed?'<label class="pw-in"><span>넣은 돈 '+w.unit+'</span><input type="number" inputmode="numeric" min="0" step="1000" enterkeyhint="done" data-pool-in="'+w.k+'" value="'+(w.put||'')+'" placeholder="0" aria-label="'+w.name+' 넣은 돈"></label><button type="button" class="btn primary pw-save" data-pool-save="'+w.k+'">저장</button>'
+        :'<span class="pw-amt"><small>넣은 돈</small><b>'+w.unit+fmt(w.put)+'</b><em>✓ 저장됨</em></span><button type="button" class="btn pw-edit" data-pool-edit="'+w.k+'">수정</button>';
+      return '<div class="pw pw-'+w.k+(left<0?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><div class="pw-v">'+val+'</div></div>'
         +'<div class="pw-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'
         +'<div class="pw-n"><span>쓴 돈 '+(w.k==='card'&&local?s0+fmt(w.usedL)+' ≈ ₩'+fmt(w.used):w.unit+fmt(w.used))+'</span><b>'+(left<0?'모자람 ':'남음 ')+w.unit+fmt(Math.abs(left))+'</b></div></div>'; }).join('')+'</div>';
     if(need) h+='<p class="pool-need">총 필요 예산(식비·입장료) ₩'+fmt(need[0])+'~'+fmt(need[1])+' · 공금 '+(allPut?(allPut>=need[1]?'넉넉해요':allPut>=need[0]?'예상 범위 안이에요':'₩'+fmt(need[0]-allPut)+' 더 있으면 최소 예산이에요'):'금액을 넣으면 비교해 드려요')+'</p>';
     h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드는 현지 돈으로 적어도 환율(₩'+fmt(rate*100)+'/'+s0+'100)로 바꿔 빼요.':'')+' 이 휴대폰에 저장돼요.</p>';
     document.querySelectorAll('[data-pool]').forEach(function(box){ var fo=box.contains(document.activeElement)?document.activeElement.dataset.poolIn:null; box.innerHTML=h; if(fo){ var i=box.querySelector('[data-pool-in="'+fo+'"]'); if(i){ i.focus(); var v=i.value; i.value=''; i.value=v; } } });
   }
-  document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(!i) return; pool[i.dataset.poolIn]=Math.max(0,parseFloat(i.value)||0); LS.set(POOLK,pool); renderPool(); });
+  // 넣은 돈: 저장 버튼·완료·입력 칸 벗어나기에 저장되고, 치는 중에도 바로 기기에 써 둔다. 저장되면 금액과 '수정' 버튼만 보인다
+  function poolPut(k,v,done){ pool[k]=Math.max(0,parseFloat(v)||0); pool.t=Date.now(); LS.set(POOLK,pool); if(done){ editing[k]=false; renderPool(); } }
+  document.addEventListener('input',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i) poolPut(i.dataset.poolIn,i.value,false); });
+  document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i) poolPut(i.dataset.poolIn,i.value,!!(+i.value)); });
+  document.addEventListener('keydown',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i&&ev.key==='Enter'){ ev.preventDefault(); poolPut(i.dataset.poolIn,i.value,true); } });
+  document.addEventListener('click',function(ev){ var sv=ev.target.closest('[data-pool-save]'); if(sv){ var box=sv.closest('.pw'), i=box&&box.querySelector('[data-pool-in]'); if(i) poolPut(sv.dataset.poolSave,i.value,true); say&&say('공금을 저장했어요. 수정하기 전까지 이 휴대폰에 남아요.'); return; }
+    var e=ev.target.closest('[data-pool-edit]'); if(e){ var k=e.dataset.poolEdit; editing[k]=true; renderPool(); var box=ev.target.closest('[data-pool]'); var ni=box&&box.querySelector('[data-pool-in="'+k+'"]'); if(ni){ ni.focus(); ni.select&&ni.select(); } } });
+  window.addEventListener('storage',function(ev){ if(ev.key===POOLK){ pool=LS.get(POOLK,pool); renderPool(); } });
   function renderEx(){
     renderPool();
     if(!exl) return; var s0=cur.symbol||'₩', tot=0, ptot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
@@ -695,7 +704,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var w=ev.target.closest('[data-syncme]'); if(w){ var pb=document.querySelector('.pp-who [data-me="'+w.dataset.syncme+'"]'); if(pb) pb.click(); paintSync(); return; }
     var b=ev.target.closest('[data-sync]'); if(!b) return;
     if(b.dataset.sync==='send'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
-      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{})}).then(function(code){
+      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{}),pool:LS.get('tp-pool-'+slug,null)}).then(function(code){
         var url=location.origin+location.pathname+'#sync='+code, title=me+'의 여행 기록';
         if(navigator.share){ navigator.share({title:title,text:title+' (열면 내 휴대폰 기록과 합쳐져요)',url:url}).catch(function(){}); return; }
         if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ say('링크를 복사했어요. 카카오톡이나 문자에 붙여 넣어 보내세요.'); },function(){ prompt('이 링크를 복사해서 보내세요',url); });
@@ -719,6 +728,7 @@ document.querySelectorAll('.route').forEach(function(card){
       Object.keys(chi.n||{}).forEach(function(k){ chm.n[k]=Math.max(+chm.n[k]||0,+chi.n[k]||0); }); LS.set('tp-ch-'+slug,chm);
       var mm=LS.get('tp-mem-'+slug,{a:{}}), mi=p.mem||{}; mm.a=mm.a||{};
       Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); LS.set('tp-mem-'+slug,mm);
+      var pm=LS.get('tp-pool-'+slug,{}), pi=p.pool; if(pi&&(+pi.t||0)>(+pm.t||0)) LS.set('tp-pool-'+slug,{card:+pi.card||0,cash:+pi.cash||0,t:+pi.t}); // 공금: 나중에 저장한 쪽
       try{sessionStorage.setItem('tp-toast',(p.from||'일행')+'의 기록과 합쳤어요.')}catch(e){}
       history.replaceState(null,'',location.pathname+location.search); location.reload(); }
   });
