@@ -411,6 +411,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var WMO=function(c){ return c<=1?'맑음':c<=3?'구름':c<=48?'안개':c<=67?'비':c<=77?'눈':c<=82?'소나기':'뇌우'; };
   var RAIN={}, rq=+new URLSearchParams(location.search).get('rain'); // 미리보기: ?rain=70
   if(rq) (C.days||[]).forEach(function(d){RAIN[d.date]=rq});
+  window.tpRain=RAIN; // planner/comfort.js 가 '오늘 챙길 것'에 우산을 더할 때 읽는다
   function loadWx(){
     if(!wx||!C.geo||wx.dataset.done) return; wx.dataset.done=1;
     var st=new Date(C.start), en=new Date(C.end), now=new Date(), days=(st-now)/864e5, url, label;
@@ -430,7 +431,7 @@ document.querySelectorAll('.route').forEach(function(card){
       for(var i=0;i<d.time.length;i++){ var dd=new Date(C.start); dd.setDate(dd.getDate()+i);
         var pm=d.precipitation_probability_max; if(pm&&pm[i]!=null&&!rq&&C.days[i]) RAIN[C.days[i].date]=pm[i]; var pr=(C.days[i]&&RAIN[C.days[i].date])||0;
         h+='<li><span class="d">'+(i+1)+'일차 '+(dd.getMonth()+1)+'/'+dd.getDate()+'</span><span class="c">'+WMO(d.weather_code[i])+'</span><span class="tmp"><b>'+Math.round(d.temperature_2m_max[i])+'°</b> / '+Math.round(d.temperature_2m_min[i])+'°</span><span class="r">'+(pr>=30?'☂ 비 올 확률 '+pr+'% ':'')+(d.precipitation_sum[i]>0.2?d.precipitation_sum[i].toFixed(1)+'mm':'')+(pr>=50&&C.days[i]&&C.days[i].alt?' <button type="button" class="planb-btn" data-open="alt-'+(i+1)+'">플랜 B 보기</button>':'')+'</span></li>'; }
-      wx.innerHTML=h+'</ul>'; nowMode();
+      wx.innerHTML=h+'</ul>'; nowMode(); document.dispatchEvent(new Event('tp-rain'));
       var mx=Math.max.apply(null,d.temperature_2m_max), mn=Math.min.apply(null,d.temperature_2m_min);
       if(wxMini&&!/지금/.test(wxMini.textContent)) wxMini.textContent=Math.round(mn)+'°~'+Math.round(mx)+'° ('+label+')';
     }).catch(function(){ wx.innerHTML='<p class="lead">날씨를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; });
@@ -456,7 +457,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var krw=function(v){ return rate&&cur.symbol?' <small>₩'+fmt(v*rate)+'</small>':''; };
   ex.forEach(function(x){ if(!x.id) x.id=rid(); });
   // 공금: 커플통장·트래블카드(원)와 현금(현지 돈) 두 지갑. 넣은 돈에서 '공금 카드/현금'으로 낸 지출을 뺀다
-  var PK='tp-pool-'+slug, pool=LS.get(PK,{card:0,cash:0}), POOL={'공금카드':'card','공금현금':'cash'};
+  var POOLK='tp-pool-'+slug, pool=LS.get(POOLK,{card:0,cash:0}), POOL={'공금카드':'card','공금현금':'cash'};
   var isPool=function(w){ return !!POOL[w]; }, whoName=function(w){ return w==='공금카드'?'공금 카드':w==='공금현금'?'공금 현금':w; };
   var toKrw=function(v){ return cur.symbol&&cur.symbol!=='₩'?(rate?v*rate:0):v; };
   function renderPool(){
@@ -472,7 +473,7 @@ document.querySelectorAll('.route').forEach(function(card){
     h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드는 현지 돈으로 적어도 환율(₩'+fmt(rate*100)+'/'+s0+'100)로 바꿔 빼요.':'')+' 이 휴대폰에 저장돼요.</p>';
     document.querySelectorAll('[data-pool]').forEach(function(box){ var fo=box.contains(document.activeElement)?document.activeElement.dataset.poolIn:null; box.innerHTML=h; if(fo){ var i=box.querySelector('[data-pool-in="'+fo+'"]'); if(i){ i.focus(); var v=i.value; i.value=''; i.value=v; } } });
   }
-  document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(!i) return; pool[i.dataset.poolIn]=Math.max(0,parseFloat(i.value)||0); LS.set(PK,pool); renderPool(); });
+  document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(!i) return; pool[i.dataset.poolIn]=Math.max(0,parseFloat(i.value)||0); LS.set(POOLK,pool); renderPool(); });
   function renderEx(){
     renderPool();
     if(!exl) return; var s0=cur.symbol||'₩', tot=0, ptot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
@@ -490,7 +491,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var cs=Object.keys(byCat).sort(function(x,y){return byCat[y]-byCat[x]});
     exc.innerHTML=cs.length?'<div class="catbar">'+cs.map(function(c,i){return '<i style="flex:'+byCat[c]+'" class="cb'+i+'"></i>'}).join('')+'</div><div class="catleg">'+cs.map(function(c,i){return '<span><i class="cb'+i+'"></i>'+c+' '+s0+fmt(byCat[c])+'</span>'}).join('')+'</div>':'';
     var tfs=ex.filter(function(x){return x.tf}), tft=0; tfs.forEach(function(x){tft+=x.amt});
-    var tfBox=document.querySelector('.extf'); if(tfBox) tfBox.innerHTML=tfs.length?'<h4>면세로 산 것 '+tfs.length+'건</h4><ul>'+tfs.map(function(x){return '<li><span>'+x.date+' '+x.what.replace(/</g,'&lt;')+'</span><b>'+s0+fmt(x.amt)+'</b></li>'}).join('')+'</ul><p>합계 <b>'+s0+fmt(tft)+'</b> · 아낀 소비세 약 '+s0+fmt(tft*.1)+'. 면세 봉투는 출국할 때까지 뜯지 않고, 영수증과 여권을 함께 챙겨요.</p>':'';
+    var tfBox=document.querySelector('.extf'); if(tfBox) tfBox.innerHTML=tfs.length?'<h4>면세로 산 것 '+tfs.length+'건</h4><ul>'+tfs.map(function(x){return '<li><span>'+x.date+' '+x.what.replace(/</g,'&lt;')+'</span><b>'+s0+fmt(x.amt)+'</b></li>'}).join('')+'</ul><p>합계 <b>'+s0+fmt(tft)+'</b> · 돌려받을 소비세 많아야 '+s0+fmt(tft/11)+'. 출국 날 체크인 전에 세관 확인을 받아야 돌려받아요. 가게별 기준은 <button type="button" class="linkbtn" data-open="tool-tf">면세 환급</button>에서 확인해요.</p>':'';
     if(exMini) exMini.textContent=ex.length?'총 '+s0+fmt(tot):'기록하고 나눠요';
   }
   if(exf){
@@ -694,7 +695,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var w=ev.target.closest('[data-syncme]'); if(w){ var pb=document.querySelector('.pp-who [data-me="'+w.dataset.syncme+'"]'); if(pb) pb.click(); paintSync(); return; }
     var b=ev.target.closest('[data-sync]'); if(!b) return;
     if(b.dataset.sync==='send'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
-      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{})}).then(function(code){
+      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{})}).then(function(code){
         var url=location.origin+location.pathname+'#sync='+code, title=me+'의 여행 기록';
         if(navigator.share){ navigator.share({title:title,text:title+' (열면 내 휴대폰 기록과 합쳐져요)',url:url}).catch(function(){}); return; }
         if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ say('링크를 복사했어요. 카카오톡이나 문자에 붙여 넣어 보내세요.'); },function(){ prompt('이 링크를 복사해서 보내세요',url); });
@@ -711,6 +712,13 @@ document.querySelectorAll('.route').forEach(function(card){
       Object.keys(p.ck||{}).forEach(function(k){ if(p.ck[k]) ck[k]=true; });
       var dl=LS.get('tp-dl-'+slug,{}); Object.keys(p.dl||{}).forEach(function(k){ if(p.dl[k]) dl[k]=true; }); LS.set('tp-dl-'+slug,dl); // 예약 '했어요'
       LS.set(PK,mine); LS.set(XK,tomb); LS.set(EK,all); LS.set(CK,ck);
+      // 함께 고르기: 보낸 사람의 표는 그 사람 것으로, 정한 곳은 내가 아직 안 정한 줄만 / 돌아보기: 보낸 사람의 답
+      var chm=LS.get('tp-ch-'+slug,{v:{},f:{},n:{}}), chi=p.ch||{}; chm.v=chm.v||{}; chm.f=chm.f||{}; chm.n=chm.n||{};
+      Object.keys(chi.v||{}).forEach(function(k){ var o=chi.v[k]||{}; if(p.from&&o[p.from]!=null) (chm.v[k]=chm.v[k]||{})[p.from]=+o[p.from]; });
+      Object.keys(chi.f||{}).forEach(function(k){ var f=chi.f[k]; if(f&&!chm.f[k]) chm.f[k]={i:+f.i,by:String(f.by||''),t:+f.t||0}; });
+      Object.keys(chi.n||{}).forEach(function(k){ chm.n[k]=Math.max(+chm.n[k]||0,+chi.n[k]||0); }); LS.set('tp-ch-'+slug,chm);
+      var mm=LS.get('tp-mem-'+slug,{a:{}}), mi=p.mem||{}; mm.a=mm.a||{};
+      Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); LS.set('tp-mem-'+slug,mm);
       try{sessionStorage.setItem('tp-toast',(p.from||'일행')+'의 기록과 합쳤어요.')}catch(e){}
       history.replaceState(null,'',location.pathname+location.search); location.reload(); }
   });
@@ -849,77 +857,6 @@ document.querySelectorAll('.route').forEach(function(card){
   if(location.hash==='#report') render();
 })();
 
-// ---------------------------------------------------------------- 앨범 카드: 여행 기록 사진으로 SNS·포토북 카드를 그린다 (사진은 휴대폰 밖으로 나가지 않음)
-(function(){
-  var root=document.querySelector('.alb'), cfgEl=document.getElementById('trip-cfg'); if(!root||!cfgEl) return;
-  var C=JSON.parse(cfgEl.textContent), slug=C.trip, cv=root.querySelector('canvas'), ctx=cv.getContext('2d'), sel=root.querySelector('select'), note=root.querySelector('.alb-note');
-  var FMT={post:[1080,1350],story:[1080,1920],cover:[1500,1500]}, fmt='post', photos=[], imgs={}, seed=0;
-  var title=(document.querySelector('.hero h1')||{}).textContent||'', short=document.title.replace(/ 여행$/,'');
-  var FONT='-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard Variable","Noto Sans KR",sans-serif';
-  var md=function(ds){ var p=ds.split('-'), w='일월화수목금토'[new Date(ds+'T12:00:00').getDay()]; return (+p[1])+'.'+(+p[2])+' '+w; };
-  sel.innerHTML='<option value="all">여행 전체</option>'+(C.days||[]).map(function(d,i){return '<option value="'+(i+1)+'">'+(i+1)+'일차 · '+md(d.date)+'</option>'}).join('');
-  function load(){ return new Promise(function(ok){ if(!window.indexedDB) return ok([]); var r=indexedDB.open('tp-photos',1);
-    r.onupgradeneeded=function(){ r.result.createObjectStore('p',{keyPath:'id'}); };
-    r.onsuccess=function(){ try{ var q=r.result.transaction('p','readonly').objectStore('p').getAll(); q.onsuccess=function(){ ok((q.result||[]).filter(function(p){return p.trip===slug})); }; q.onerror=function(){ok([])}; }catch(e){ ok([]); } };
-    r.onerror=function(){ok([])}; }); }
-  function img(p){ if(imgs[p.id]) return imgs[p.id]; return imgs[p.id]=new Promise(function(ok){ var i=new Image(); i.onload=function(){ok(i)}; i.onerror=function(){ok(null)}; i.src=URL.createObjectURL(p.blob); }); }
-  function cover(i,x,y,w,h,r){ ctx.save(); ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.clip(); var k=Math.max(w/i.width,h/i.height), iw=i.width*k, ih=i.height*k; ctx.drawImage(i,x+(w-iw)/2,y+(h-ih)/2,iw,ih); ctx.restore(); }
-  function css(v){ return getComputedStyle(document.body).getPropertyValue(v).trim(); }
-  var gen=0;
-  function draw(){
-    var my=++gen;
-    var wh=FMT[fmt], W=wh[0], H=wh[1];
-    var day=sel.value, jr={d:{},s:{}}; try{ jr=JSON.parse(localStorage.getItem('tp-log-'+slug)||'{"d":{},"s":{}}'); }catch(e){}
-    var ps=photos.filter(function(p){ return day==='all'||p.blk.indexOf('blk-'+day+'-')===0; });
-    if(ps.length>1){ var s=seed; ps=ps.slice().sort(function(a,b){ return ((a.t*9301+s*49297)%233280)-((b.t*9301+s*49297)%233280); }); }
-    return Promise.all(ps.slice(0,Math.min(ps.length,fmt==='story'?5:4)).map(img)).then(function(is0){ if(my!==gen) return; cv.width=W; cv.height=H;
-    var pri=css('--pri')||'#24346b', acc=css('--acc')||'#c13d69';
-    if(matchMedia('(prefers-color-scheme: dark)').matches){ pri='#24346b'; } // 카드 색은 늘 짙은 쪽
-    var g=ctx.createLinearGradient(0,0,W*.4,H); g.addColorStop(0,pri); g.addColorStop(1,'#0b0f1c'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    var rg=ctx.createRadialGradient(W*.9,H*.05,0,W*.9,H*.05,W*.7); rg.addColorStop(0,acc+'88'); rg.addColorStop(1,'transparent'); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
-    var P=Math.round(W*.07), y=P, d=day==='all'?null:C.days[+day-1];
-    ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='600 '+Math.round(W*.028)+'px '+FONT; ctx.textBaseline='top';
-    ctx.fillText((d?day+'일차 · '+md(d.date):C.start.replace(/-/g,'.')+' — '+C.end.slice(5).replace('-','.')).toUpperCase(),P,y); y+=W*.05;
-    ctx.fillStyle='#fff'; ctx.font='800 '+Math.round(W*(fmt==='cover'?.085:.075))+'px '+FONT;
-    var head=d?(document.querySelector('[data-pane="day'+day+'"]')?(document.getElementById('day'+day).querySelector('.dayhead .t')||{}).textContent.replace(/^.*?\)\s*/,''):short):title;
-    wrap(head||short,P,y,W-2*P,W*.088).forEach(function(l){ ctx.fillText(l.t,P,l.y); y=l.y+W*.088; }); y+=W*.025;
-    var areaH=H-y-P-W*(fmt==='story'?.36:.2), n=Math.min(ps.length,fmt==='story'?5:4), gap=Math.round(W*.014);
-    return Promise.resolve(is0).then(function(is){ is=is.filter(Boolean);
-      if(!is.length){ ctx.fillStyle='rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(P,y,W-2*P,areaH,W*.03); ctx.fill();
-        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font='500 '+Math.round(W*.03)+'px '+FONT; ctx.fillText('여행 기록에 사진을 넣으면 여기에 담겨요',P+W*.04,y+areaH/2-W*.02); }
-      else layout(is,P,y,W-2*P,areaH,gap,W*.03);
-      y+=areaH+W*.04;
-      // 다녀온 곳 목록
-      var list=[]; (C.days||[]).forEach(function(dd,i){ if(d&&dd!==d) return; dd.blocks.forEach(function(b,j){ var id='blk-'+(i+1)+'-'+(j+1); if(jr.d&&jr.d[id]&&b.place&&b.place!=='미정') list.push([b.place,(jr.s||{})[id]||0]); }); });
-      if(!list.length) (d?d.blocks:[]).forEach(function(b){ if(/식사|아침|점심|저녁|활동|카페/.test(b.type)&&list.length<6) list.push([b.place,0]); });
-      ctx.font='600 '+Math.round(W*.03)+'px '+FONT; ctx.fillStyle='#fff';
-      var line=list.slice(0,fmt==='story'?8:5).map(function(x){return x[0]+(x[1]?' '+'★'.repeat(x[1]):'')});
-      wrap(line.join('  ·  '),P,y,W-2*P,W*.044).slice(0,fmt==='story'?6:3).forEach(function(l){ ctx.fillText(l.t,P,l.y); });
-      ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='600 '+Math.round(W*.024)+'px '+FONT; ctx.textBaseline='bottom'; ctx.fillText('여행 플래너 · '+short,P,H-P*.7);
-      note.textContent=photos.length?'사진 '+photos.length+'장 중 '+Math.min(is.length,n)+'장을 담았어요. \'사진 섞기\'로 바꿀 수 있어요.':'아직 사진이 없어요. 시간표 한 줄을 눌러 \'사진 추가\'로 넣으면 카드에 담겨요.';
-    });
-  }); }
-  function layout(is,x,y,w,h,g,r){
-    if(is.length===1) return cover(is[0],x,y,w,h,r);
-    if(is.length===2){ var hw=(w-g)/2; cover(is[0],x,y,hw,h,r); cover(is[1],x+hw+g,y,hw,h,r); return; }
-    var big=h*.62; cover(is[0],x,y,w,big,r); var rest=is.slice(1), cw=(w-g*(rest.length-1))/rest.length;
-    rest.forEach(function(i,k){ cover(i,x+k*(cw+g),y+big+g,cw,h-big-g,r); });
-  }
-  function wrap(text,x,y,maxW,lh){ var out=[], cur=''; String(text).split('').forEach(function(ch){ if(ctx.measureText(cur+ch).width>maxW&&cur){ out.push({t:cur,y:y}); y+=lh; cur=ch.trim()?ch:''; } else cur+=ch; }); if(cur) out.push({t:cur,y:y}); return out; }
-  function blob(){ return new Promise(function(ok){ cv.toBlob(ok,'image/jpeg',.92); }); }
-  var name=function(){ return slug+'-'+(sel.value==='all'?'전체':sel.value+'일차')+'-'+fmt+'.jpg'; };
-  root.addEventListener('click',function(ev){
-    var f=ev.target.closest('[data-fmt]'); if(f){ fmt=f.dataset.fmt; root.querySelectorAll('[data-fmt]').forEach(function(b){b.setAttribute('aria-pressed',b===f)}); draw(); return; }
-    var a=ev.target.closest('[data-alb]'); if(!a) return;
-    if(a.dataset.alb==='shuffle'){ seed++; draw(); return; }
-    blob().then(function(b){ if(!b) return; var file=new File([b],name(),{type:'image/jpeg'});
-      if(a.dataset.alb==='share'&&navigator.canShare&&navigator.canShare({files:[file]})) return navigator.share({files:[file],title:short+' 여행'}).catch(function(){});
-      var u=URL.createObjectURL(b), l=document.createElement('a'); l.href=u; l.download=name(); document.body.appendChild(l); l.click(); l.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000); });
-  });
-  sel.addEventListener('change',draw);
-  document.addEventListener('click',function(ev){ if(ev.target.closest('[data-open="tool-alb"]')) load().then(function(p){ photos=p; draw(); }); });
-})();
-
 // ---------------------------------------------------------------- 네컷 사진: 사진관 스티커 사진처럼 네 칸 프레임. 칸은 비워 두고, 아래 사진 목록에서 골라 넣고, 끌어서 위치·핀치로 크기를 맞춘다. 사진은 휴대폰 밖으로 나가지 않음
 (function(){
   var root=document.querySelector('.cut'), cfgEl=document.getElementById('trip-cfg'); if(!root||!cfgEl) return;
@@ -935,7 +872,7 @@ document.querySelectorAll('.route').forEach(function(card){
     r.onsuccess=function(){ try{ var q=r.result.transaction('p','readonly').objectStore('p').getAll(); q.onsuccess=function(){ ok((q.result||[]).filter(function(p){return p.trip===slug})); }; q.onerror=function(){ok([])}; }catch(e){ ok([]); } };
     r.onerror=function(){ok([])}; }); }
   function fileImg(b){ return new Promise(function(ok){ var i=new Image(), u=URL.createObjectURL(b); i.onload=function(){ok({img:i,url:u})}; i.onerror=function(){ok(null)}; i.src=u; }); }
-  // 사진 목록(인생네컷의 '찍은 사진들'): 여행 기록 사진 + 앨범에서 고른 사진. 칸에는 직접 골라 넣는다
+  // 사진 목록(인생네컷의 '찍은 사진들'): 여행 기록 사진 + 휴대폰 앨범에서 고른 사진. 칸에는 직접 골라 넣는다
   function addPool(list){ list.filter(Boolean).forEach(function(p){ pool.push(p); }); paintTray(); }
   function used(p){ return slots.some(function(s){ return s&&s.p===p; }); }
   function paintTray(){

@@ -33,8 +33,8 @@ def asset_ver(*paths):
 
 
 _P = os.path.dirname(os.path.abspath(__file__))
-ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js")))}
+ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py", "together.py"))),
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -177,9 +177,9 @@ def flags(b):
 # 여행 도구를 쓰는 때에 따라 셋으로 묶는다. app.js가 출발 전·여행 중·다녀온 뒤에 맞춰 순서를 바꾼다
 TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "함께·기록")]
 TOOL_OF = {c: g for g, cs in {
-    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx"],
-    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-coin", "t-tz", "t-sos"],
-    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-alb", "t-cut"],
+    "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx", "t-etq", "t-his"],
+    "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-tf", "t-coin", "t-tz", "t-sos"],
+    "share": ["t-ex", "t-sync", "t-ch", "t-log", "t-mem", "t-rep", "t-cut"],
 }.items() for c in cs}
 
 
@@ -354,6 +354,7 @@ def render_trip(slug, t):
     w = P.append
     use_map(t)
     DOM = domestic(t)  # 국내 여행: 환율·면세·회화·택시 카드·현지 시각처럼 해외에서만 쓰는 도구를 숨긴다
+    G = guide.load(slug, t)  # 여행지 안내: 나라 자료(planner/countries) + 도시 자료(trips/<폴더>/guide.json)
     start, end = d_of(t["start"]), d_of(t["end"])
     nights = (end - start).days
     AI = {}
@@ -422,11 +423,14 @@ def render_trip(slug, t):
             _tl, _th, _ = costs.totals(t)
             _n = max(len(trav), 1)
             cfg["need"] = [_tl * _n, _th * _n]  # 총 필요 예산 (현지 통화), 공금 카드에서 비교
+        cfg.update(guide.cfg(t, G))
+        cfg.update(together.cfg(t))
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
                         "art": os.path.basename(_art) if _art and os.path.isfile(os.path.join(ROOT, "trips", slug, _art)) else "",
                         "name": t.get("short", t["title"]).replace("*", "")}
+        cfg.update(comfort.cfg(t))  # 여행자 편의: 오늘 챙길 것·쉼표·다음 여행 메모
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
           '<p class="lead" style="margin:0 0 10px">가고 싶은 곳에 하트를 눌러 두면 누가 고른 곳인지 장소마다 보여요. '
@@ -460,9 +464,12 @@ def render_trip(slug, t):
         ("t-sync", "tool-sync", "⇄", "일행과 공유", '<small>일정 링크·내 기록 보내기</small>') if len(trav) > 1 else None,
         ("t-tz", "tool-tz", "◷", "현지 시각", f'<small class="tz-mini">{e(t.get("local_tz_note", ""))}</small>') if not DOM and tz_gap(t) else None,
     ]
+    tiles += comfort.tiles(t)
     at = next((k for k, x in enumerate(tiles) if x and x[0] == "t-taxi"), len(tiles) - 1) + 1
     tiles[at:at] = live.tiles(t)
+    tiles += guide.tiles(t, G)
     tiles += extras.tiles(t)
+    tiles += together.tiles(t)
     groups = {g: [] for g, _ in TOOL_GROUPS}
     for x in tiles:
         if not x:
@@ -525,8 +532,11 @@ def render_trip(slug, t):
             for nm, num in t["emergency"]) + '</ul>' + ("" if DOM else '<p class="lead" style="margin:12px 0 0;font-size:13px">여권을 잃어버리면 경찰서에서 분실 신고서를 받은 뒤 총영사관에서 여행증명서를 받아요. 여권 사진면을 휴대폰에 찍어 두면 빨라요.</p>')))
     w('<dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>')
     w(sheet("tool-log", "여행 기록", "다녀온 곳, 한 줄 기록, 사진 · 이 휴대폰에 저장돼요", '<div class="log"></div>'))
+    w(comfort.sheets(t))
     w(extras.sheets(slug, t))
     w(live.sheets(t))
+    w(guide.sheets(slug, t, G))
+    w(together.sheets(t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -608,6 +618,8 @@ def render_trip(slug, t):
                 btns.append(f'<button type="button" class="btn primary" data-open="{pid}">장소 상세 보기</button>')
             if pname and pname not in ("미정", "-"):
                 btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">{MAP["name"]}</a>')
+            inner += together.block_choose(t, b, bid)
+            inner += guide.block_tips(t, G, b, i)
             inner += '<div class="row">' + "".join(btns) + "</div>" + live.plan_ctl(bid, b.get("area"), b["type"])
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
                       '<div class="jr-stars" role="group" aria-label="별점">' + "".join(f'<button type="button" data-star="{k}" aria-label="{k}점">★</button>' for k in range(1, 6)) + '</div>'
@@ -663,11 +675,13 @@ def render_trip(slug, t):
         w('<div class="gchips">' + "".join(chips) + '</div>' + "".join(dlgs))
         w('</section>')
 
-    # 5. 비용
+    # 5. 예산 탭: 맨 위 공금(넣은 돈 → 지출 차감), 아래 예상 비용
+    w('<section id="money"><h2>공금</h2><p class="lead">커플통장·트래블카드와 현금에 넣은 돈을 적어 두면, 함께 쓴 돈에서 공금으로 낸 만큼 빠져요. 이 휴대폰에 기억돼요.</p>'
+      '<div class="card pool pool-card" data-pool></div><div class="pool-go"><button type="button" class="btn primary" data-open="tool-ex">지출 적기</button></div></section>')
     b = t.get("budget")
     if b:
         w(f'<section id="budget"><h2>{e(b["title"])}</h2><p class="lead">{rich(b.get("note", ""))}</p>')
-        w(budget_chart(t, b) + '<div class="card pool pool-card" data-pool></div></section>')
+        w(budget_chart(t, b) + '</section>')
 
     # 6. 출발 전 확인
     bf = t.get("before")
@@ -702,17 +716,18 @@ def render_trip(slug, t):
           "desc": f'{nights}박 {nights + 1}일 일정과 지도: {days_txt}', "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/"}
     body = "\n".join(P)
     views = {"simple": "home", "tools": "home", "detail": "plan", "picks": "places", "cands": "places",
-             "overview": "prep", "budget": "prep", "before": "prep", "export": "prep", "feedback": "prep"}
+             "overview": "prep", "money": "money", "budget": "money", "before": "prep", "export": "prep", "feedback": "prep"}
     for sid, v in views.items():
         body = body.replace(f'<section id="{sid}"', f'<section data-view="{v}" id="{sid}"', 1)
     body = body.replace('<header class="hero">', '<header class="hero" data-view="home">', 1)
     icons = {"home": '<path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
              "plan": '<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/>',
              "places": '<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+             "money": '<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17"/><circle cx="16" cy="14.5" r="1.3"/>',
              "prep": '<path d="M5 6.5h14M5 12h14M5 17.5h9"/><path d="m16.5 17.5 1.8 1.8 3-3.4"/>'}
     body += ('<nav class="tabbar" aria-label="화면 바꾸기">' + "".join(
         f'<button type="button" data-tab="{k}"><svg viewBox="0 0 24 24" aria-hidden="true">{icons[k]}</svg><span>{lab}</span></button>'
-        for k, lab in (("home", "홈"), ("plan", "일정"), ("places", "장소"), ("prep", "준비"))) + '</nav>')
+        for k, lab in (("home", "홈"), ("plan", "일정"), ("places", "장소"), ("money", "예산"), ("prep", "준비"))) + '</nav>')
     return page(t.get("short", t["title"]) + " 여행", body, 2, t.get("theme", "hakata"), og=og)
 
 
@@ -862,10 +877,12 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
+    with open(os.path.join(OUT, "assets", "app.js"), "a", encoding="utf-8") as fp:  # 여행자 편의 스크립트는 맨 뒤에
+        fp.write("\n" + open(os.path.join(here, "comfort.js"), encoding="utf-8").read())
     manifest = {"name": SITE_NAME, "short_name": SITE_NAME, "lang": "ko", "start_url": "../", "scope": "../", "display": "standalone",
                 "background_color": "#f5f6f9", "theme_color": "#24346b",
                 "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"}, {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
@@ -908,10 +925,17 @@ def main():
     open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 
 
+import comfort  # noqa: E402  (여행자 편의: planner/comfort.py)
+# 다른 모듈 목록 줄을 건드리지 않고 여기서 더한다: 도구 묶음, 스타일·스크립트 버전
+TOOL_OF.update(comfort.TOOL_OF)
+_CV = asset_ver(os.path.join(_P, "comfort.py"), os.path.join(_P, "comfort.js"))
+ASSET_V = {k: v[:4] + _CV[:4] for k, v in ASSET_V.items()}
 import costs  # noqa: E402
 import deadlines  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
+import guide  # noqa: E402
+import together  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())

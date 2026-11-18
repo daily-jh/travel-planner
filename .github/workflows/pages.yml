@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install segno==1.6.6 openpyxl==3.1.5
+      - run: pip install segno==1.6.6 openpyxl==3.1.5 cryptography==44.0.0
       - run: python planner/check_trip.py
       - run: python planner/build.py
       # 엑셀·PDF는 실패해도 사이트 배포는 계속한다 (책자 화면에서 바로 인쇄할 수 있음)
@@ -40,6 +40,11 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
           node planner/tools/render-pdf.js
+      # 공용 비밀번호: 저장소 Settings → Secrets → Actions 의 SITE_PASSWORD 로 모든 페이지를 암호화한다 (없으면 잠그지 않음)
+      - name: 비밀번호 잠금
+        env:
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: python planner/lock.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
