@@ -33,8 +33,8 @@ def asset_ver(*paths):
 
 
 _P = os.path.dirname(os.path.abspath(__file__))
-ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js")))}
+ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py", "together.py"))),
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -179,7 +179,7 @@ TOOL_GROUPS = [("prep", "떠나기 전"), ("local", "현지에서"), ("share", "
 TOOL_OF = {c: g for g, cs in {
     "prep": ["t-wx", "t-bag", "t-shop", "t-pass", "t-fx", "t-etq", "t-his"],
     "local": ["t-go", "t-taxi", "t-eat", "t-ph", "t-qr", "t-near", "t-tf", "t-coin", "t-tz", "t-sos"],
-    "share": ["t-ex", "t-sync", "t-log", "t-rep", "t-cut"],
+    "share": ["t-ex", "t-sync", "t-ch", "t-log", "t-mem", "t-rep", "t-cut"],
 }.items() for c in cs}
 
 
@@ -420,6 +420,7 @@ def render_trip(slug, t):
                "map": MAP["kind"], "domestic": DOM, "default_picks": t.get("default_picks")}
         cfg.update(live.cfg_extra(t))
         cfg.update(guide.cfg(t, G))
+        cfg.update(together.cfg(t))
         _th = THEMES.get(t.get("theme", "hakata"), THEMES["hakata"])["light"]
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
@@ -462,6 +463,7 @@ def render_trip(slug, t):
     tiles[at:at] = live.tiles(t)
     tiles += guide.tiles(t, G)
     tiles += extras.tiles(t)
+    tiles += together.tiles(t)
     groups = {g: [] for g, _ in TOOL_GROUPS}
     for x in tiles:
         if not x:
@@ -527,6 +529,7 @@ def render_trip(slug, t):
     w(extras.sheets(slug, t))
     w(live.sheets(t))
     w(guide.sheets(slug, t, G))
+    w(together.sheets(t))
     w(sheet("tool-tz", "현지 시각", e(t.get("local_tz_note", "")), '<div class="tz"><div><small>현지</small><b class="tz-local">--:--</b></div><div><small>한국</small><b class="tz-home">--:--</b></div></div>'))
     w('<section id="overview"><h2>숙소·이동·예약</h2><p class="lead">누르면 자세한 내용이 열려요.</p><div class="stack">')
     kv = lambda rows: "".join(f"<dt>{e(k)}</dt><dd>{rich(v)}</dd>" for k, v in rows)
@@ -608,6 +611,7 @@ def render_trip(slug, t):
                 btns.append(f'<button type="button" class="btn primary" data-open="{pid}">장소 상세 보기</button>')
             if pname and pname not in ("미정", "-"):
                 btns.append(f'<a class="btn" href="{gmap(pname)}" target="_blank" rel="noopener">{MAP["name"]}</a>')
+            inner += together.block_choose(t, b, bid)
             inner += guide.block_tips(t, G, b, i)
             inner += '<div class="row">' + "".join(btns) + "</div>" + live.plan_ctl(bid, b.get("area"), b["type"])
             inner += (f'<div class="jr" data-jr="{bid}"><button type="button" class="jr-done" aria-pressed="false">다녀왔어요</button>'
@@ -863,7 +867,7 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
@@ -914,6 +918,7 @@ import deadlines  # noqa: E402
 import extras  # noqa: E402  (위 도우미 함수를 쓰므로 맨 아래에서 불러온다)
 import live  # noqa: E402
 import guide  # noqa: E402
+import together  # noqa: E402
 
 if __name__ == "__main__":
     sys.exit(main())
