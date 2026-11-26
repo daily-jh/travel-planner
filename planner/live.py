@@ -124,6 +124,9 @@ def sheets(t):
         out.append(B.sheet("tool-qr", "QR·바우처", "입국 QR, 탑승권, 예약 화면을 한곳에", '''<p class="vault-note"><b>이 휴대폰 안에만 저장돼요.</b> 사이트·서버·공유 링크 어디에도 올라가지 않아요. 캡처 사진·PDF나 예약번호를 넣어 두면 인터넷이 없어도 바로 열려요. 휴대폰 화면 잠금은 꼭 켜 두세요.</p>
 <ul class="vault-tips"><li><b>두 사람 것</b> 탑승권처럼 사람마다 다른 건 한 칸에 여러 장 넣고 크게 보기에서 옆으로 넘겨요</li><li><b>QR만 크게</b> 캡처 속 QR을 찾아 화면 가득 보여 줘요 · 보는 동안 화면이 꺼지지 않아요</li><li><b>다 썼어요</b> 누르면 아래로 접혀요 · 오늘 쓸 칸이 맨 위에 와요</li></ul>
 <ul class="vault" aria-live="polite"></ul>
+<details class="vault-mail"><summary>✉︎ 예약 메일 붙여넣기로 칸 만들기</summary><p>예약 확인 메일·문자를 통째로 복사해 붙여 넣으면 날짜·시각·예약번호를 찾아 칸을 만들어요. 글은 이 휴대폰 안에서만 읽어요.</p>
+<textarea class="vm-in" rows="5" placeholder="여기에 메일 내용을 붙여 넣어요"></textarea><button type="button" class="btn vm-go">찾기</button>
+<form class="vm-out" hidden><label>칸 이름<input name="label" maxlength="30" required></label><label>날짜<input name="when" type="date"></label><label>번호·메모<input name="num" maxlength="80"></label><p class="vm-hit"></p><div class="row"><button class="btn primary" type="submit">칸 만들기</button></div></form></details>
 <form class="vault-add"><input name="label" placeholder="칸 직접 추가 (예: 렌터카 예약)" maxlength="30" required><button class="btn primary" type="submit">추가</button></form>
 <div class="vault-move"><p><b>새 휴대폰·일행 휴대폰으로 옮기기</b> 보관함을 파일 하나로 만들어 에어드롭으로 보내고, 받은 쪽에서 가져오기를 눌러요. 사진이 그대로 들어 있으니 일행에게만 보내요.</p>
 <div class="row"><button type="button" class="btn vault-out">파일로 내보내기</button><label class="btn vault-in">가져오기<input type="file" accept="application/json,.json" hidden></label></div></div>'''))

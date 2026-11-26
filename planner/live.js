@@ -66,7 +66,8 @@
   // 내 위치를 켜면 페이지 안 구글 지도에 내 위치가 뜨고, 후보를 고르면 내 위치 → 그곳 걷는 길을 같은 지도에 보여 준다.
   // 위치는 이 휴대폰 안에서만 쓰고 저장·전송하지 않는다 (지도를 그릴 때 구글 지도에 좌표가 넘어가는 것만 예외)
   var nearUl=document.querySelector('ul.near'), nearWhere=document.querySelector('.near-where'), nearArea='', nearRef=null, nf='all', nowArea='', watch=null, nearPick=null;
-  var AR=C.areas||{}, NAV=C.map==='naver';
+  var AR=C.areas||{}, NAV=C.map==='naver', NAK='tp-narea-'+slug, NA=LS.get(NAK,{}); // 위치 모르는 후보: 여행자가 고른 동네 (이 휴대폰에만)
+  var areaOf=function(x){ return x.a||NA[x.n]||''; };
   var nmapQ=function(qq){ return 'https://map.naver.com/p/search/'+encodeURIComponent(qq); };
   var mapQ=function(qq){ return NAV?nmapQ(qq):gmap(qq); };
   // 길찾기: 출발지를 비우면 지도 앱이 '내 위치'에서 시작한다
@@ -102,12 +103,12 @@
     var ref=nearRef||(area&&AR[area])||null;
     nearWhere.textContent=(nearRef?'내 위치 기준':area?area+(nearArea?'':' (지금 일정)')+' 기준':'권역별')+' · 지금 '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+(swapFor?' · 고른 곳으로 일정 한 줄을 바꿔요':'');
     var list=(C.near||[]).filter(function(x){ return nf==='all'||kind(x)===nf; }).map(function(x){
-      var st=openState(x.o,m), d=ref&&AR[x.a]?km(ref,AR[x.a]):null;
+      var st=openState(x.o,m), xa=areaOf(x), d=ref&&AR[xa]?km(ref,AR[xa]):null;
       return {x:x,st:st,d:d,score:(st==='open'||st==='closing'?0:st==='soon'?1:2)*1000+(d===null?500:d)}; });
     list.sort(function(a,b){ return a.score-b.score; });
-    nearUl.innerHTML=list.slice(0,30).map(function(r,i){ var x=r.x, s=ST[r.st], on=nearPick&&!nearPick.kw&&nearPick.n===x.n;
+    nearUl.innerHTML=list.slice(0,60).map(function(r,i){ var x=r.x, s=ST[r.st], on=nearPick&&!nearPick.kw&&nearPick.n===x.n;
       return '<li class="'+s[0]+(on?' on':'')+'"><div class="nr-b"><b>'+esc(x.n)+'</b><small>'+esc([x.c,x.r&&'★ '+x.r,x.m].filter(Boolean).join(' · '))+'</small>'
-        +'<span class="nr-m"><i class="nst '+s[0]+'">'+s[1]+'</i>'+esc(x.o.replace('-','~'))+' 어림'+(x.a?' · '+esc(x.a)+(r.d===null?'':(r.d<0.3?(nearRef?' · 약 300m 안':' · 같은 동네'):' · 약 '+(r.d<1?Math.round(r.d*10)*100+'m':r.d.toFixed(1)+'km')+(nearRef&&r.d<3?' · 걸어서 '+Math.max(5,Math.round(r.d*1.3/4.5*60/5)*5)+'분쯤':''))):' · 위치 확인 필요')+'</span></div>'
+        +'<span class="nr-m"><i class="nst '+s[0]+'">'+s[1]+'</i>'+esc(x.o.replace('-','~'))+' 어림'+(areaOf(x)?' · '+esc(areaOf(x))+(x.a?'':' <button type="button" class="nr-ar" data-nar="'+i+'">바꾸기</button>')+(r.d===null?'':(r.d<0.3?(nearRef?' · 약 300m 안':' · 같은 동네'):' · 약 '+(r.d<1?Math.round(r.d*10)*100+'m':r.d.toFixed(1)+'km')+(nearRef&&r.d<3?' · 걸어서 '+Math.max(5,Math.round(r.d*1.3/4.5*60/5)*5)+'분쯤':''))):' · <label class="nr-ar">동네 정하기 <select data-nsel="'+i+'"><option value="">모름</option>'+Object.keys(AR).map(function(k){return '<option>'+esc(k)+'</option>'}).join('')+'</select></label>')+'</span></div>'
         +'<div class="nr-a">'+(nearRef?'<button type="button" class="btn'+(on?' primary':'')+'" data-nshow="'+i+'">지도에서 보기</button>':'')+'<a class="btn" href="'+walkTo(x.q)+'" target="_blank" rel="noopener">길찾기</a>'+(swapFor?'<button type="button" class="btn primary" data-swapto="'+esc(x.n)+'">이걸로 바꾸기</button>':'')+'</div></li>'; }).join('')
       ||'<li class="empty">고른 종류의 후보가 없어요.</li>';
     nearUl._list=list; paintMap();
@@ -117,6 +118,7 @@
   document.addEventListener('click',function(ev){
     var o=ev.target.closest('[data-open="tool-near"]'); if(o&&!o.closest('.plan-ctl')){ swapFor=null; nearArea=o.dataset.area||''; if(nearRef&&Date.now()-nearRef.at>600000){ nearRef=null; nearPick=null; } if(o.dataset.kind) setNf(o.dataset.kind); setTimeout(renderNear,0); }
     var f=ev.target.closest('[data-nf]'); if(f){ setNf(f.dataset.nf); renderNear(); }
+    var na=ev.target.closest('[data-nar]'); if(na&&nearUl._list){ delete NA[nearUl._list[+na.dataset.nar].x.n]; LS.set(NAK,NA); renderNear(); return; }
     var sh=ev.target.closest('[data-nshow]'); if(sh&&nearUl._list){ var x=nearUl._list[+sh.dataset.nshow].x; nearPick={n:x.n,q:x.q}; renderNear(); if(nmap) nmap.scrollIntoView({behavior:'smooth',block:'nearest'}); }
     var kw=ev.target.closest('[data-nkw]'); if(kw&&nearRef){ nearPick=nearPick&&nearPick.kw===kw.dataset.nkw?null:{kw:kw.dataset.nkw,label:kw.textContent}; paintMap(); }
     if(ev.target.closest('.nm-me')){ nearPick=null; renderNear(); }
@@ -129,6 +131,7 @@
     var s=ev.target.closest('[data-swapto]'); if(s&&swapFor){ PL.w[swapFor]=s.dataset.swapto; delete PL.s[swapFor]; var id=swapFor; swapFor=null; savePlan();
       var d=document.getElementById('tool-near'); if(d&&d.open) d.close(); say(s.dataset.swapto+'(으)로 바꿨어요.'); setTimeout(function(){ openSheet(id); },300); }
   });
+  document.addEventListener('change',function(ev){ var se=ev.target.closest('[data-nsel]'); if(!se||!nearUl._list) return; var x=nearUl._list[+se.dataset.nsel].x; if(se.value) NA[x.n]=se.value; else delete NA[x.n]; LS.set(NAK,NA); renderNear(); say(se.value?x.n+' → '+se.value+'(으)로 기억할게요.':'지웠어요.'); });
   var nd=document.getElementById('tool-near'); if(nd) nd.addEventListener('close',function(){ swapFor=null; stopWatch(); });
   renderNear();
 
@@ -141,7 +144,7 @@
     var db=function(){ return idb||(idb=new Promise(function(ok,no){ if(!window.indexedDB) return no(); var r=indexedDB.open('tp-vault',1);
       r.onupgradeneeded=function(){ r.result.createObjectStore('v',{keyPath:'id'}); }; r.onsuccess=function(){ok(r.result)}; r.onerror=no; })); };
     var tx=function(mode,fn){ return db().then(function(d){ return new Promise(function(ok,no){ var t=d.transaction('v',mode), r=fn(t.objectStore('v')); t.oncomplete=function(){ok(r&&r.result)}; t.onerror=t.onabort=no; }); }); };
-    var slots=function(){ return (C.vouchers||[]).concat(V.mine.map(function(x){return {id:x.id,label:x.label,hint:'직접 추가한 칸',when:'',mine:1}})); };
+    var slots=function(){ return (C.vouchers||[]).concat(V.mine.map(function(x){return {id:x.id,label:x.label,hint:'직접 추가한 칸',when:x.when||'',mine:1}})); };
     var isPdf=function(r){ return /pdf/i.test((r.blob&&r.blob.type)||'')||/\.pdf$/i.test(r.name||''); };
     var addUrl=function(r){ r.url=URL.createObjectURL(r.blob); if(r.crop) r.curl=URL.createObjectURL(r.crop); return r; };
     var drop=function(r){ URL.revokeObjectURL(r.url); if(r.curl) URL.revokeObjectURL(r.curl); };
@@ -204,6 +207,41 @@
     var armed=0; function confirmDel(){ if(Date.now()-armed<3000){ armed=0; return true; } armed=Date.now(); say('한 번 더 누르면 지워져요.'); return false; }
     var vf=document.querySelector('.vault-add'); if(vf) vf.addEventListener('submit',function(ev){ ev.preventDefault(); var l=String(new FormData(vf).get('label')||'').trim(); if(!l) return;
       V.mine.push({id:'m'+Date.now().toString(36),label:l.slice(0,30)}); LS.set(VK,V); vf.reset(); paintVault(); });
+
+    // 예약 메일 붙여넣기: 날짜·시각·예약번호·이름을 글에서 찾아 칸을 만든다 (이미 있는 칸과 겹치면 그 칸에 번호를 넣는다)
+    var MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    var p2=function(n){ return String(n).padStart(2,'0'); };
+    function mailParse(tx){ var Y=+C.start.slice(0,4), ds=[], m, re;
+      var add=function(y,mo,d,at){ y=+y||Y; mo=+mo; d=+d; if(mo>=1&&mo<=12&&d>=1&&d<=31) ds.push({v:y+'-'+p2(mo)+'-'+p2(d),at:at}); };
+      re=/(20\d\d)\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/g; while((m=re.exec(tx))) add(m[1],m[2],m[3],m.index);
+      re=/(20\d\d)年\s*(\d{1,2})月\s*(\d{1,2})日/g; while((m=re.exec(tx))) add(m[1],m[2],m[3],m.index);
+      re=/(?:^|[^\d년.])(\d{1,2})\s*월\s*(\d{1,2})\s*일/g; while((m=re.exec(tx))) add(0,m[1],m[2],m.index);
+      re=/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(20\d\d)/gi; while((m=re.exec(tx))) add(m[3],MON[m[2].toLowerCase()],m[1],m.index);
+      re=/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2}),?\s+(20\d\d)/gi; while((m=re.exec(tx))) add(m[3],MON[m[1].toLowerCase()],m[2],m.index);
+      var s0=new Date(C.start+'T00:00:00'); s0.setDate(s0.getDate()-1); var lo=ymd(s0);
+      ds.sort(function(a,b){return a.at-b.at}); var dd=ds.filter(function(d){return d.v>=lo&&d.v<=C.end})[0]||ds[0];
+      var tm2=(dd?tx.slice(dd.at):tx).match(/(?:^|[^\d])([0-2]?\d):([0-5]\d)/);
+      var num=tx.match(/(?:예약\s*번호|확인\s*번호|예약\s*코드|바우처\s*번호|주문\s*번호|booking\s*(?:id|no\.?|number|reference|ref\.?|code)|confirmation\s*(?:no\.?|number|code)|reservation\s*(?:id|no\.?|number|code)|order\s*(?:id|no\.?|number)|itinerary\s*(?:no\.?|number)|PNR|予約番号|確認番号)\s*[:：#.]?\s*([A-Z0-9][A-Z0-9\-]{3,})/i);
+      var fl=tx.match(/\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{3,4})\b/);
+      var ttl=tx.match(/(?:상품\s*명|상품|투어\s*명|activity|product|hotel\s*name|property|숙소\s*명|호텔\s*명|호텔|매장|가게|레스토랑|restaurant|施設名|店舗名|プラン名)\s*[:：]\s*([^\n]{2,40})/i);
+      var first=tx.split(/\n/).map(function(l){return l.trim()}).filter(function(l){ return l.length>=3&&l.length<=40&&!/^(from|to|보낸|받는|date|subject|제목)\b/i.test(l); })[0]||'';
+      var label=(ttl?ttl[1]:first).replace(/\s+/g,' ').trim().slice(0,30);
+      // 이미 있는 칸: 편명이나 이름이 겹치면 그 칸
+      var lb=label.replace(/\s/g,''), geo=Object.keys(AR).concat([(C.geo||{}).city||'','후쿠오카','호텔','공항']);
+      var hit=slots().map(function(s){ var L=s.label.replace(/\s/g,''); if(fl&&L.indexOf(fl[1]+fl[2])>=0) return {s:s,n:9};
+        return {s:s,n:lb?s.label.split(/[^0-9A-Za-z가-힣ぁ-んァ-ン一-龥]+/).filter(function(w){ w=w.replace(/예약|바우처|탑승권|확인|화면/g,''); return w.length>=3&&!geo.some(function(g){ return g&&(g.indexOf(w)>=0||w.indexOf(g)>=0); })&&lb.indexOf(w)>=0; }).length:0}; })
+        .filter(function(x){return x.n}).sort(function(a,b){return b.n-a.n}).map(function(x){return x.s})[0];
+      var memo=[num?num[1]:'',tm2?p2(tm2[1])+':'+tm2[2]:''].filter(Boolean).join(' · ');
+      return {when:dd?dd.v:'',label:hit?hit.label:label,num:memo,hit:hit,flight:fl?fl[1]+fl[2]:''}; }
+    var vmIn=document.querySelector('.vm-in'), vmOut=document.querySelector('.vm-out'), vmRes=null;
+    var vmGo=document.querySelector('.vm-go'); if(vmGo) vmGo.addEventListener('click',function(){ var tx=(vmIn.value||'').trim(); if(!tx){ say('메일 내용을 먼저 붙여 넣어 주세요.'); return; }
+      vmRes=mailParse(tx); vmOut.hidden=false; vmOut.label.value=vmRes.label; vmOut.when.value=vmRes.when; vmOut.num.value=vmRes.num;
+      vmOut.querySelector('.vm-hit').textContent=vmRes.hit?'이미 있는 "'+vmRes.hit.label+'" 칸에 번호를 넣어요.':(vmRes.when||vmRes.num?'찾은 걸 확인하고 고쳐서 만들어요.':'날짜·번호를 못 찾았어요. 직접 적어 주세요.'); });
+    if(vmOut) vmOut.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(vmOut), l=String(f.get('label')||'').trim().slice(0,30), w=String(f.get('when')||''), n=String(f.get('num')||'').trim().slice(0,80);
+      var id=vmRes&&vmRes.hit&&vmRes.hit.label===l?vmRes.hit.id:null;
+      if(!id){ id='m'+Date.now().toString(36); V.mine.push({id:id,label:l,when:w}); }
+      if(n) V.t[id]=V.t[id]?(V.t[id].indexOf(n)>=0?V.t[id]:(n+' · '+V.t[id]).slice(0,80)):n;
+      LS.set(VK,V); vmOut.hidden=true; vmIn.value=''; vmRes=null; var d=vmOut.closest('details'); if(d) d.open=false; paintVault(); say('"'+l+'" 칸을 '+(id[0]==='m'?'만들었어요':'채웠어요')+'. 캡처나 PDF도 넣어 두세요.'); });
 
     // 크게 보기: 흰 화면 가득, 여러 장은 좌우로 넘기기, 'QR만'·'전체' 바꾸기, 누르면 확대, 보는 동안 화면이 꺼지지 않게
     var vv=document.querySelector('.vaultview'), cur={id:null,k:0,full:false}, lock=null;

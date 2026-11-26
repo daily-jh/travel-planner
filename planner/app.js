@@ -439,8 +439,18 @@ document.querySelectorAll('.route').forEach(function(card){
   loadWx();
 
   // 현지 한마디: 현지어 음성 (trip.json lang.code)
+  // 휴대폰에 깔린 음성(기기 안 음성)만 골라 쓰면 인터넷 없이도 나온다. 향상된 음성이 있으면 그걸로, '천천히'는 이 휴대폰에 기억
+  var SL=(C.lang||'ja-JP'), voice=null, slow=LS.get('tp-slow',false);
+  function pickVoice(){ if(!window.speechSynthesis) return; var vs=speechSynthesis.getVoices().filter(function(v){ return v.lang.replace('_','-').toLowerCase().indexOf(SL.slice(0,2).toLowerCase())===0; });
+    var sc=function(v){ return (v.localService?4:0)+(/premium|enhanced|향상|拡張|siri/i.test(v.name)?2:0)+(v.lang.replace('_','-')===SL?1:0); };
+    vs.sort(function(a,b){return sc(b)-sc(a)}); voice=vs[0]||null;
+    var vn=document.querySelector('.ph-voice'); if(vn) vn.innerHTML=voice?(voice.localService?'✓ 인터넷 없이도 소리가 나요 ('+voice.name.replace(/[<>&]/g,'')+')':'이 음성은 인터넷이 필요해요. 아래 방법으로 기기 음성을 받아 두세요.')
+      :'이 휴대폰에 현지어 음성이 없어요. 아이폰: 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 일본어 → Kyoko(향상됨) 내려받기. 안드로이드: 설정 → 텍스트 음성 변환 → 일본어 음성 데이터 설치'; }
+  if(window.speechSynthesis){ pickVoice(); speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',pickVoice); }
+  document.addEventListener('click',function(ev){ var sw=ev.target.closest('.ph-slow'); if(sw){ slow=!slow; LS.set('tp-slow',slow); sw.setAttribute('aria-pressed',slow); return; } });
+  (function(){ var sw=document.querySelector('.ph-slow'); if(sw) sw.setAttribute('aria-pressed',slow); })();
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-say]'); if(!b||!window.speechSynthesis) return;
-    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang=(C.lang||'ja-JP'); u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang=SL; if(voice) u.voice=voice; u.rate=slow?.6:.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
     b.classList.remove('said'); void b.offsetWidth; b.classList.add('said'); });
 
   // 현지 시각

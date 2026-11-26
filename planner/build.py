@@ -549,7 +549,8 @@ def render_trip(slug, t):
               + f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
     if ph:
         # 찾기 칸 · ★ 자주 쓰는 말(모든 여행 공용, 이 휴대폰에 저장) · 분류 탭. 문장 id 는 현지어 문장 그대로 (분류가 바뀌어도 ★ 유지)
-        top = (f'<div class="ph-top"><input type="search" class="ph-q" placeholder="찾기 (예: 화장실, 면세, 카드)" aria-label="회화 찾기" enterkeyhint="search"></div>')
+        top = ('<div class="ph-top"><input type="search" class="ph-q" placeholder="찾기 (예: 화장실, 면세, 카드)" aria-label="회화 찾기" enterkeyhint="search">'
+               '<button type="button" class="ph-slow" aria-pressed="false">천천히</button></div><p class="ph-voice"></p>')
         tabs = ('<div class="seg ph-tabs" role="tablist"><button type="button" role="tab" data-cat="fav" aria-selected="false">★ 자주</button>'
                 + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>')
         lists = "".join(f'<ul class="phr" data-cat="{k}" data-name="{e(c["cat"])}"{"" if k == 0 else " hidden"}>' + "".join(
