@@ -66,7 +66,7 @@ document.querySelectorAll('.route').forEach(function(card){
   var t=window.TPNow(), iso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
   document.querySelectorAll('[data-date="'+iso+'"]').forEach(function(el){
     el.classList.add(el.tagName==='A'||el.tagName==='BUTTON'?'is-today':'today');
-    if(el.tagName==='DETAILS'){ document.querySelectorAll('details.day').forEach(function(d){d.open=d===el}); }
+    if(el.tagName==='DETAILS'){ document.querySelectorAll('details.day:not(.oday)').forEach(function(d){d.open=d===el}); }
   });
 })();
 
@@ -633,7 +633,7 @@ document.querySelectorAll('.route').forEach(function(card){
       h+='<div class="nc-tmr"><small>내일 브리핑</small>'+(fi>=0?'<b>'+esc(tb[fi].time.split(/[–-]/)[0])+' '+esc(tb[fi].place)+'</b>':'')+(tr.length?'<span>예약: '+tr.map(function(b){return esc(b.time.split(/[–-]/)[0])+' '+esc(b.place)}).join(', ')+'</span>':'')+'</div>'; }
     nc.innerHTML=h; nc.hidden=false;
     document.querySelectorAll('tr.now').forEach(function(tr){tr.classList.remove('now')});
-    var cur_tr=ci>=0&&document.querySelector('tr[data-open="blk-'+(di+1)+'-'+(ci+1)+'"]'); if(cur_tr) cur_tr.classList.add('now');
+    if(ci>=0) document.querySelectorAll('tr[data-open="blk-'+(di+1)+'-'+(ci+1)+'"]').forEach(function(tr){ tr.classList.add('now'); });
     var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null), tgw=nx>=0?sw(nx):(ci>=0?sw(ci):'');
     if(go&&tgt&&tgt.place){ var dest=(tgw||tgt.place.split('→').pop().trim())+' '+((C.geo||{}).city||'');
       go.href=C.map==='naver'?'https://map.naver.com/p/search/'+encodeURIComponent(dest):'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
