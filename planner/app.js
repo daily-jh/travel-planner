@@ -635,7 +635,7 @@ document.querySelectorAll('.route').forEach(function(card){
       var f=(C.flights||[])[0];
       h='<div class="nc-h"><span class="live off"></span>'+(left===1?'내일 출발해요':'출발 D-'+left+' 준비')+'</div><div class="bcs">'
         +chip(ckLeft?'warn':'ok','출발 전 확인 '+(ckLeft?ckLeft+'개 남음':'완료')).replace('<span ','<span data-goto="before" role="button" tabindex="0" ')+chip(bagDone<bagAll?'':'ok','캐리어 '+(bagAll?Math.round(bagDone/bagAll*100):0)+'%','tool-bag')+'</div>';
-      if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요'+fst(f)+'</span></div>'; }
+      if(f){ var dep=tm(f.dep); h+='<div class="nc-row static"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+f.from+'공항 '+String(Math.floor((dep-120)/60)).padStart(2,'0')+':'+String((dep-120)%60).padStart(2,'0')+'까지 도착</b><span>온라인 체크인은 항공사 앱에서 미리 해 두면 빨라요'+fst(f)+(document.getElementById('tool-seat')?' · <button type="button" class="linkbtn" data-open="tool-seat">내 좌석 보기</button>':'')+'</span></div>'; }
       nc.innerHTML=h; nc.hidden=false; return;
     }
     if(di<0){ nc.hidden=true; document.dispatchEvent(new CustomEvent('tp-now',{detail:{di:-1}})); return; }
@@ -654,7 +654,7 @@ document.querySelectorAll('.route').forEach(function(card){
       +(RAIN[ds]>=50&&C.days[di].alt?chip('rain','비 올 확률 '+RAIN[ds]+'% · 플랜 B','alt-'+(di+1)):'')
       +(cs.length?chip('cash','현금 필요 '+cs.length+'곳'):'')
       +(bg?chip(sp>bg[1]?'warn':'','오늘 '+sym+fmt(sp)+' / 예산 '+sym+fmt(bg[0])+'~'+fmt(bg[1]),'tool-ex'):'')+'</div>';
-    var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준'+fst(f)+'</span></div>'; }
+    var f=flightFor(ds); if(f&&f.dep_tz===(C.timezone||'Asia/Tokyo')){ var fd=tm(f.dep), dl=fd-120-mins; h+='<div class="nc-row static fl"><small>'+f.airline+' '+f.no+' · '+f.dep+' 출발</small><b>'+(dl>0?'공항 도착까지 '+hm(dl):'지금 공항에 있어야 해요')+'</b><span>출발 2시간 전 도착 기준'+fst(f)+(document.getElementById('tool-seat')?' · <button type="button" class="linkbtn" data-open="tool-seat">내 좌석</button>':'')+'</span></div>'; }
     h+=row(ci,'지금',di)+row(nx,'다음',di)+(ci<0&&nx<0?'<p class="lead">오늘 남은 일정이 없어요.</p>':'');
     var nb=nx>=0?bl[nx]:(ci>=0?bl[ci]:null);
     if(nb&&C.near&&C.near.length) h+='<button type="button" class="nc-near" data-open="tool-near" data-area="'+esc(nb.area||'')+'"><b>줄이 길거나 문을 닫았나요?</b><span>'+(nb.area?esc(nb.area)+' 근처 ':'')+'지금 열었을 만한 대안 보기 ›</span></button>';
@@ -733,7 +733,7 @@ document.querySelectorAll('.route').forEach(function(card){
     var w=ev.target.closest('[data-syncme]'); if(w){ var pb=document.querySelector('.pp-who [data-me="'+w.dataset.syncme+'"]'); if(pb) pb.click(); paintSync(); return; }
     var b=ev.target.closest('[data-sync]'); if(!b) return;
     if(b.dataset.sync==='send'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
-      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{}),pool:LS.get('tp-pool-'+slug,null)}).then(function(code){
+      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{}),pool:LS.get('tp-pool-'+slug,null),seat:LS.get('tp-seat-'+slug,null)}).then(function(code){
         var url=location.origin+location.pathname+'#sync='+code, title=me+'의 여행 기록';
         if(navigator.share){ navigator.share({title:title,text:title+' (열면 내 휴대폰 기록과 합쳐져요)',url:url}).catch(function(){}); return; }
         if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ say('링크를 복사했어요. 카카오톡이나 문자에 붙여 넣어 보내세요.'); },function(){ prompt('이 링크를 복사해서 보내세요',url); });
@@ -758,6 +758,12 @@ document.querySelectorAll('.route').forEach(function(card){
       var mm=LS.get('tp-mem-'+slug,{a:{}}), mi=p.mem||{}; mm.a=mm.a||{};
       Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); LS.set('tp-mem-'+slug,mm);
       var pm=LS.get('tp-pool-'+slug,{}), pi=p.pool; if(pi&&(+pi.t||0)>(+pm.t||0)) LS.set('tp-pool-'+slug,{card:+pi.card||0,cash:+pi.cash||0,t:+pi.t}); // 공금: 나중에 저장한 쪽
+      // 내 좌석: 보낸 사람 자리는 그 사람 것으로, 다른 자리·기종은 내가 비워 둔 것만
+      var sm=LS.get('tp-seat-'+slug,{f:{},x:[]}), si=p.seat||{}; sm.f=sm.f||{}; sm.x=sm.x||[];
+      Object.keys(si.f||{}).forEach(function(k){ var o=si.f[k]||{}, r=sm.f[k]=sm.f[k]||{s:{}}; r.s=r.s||{}; if(!r.ac&&o.ac) r.ac=String(o.ac).slice(0,20);
+        Object.keys(o.s||{}).forEach(function(n){ var v=String(o.s[n]||'').slice(0,3); if(v&&(n===p.from||!r.s[n])) r.s[n]=v; }); });
+      (si.x||[]).forEach(function(f){ if(f&&f.no&&!sm.x.some(function(y){return y.no===f.no&&y.date===f.date})) sm.x.push({no:String(f.no).slice(0,8),date:String(f.date||'').slice(0,10),route:String(f.route||'').slice(0,30)}); });
+      if(p.seat) LS.set('tp-seat-'+slug,sm);
       try{sessionStorage.setItem('tp-toast',(p.from||'일행')+'의 기록과 합쳤어요.')}catch(e){}
       history.replaceState(null,'',location.pathname+location.search); location.reload(); }
   });

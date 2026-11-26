@@ -4772,7 +4772,9 @@
    "to": "후쿠오카",
    "no": "TW0203",
    "airline": "트리니티항공",
-   "dep_tz": "Asia/Seoul"
+   "dep_tz": "Asia/Seoul",
+   "aircraft": "B737-800",
+   "seatmap_url": "https://seatmaps.com/ko/airlines/tw-t-way-air/boeing-737-800/"
   },
   {
    "date": "2027-03-03",
@@ -4781,7 +4783,9 @@
    "to": "인천",
    "no": "ZE0648",
    "airline": "이스타항공",
-   "dep_tz": "Asia/Tokyo"
+   "dep_tz": "Asia/Tokyo",
+   "aircraft": "B737-800",
+   "seatmap_url": "https://seatmaps.com/ko/airlines/ze-eastar-jet/boeing-737-800/"
   }
  ],
  "areas": {
