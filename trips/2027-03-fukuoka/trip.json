@@ -7,6 +7,7 @@
   "name": "후쿠오카 타워",
   "art": "landmark.webp"
  },
+ "frames": {"motifs": ["yatai", "ume", "ticket"], "route": [["ICN", "인천"], ["FUK", "후쿠오카"]]},
  "travelers": [
   {
    "name": "지훈",

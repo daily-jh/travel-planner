@@ -28,6 +28,7 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `title` / `short` / `eyebrow` | 문자열 | 표지 제목, 짧은 이름, 위 작은 글씨(`FUK · 博多`) |
 | `theme` | `hakata` `ocean` `forest` `snow` `citrus` `temple` | 남색·매화 / 바다·섬 / 숲·온천 / 겨울·설경 / 열대·휴양 / 고도·사찰 |
 | `landmark` | `{"name","art"}` | 첫 화면 여행 카드의 랜드마크 그림. 아래 '랜드마크 그림' 참고 |
+| `frames` | `{"motifs":[…],"route":[["코드","이름"],…]}` | 네컷 사진 여행지 프레임. motifs: yatai(야타이)·ume(매화)·ticket(탑승권/승차권)·onsen(온천)·pottery(도자기)·snow(눈)·road(드라이브)·sea(바다)·mountain(산). route는 탑승권·드라이브 경로. 없으면 해외 ticket, 국내 road |
 | `travelers` | `[{"name","tone":"pri"|"acc"}]` | 픽(♥)을 고를 사람. 이름만 |
 | `default_picks` (선택) | `{"version","note","picks":{"이름":[장소 이름]}}` | 일정을 짠 사람의 픽을 처음 열 때 한 번 채워 둔다. 장소 이름은 `places.name`·`candidates.name`과 같게. 목록을 바꾸면 `version`도 바꿔야 다시 채워진다 (지운 픽은 되살리지 않음) |
 | `start` `end` | `YYYY-MM-DD` | 첫날·마지막 날 |

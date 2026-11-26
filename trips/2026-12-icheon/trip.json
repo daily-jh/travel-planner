@@ -7,6 +7,7 @@
   "name": "테르메덴 노천탕",
   "art": "landmark.webp"
  },
+ "frames": {"motifs": ["onsen", "pottery", "snow", "road"], "route": [["수원", "수원"], ["이천", "이천 테르메덴"]]},
  "travelers": [
   {
    "name": "지훈",
