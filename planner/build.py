@@ -195,6 +195,20 @@ def tz_gap(t):
         return 1
 
 
+def phrasebook(trip_ph, country_ph):
+    """여행 회화(trip.json) + 나라 공통 회화(planner/countries). 같은 분류는 합치고 같은 현지어 문장은 한 번만."""
+    out, seen = [], set()
+    for c in list(trip_ph or []) + list(country_ph or []):
+        items = [x for x in c["items"] if x[1] not in seen]
+        seen.update(x[1] for x in items)
+        hit = next((o for o in out if o["cat"] == c["cat"]), None)
+        if hit:
+            hit["items"] += items
+        elif items:
+            out.append({"cat": c["cat"], "items": list(items)})
+    return out
+
+
 def sheet(did, title, sub, inner):
     """팝업(아래에서 올라오는 시트). data-open 버튼으로 연다."""
     return (f'<dialog class="sheet" id="{did}" aria-labelledby="{did}-t"><div class="sheet-h"><div><b id="{did}-t">{title}</b>'
@@ -484,6 +498,7 @@ def render_trip(slug, t):
     ph = [] if DOM else (t.get("phrases") or [])
     if ph and isinstance(ph[0], list):
         ph = [{"cat": "기본", "items": ph}]
+    ph = phrasebook(ph, [] if DOM else G["country"].get("phrases"))
     pk = t.get("packing") or []
     npk = sum(len(c["items"]) for c in pk)
     fx_mini = f'{sym}100 ≈ ₩{cur.get("fallback_krw_per_100", "")}' if cur else ""
@@ -533,11 +548,19 @@ def render_trip(slug, t):
               + (f'<p class="fx-tax">면세: 2026년 11월부터 가게에서는 세금 포함으로 내고, 출국할 때 공항에서 소비세 10%를 돌려받아요. 같은 가게 하루 세금 제외 {e(sym)}5,000 이상, 여권 필수예요.</p>' if t.get("country") == "일본" else "")
               + f'<p class="lead fx-rate" style="margin:12px 0 0;font-size:13px">기본값 {e(sym)}100 ≈ ₩{cur.get("fallback_krw_per_100", "")} · 실시간 환율을 불러오는 중이에요</p></div>'))
     if ph:
-        tabs = '<div class="seg" role="tablist">' + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>'
-        lists = "".join(f'<ul class="phr" data-cat="{k}"{"" if k == 0 else " hidden"}>' + "".join(
-            f'<li><button type="button" data-say="{e(j)}"><span class="ko">{e(ko)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button><button type="button" class="big" data-big="{e(j)}" data-bigko="{e(ko)}" aria-label="크게 보여주기">⤢</button></li>'
+        # 찾기 칸 · ★ 자주 쓰는 말(모든 여행 공용, 이 휴대폰에 저장) · 분류 탭. 문장 id 는 현지어 문장 그대로 (분류가 바뀌어도 ★ 유지)
+        top = ('<div class="ph-top"><input type="search" class="ph-q" placeholder="찾기 (예: 화장실, 면세, 카드)" aria-label="회화 찾기" enterkeyhint="search">'
+               '<button type="button" class="ph-slow" aria-pressed="false">천천히</button></div><p class="ph-voice"></p>')
+        tabs = ('<div class="seg ph-tabs" role="tablist"><button type="button" role="tab" data-cat="fav" aria-selected="false">★ 자주</button>'
+                + "".join(f'<button type="button" role="tab" data-cat="{k}" aria-selected="{str(k == 0).lower()}">{e(c["cat"])}</button>' for k, c in enumerate(ph)) + '</div>')
+        lists = "".join(f'<ul class="phr" data-cat="{k}" data-name="{e(c["cat"])}"{"" if k == 0 else " hidden"}>' + "".join(
+            f'<li data-ph="{e(j)}"><button type="button" data-say="{e(j)}"><span class="ko">{e(ko)}</span><b lang="ja">{e(j)}</b><small>{e(r)}</small></button>'
+            f'<button type="button" class="star" data-star aria-pressed="false" aria-label="자주 쓰는 말에 넣기">☆</button><button type="button" class="big" data-big="{e(j)}" data-bigko="{e(ko)}" aria-label="크게 보여주기">⤢</button></li>'
             for ko, j, r in c["items"]) + '</ul>' for k, c in enumerate(ph))
-        w(sheet("tool-ph", lang(t)["name"] + " 회화", "누르면 소리로 들려요 · ⤢ 누르면 크게 보여 줘요", tabs + lists))
+        lists += ('<ul class="phr ph-fav" data-cat="fav" hidden></ul><p class="ph-empty lead" hidden></p>'
+                  '<p class="lead ph-foot">○○ 자리는 손가락으로 가리키거나 이름을 넣어 말해요. (점원)·(방송)이 붙은 말은 현지에서 듣게 되는 말이에요.</p>')
+        n_ph = sum(len(c["items"]) for c in ph)
+        w(sheet("tool-ph", lang(t)["name"] + " 회화", f"{n_ph}문장 · 누르면 소리로 · ☆ 모아 두기 · ⤢ 크게", top + tabs + lists))
     if pk:
         inner = ('<div class="bag-top"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" pathLength="100"/></svg><b class="bag-pct">0%</b></div>'
                  '<div class="bag-filter seg" role="group"><button type="button" data-bf="all" aria-pressed="true">전체</button><button type="button" data-bf="기내" aria-pressed="false">기내</button><button type="button" data-bf="위탁" aria-pressed="false">위탁</button><button type="button" data-bf="left" aria-pressed="false">남은 것</button></div></div>'

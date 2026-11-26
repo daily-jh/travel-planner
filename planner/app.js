@@ -439,8 +439,18 @@ document.querySelectorAll('.route').forEach(function(card){
   loadWx();
 
   // 현지 한마디: 현지어 음성 (trip.json lang.code)
+  // 휴대폰에 깔린 음성(기기 안 음성)만 골라 쓰면 인터넷 없이도 나온다. 향상된 음성이 있으면 그걸로, '천천히'는 이 휴대폰에 기억
+  var SL=(C.lang||'ja-JP'), voice=null, slow=LS.get('tp-slow',false);
+  function pickVoice(){ if(!window.speechSynthesis) return; var vs=speechSynthesis.getVoices().filter(function(v){ return v.lang.replace('_','-').toLowerCase().indexOf(SL.slice(0,2).toLowerCase())===0; });
+    var sc=function(v){ return (v.localService?4:0)+(/premium|enhanced|향상|拡張|siri/i.test(v.name)?2:0)+(v.lang.replace('_','-')===SL?1:0); };
+    vs.sort(function(a,b){return sc(b)-sc(a)}); voice=vs[0]||null;
+    var vn=document.querySelector('.ph-voice'); if(vn) vn.innerHTML=voice?(voice.localService?'✓ 인터넷 없이도 소리가 나요 ('+voice.name.replace(/[<>&]/g,'')+')':'이 음성은 인터넷이 필요해요. 아래 방법으로 기기 음성을 받아 두세요.')
+      :'이 휴대폰에 현지어 음성이 없어요. 아이폰: 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 일본어 → Kyoko(향상됨) 내려받기. 안드로이드: 설정 → 텍스트 음성 변환 → 일본어 음성 데이터 설치'; }
+  if(window.speechSynthesis){ pickVoice(); speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',pickVoice); }
+  document.addEventListener('click',function(ev){ var sw=ev.target.closest('.ph-slow'); if(sw){ slow=!slow; LS.set('tp-slow',slow); sw.setAttribute('aria-pressed',slow); return; } });
+  (function(){ var sw=document.querySelector('.ph-slow'); if(sw) sw.setAttribute('aria-pressed',slow); })();
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-say]'); if(!b||!window.speechSynthesis) return;
-    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang=(C.lang||'ja-JP'); u.rate=.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    var u=new SpeechSynthesisUtterance(b.dataset.say); u.lang=SL; if(voice) u.voice=voice; u.rate=slow?.6:.9; speechSynthesis.cancel(); speechSynthesis.speak(u);
     b.classList.remove('said'); void b.offsetWidth; b.classList.add('said'); });
 
   // 현지 시각
@@ -465,12 +475,12 @@ document.querySelectorAll('.route').forEach(function(card){
     var W=[{k:'card',name:'커플통장·트래블카드',unit:'₩',put:pool.card||0,used:toKrw(sp.card),usedL:sp.card},{k:'cash',name:'현금'+(local?' ('+(cur.name||s0)+')':''),unit:s0,put:pool.cash||0,used:sp.cash,usedL:sp.cash}];
     var allPut=(pool.card||0)+toKrw(pool.cash||0), allLeft=allPut-toKrw(sp.card)-toKrw(sp.cash);
     var need=C.need&&rate&&local?[C.need[0]*rate,C.need[1]*rate]:(C.need&&!local?C.need:null);
-    var h='<div class="pool-h"><h3>공금</h3><span>남은 돈 <b>₩'+fmt(allLeft)+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
+    var h='<div class="pool-h"><h3>공금</h3><span>'+(allPut?(allLeft<0?'모자람 <b>₩'+fmt(-allLeft):'남은 돈 <b>₩'+fmt(allLeft)):'쓴 돈 <b>₩'+fmt(toKrw(sp.card)+toKrw(sp.cash)))+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
       var ed=editing[w.k]||!w.put, val=ed?'<label class="pw-in"><span>넣은 돈 '+w.unit+'</span><input type="number" inputmode="numeric" min="0" step="1000" enterkeyhint="done" data-pool-in="'+w.k+'" value="'+(w.put||'')+'" placeholder="0" aria-label="'+w.name+' 넣은 돈"></label><button type="button" class="btn primary pw-save" data-pool-save="'+w.k+'">저장</button>'
         :'<span class="pw-amt"><small>넣은 돈</small><b>'+w.unit+fmt(w.put)+'</b><em>✓ 저장됨</em></span><button type="button" class="btn pw-edit" data-pool-edit="'+w.k+'">수정</button>';
-      return '<div class="pw pw-'+w.k+(left<0?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><div class="pw-v">'+val+'</div></div>'
+      return '<div class="pw pw-'+w.k+(left<0&&w.put?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><div class="pw-v">'+val+'</div></div>'
         +'<div class="pw-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'
-        +'<div class="pw-n"><span>쓴 돈 '+(w.k==='card'&&local?s0+fmt(w.usedL)+' ≈ ₩'+fmt(w.used):w.unit+fmt(w.used))+'</span><b>'+(left<0?'모자람 ':'남음 ')+w.unit+fmt(Math.abs(left))+'</b></div></div>'; }).join('')+'</div>';
+        +'<div class="pw-n"><span>쓴 돈 '+(w.k==='card'&&local?s0+fmt(w.usedL)+' ≈ ₩'+fmt(w.used):w.unit+fmt(w.used))+'</span><b>'+(!w.put?'넣은 돈을 적으면 남은 돈이 보여요':(left<0?'모자람 ':'남음 ')+w.unit+fmt(Math.abs(left)))+'</b></div></div>'; }).join('')+'</div>';
     if(need) h+='<p class="pool-need">총 필요 예산(식비·입장료) ₩'+fmt(need[0])+'~'+fmt(need[1])+' · 공금 '+(allPut?(allPut>=need[1]?'넉넉해요':allPut>=need[0]?'예상 범위 안이에요':'₩'+fmt(need[0]-allPut)+' 더 있으면 최소 예산이에요'):'금액을 넣으면 비교해 드려요')+'</p>';
     h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드는 현지 돈으로 적어도 환율(₩'+fmt(rate*100)+'/'+s0+'100)로 바꿔 빼요.':'')+' 이 휴대폰에 저장돼요.</p>';
     document.querySelectorAll('[data-pool]').forEach(function(box){ var fo=box.contains(document.activeElement)?document.activeElement.dataset.poolIn:null; box.innerHTML=h; if(fo){ var i=box.querySelector('[data-pool-in="'+fo+'"]'); if(i){ i.focus(); var v=i.value; i.value=''; i.value=v; } } });
@@ -533,10 +543,29 @@ document.querySelectorAll('.route').forEach(function(card){
   }
 
   // 일본어 회화: 분류 탭, 크게 보여주기
+  // 찾기 칸(한국어·현지어·발음 어디든), ★ 자주 쓰는 말(모든 여행 공용 tp-phfav, 이 휴대폰에만)
   var ph=document.getElementById('tool-ph');
-  if(ph){ ph.addEventListener('click',function(ev){ var t=ev.target.closest('[data-cat]'); if(!t||!t.closest('.seg')) return;
-      ph.querySelectorAll('.seg [data-cat]').forEach(function(x){x.setAttribute('aria-selected',x===t)});
-      ph.querySelectorAll('ul.phr').forEach(function(u){u.hidden=u.dataset.cat!==t.dataset.cat}); }); }
+  if(ph){
+    var FK='tp-phfav', fav=LS.get(FK,[]), pq=ph.querySelector('.ph-q'), pe=ph.querySelector('.ph-empty'), pf=ph.querySelector('.ph-fav'), pcat=null;
+    var phLis=[].slice.call(ph.querySelectorAll('ul.phr:not(.ph-fav) li[data-ph]'));
+    var norm=function(x){ return String(x||'').toLowerCase().replace(/[\s?？!！.。、,／/~·()（）]/g,''); };
+    phLis.forEach(function(li){ li._k=norm(li.textContent); });
+    function paintStars(){ ph.querySelectorAll('[data-star]').forEach(function(b){ var on=fav.indexOf(b.closest('li').dataset.ph)>=0; b.setAttribute('aria-pressed',on); b.textContent=on?'★':'☆'; }); }
+    function showCat(c){ pcat=c; ph.querySelectorAll('.ph-tabs [data-cat]').forEach(function(x){x.setAttribute('aria-selected',x.dataset.cat===String(c))});
+      if(c==='fav'){ var seen={}; pf.innerHTML=fav.map(function(j){ var li=phLis.filter(function(l){return l.dataset.ph===j})[0]; if(!li||seen[j]) return ''; seen[j]=1; return li.outerHTML; }).join(''); }
+      ph.querySelectorAll('ul.phr').forEach(function(u){ u.hidden=u.dataset.cat!==String(c); u.querySelectorAll('li').forEach(function(li){ li.hidden=false; }); });
+      pe.hidden=!(c==='fav'&&!pf.children.length); pe.textContent='☆을 누르면 여기 모여요. 자주 쓰는 말을 모아 두면 현지에서 바로 찾아요.'; paintStars(); }
+    function search(){ var k=norm(pq.value); if(!k){ ph.classList.remove('searching'); showCat(pcat===null?0:pcat); return; }
+      ph.classList.add('searching'); var n=0;
+      ph.querySelectorAll('ul.phr').forEach(function(u){ if(u.classList.contains('ph-fav')){ u.hidden=true; return; } var any=false;
+        u.querySelectorAll('li[data-ph]').forEach(function(li){ var hit=li._k.indexOf(k)>=0; li.hidden=!hit; if(hit){ any=true; n++; } }); u.hidden=!any; });
+      pe.hidden=!!n; pe.textContent='"'+pq.value+'"이(가) 들어간 문장이 없어요. 더 짧게 찾아보세요.'; }
+    ph.addEventListener('click',function(ev){
+      var st=ev.target.closest('[data-star]'); if(st){ var j=st.closest('li').dataset.ph, i=fav.indexOf(j); if(i>=0) fav.splice(i,1); else fav.unshift(j); LS.set(FK,fav.slice(0,80)); paintStars(); if(pcat==='fav'&&!pq.value) showCat('fav'); return; }
+      var t=ev.target.closest('[data-cat]'); if(!t||!t.closest('.seg')) return; if(pq&&pq.value){ pq.value=''; ph.classList.remove('searching'); } showCat(t.dataset.cat==='fav'?'fav':+t.dataset.cat); });
+    if(pq) pq.addEventListener('input',search);
+    showCat(fav.length?'fav':0);
+  }
   var big=document.querySelector('.bigshow');
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-big]'); if(b&&big){ big.querySelector('b').textContent=b.dataset.big; big.querySelector('small').textContent=b.dataset.bigko; if(big.showModal) big.showModal(); return; }
     if(big&&big.open&&ev.target.closest('.bigshow')) big.close(); });
