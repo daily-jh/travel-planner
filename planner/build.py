@@ -479,7 +479,10 @@ def render_trip(slug, t):
         _art = (t.get("landmark") or {}).get("art")
         cfg["frame"] = {"pri": _th["pri"], "acc": _th["acc"], "pri_soft": _th["pri-soft"], "acc_soft": _th["acc-soft"],
                         "art": os.path.basename(_art) if _art and os.path.isfile(os.path.join(ROOT, "trips", slug, _art)) else "",
-                        "name": t.get("short", t["title"]).replace("*", "")}
+                        "name": t.get("short", t["title"]).replace("*", ""), "intl": not t.get("domestic"),
+                        # 네컷 여행지 모티프·경로 (trip.json frames). 없으면 해외는 탑승권, 국내는 드라이브
+                        "motifs": (t.get("frames") or {}).get("motifs") or (["road"] if t.get("domestic") else ["ticket"]),
+                        "route": (t.get("frames") or {}).get("route") or []}
         cfg.update(comfort.cfg(t))  # 여행자 편의: 오늘 챙길 것·쉼표·다음 여행 메모
         w(f'<script type="application/json" id="trip-cfg">{json.dumps(cfg, ensure_ascii=False)}</script>')
         w('<section id="picks"><div class="card pickpanel"><div class="pp-h"><h3>우리의 픽</h3><span class="pp-store"></span></div>'
