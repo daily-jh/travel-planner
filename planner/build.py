@@ -202,12 +202,21 @@ def sheet(did, title, sub, inner):
             f'<div class="sheet-b">{inner}</div></dialog>')
 
 
-def planb_html(d):
-    """플랜 B 팝업: 하루 대안 일정(6칸·장소) + 상황별 짧은 대안."""
-    out = ""
+def plan_bs(d):
+    """plan_b 는 하나(dict)거나 여러 개(list: 대안 1, 대안 2 …)."""
     pb = d.get("plan_b")
-    if pb:
-        out += f'<div class="pbday"><b class="pb-title">{e(pb["title"])}</b><p class="pb-when">{rich(pb.get("when", ""))}</p><table class="simple"><tbody>'
+    return [x for x in (pb if isinstance(pb, list) else [pb]) if x]
+
+
+def pb_name(pb):
+    return (pb["label"] + " · " if pb.get("label") else "") + pb["title"]
+
+
+def planb_html(d):
+    """플랜 B 팝업: 하루 대안 일정(6칸·장소) + 상황별 짧은 대안. 대안이 여러 개면 차례로."""
+    out = ""
+    for pb in plan_bs(d):
+        out += f'<div class="pbday">' + (f'<span class="pb-label">{e(pb["label"])}</span>' if pb.get("label") else "") + f'<b class="pb-title">{e(pb["title"])}</b><p class="pb-when">{rich(pb.get("when", ""))}</p><table class="simple"><tbody>'
         for r in pb["simple"]:
             cls = "meal" if r["slot"] in ("아침", "점심", "저녁") else ""
             out += f'<tr class="{cls}"><td class="k">{e(r["slot"])}</td><td class="t">{e(r["time"])}</td><td>{rich(r["text"])}</td></tr>'
@@ -221,7 +230,7 @@ def planb_html(d):
             out += '</ul>'
         out += '</div>'
     if d.get("alternatives"):
-        out += ('<div class="sub">상황별로 조금만 바꾸기</div>' if pb else "") + '<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b><p>{rich(a["text"])}</p></div>' for a in d["alternatives"]) + '</div>'
+        out += ('<div class="sub">상황별로 조금만 바꾸기</div>' if plan_bs(d) else "") + '<div class="alts">' + "".join(f'<div class="alt"><b>{e(a["when"])}</b><p>{rich(a["text"])}</p></div>' for a in d["alternatives"]) + '</div>'
     return out
 
 
@@ -411,7 +420,7 @@ def render_trip(slug, t):
               f'<td class="place"><span class="tag {TYPE_CLS.get(b["type"], "act")}">{e(b["type"])}</span><b class="pl">{rich(b["place"])}</b>'
               + (f'<span class="wh">{rich(b["what"])}</span>' if plain(b["what"]) else "") + '</td></tr>')
         w(f'</tbody></table><button type="button" class="day-go" data-goto="day{i}">{i}일차 지도·동선 보기</button>'
-          + (f'<button type="button" class="day-go pb" data-open="alt-{i}">플랜 B · {e(d["plan_b"]["title"])}</button>' if d.get("plan_b") else "") + '</details>')
+          + "".join(f'<button type="button" class="day-go pb" data-open="alt-{i}">{e(pb.get("label") or "플랜 B")} · {e(pb["title"])}</button>' for pb in plan_bs(d)) + '</details>')
     w('</div></section>')
 
     # 1-1. 일정을 짠 사람이 보낸 원래 목록 (trip.json original). 시간순 일정 바로 아래
@@ -655,10 +664,10 @@ def render_trip(slug, t):
             blk_dlgs.append(sheet(bid, rich(b["place"]), f'{i}일차 · {e(b["time"])} · {e(b["type"])}', inner))
         w('</tbody></table></div>' + "".join(blk_dlgs))
         if d.get("alternatives") or d.get("plan_b"):
-            pb = d.get("plan_b")
-            nm = pb["title"] if pb else " · ".join(a["when"] for a in d["alternatives"])
-            w(f'<button type="button" class="gchip ov wide planb" data-open="alt-{i}"><span class="k">플랜 B</span><span class="nm">{e(nm)}</span><small>{"하루 대안 일정 · 휴무 요일 확인" if pb else "날씨나 컨디션이 안 좋을 때 바꿀 일정"}</small></button>')
-            w(sheet(f"alt-{i}", "플랜 B", f"{i}일차 · {md(d['date'])}", planb_html(d)))
+            pbs = plan_bs(d)
+            nm = " / ".join(pb_name(x) for x in pbs) if pbs else " · ".join(a["when"] for a in d["alternatives"])
+            w(f'<button type="button" class="gchip ov wide planb" data-open="alt-{i}"><span class="k">{"대안 일정 " + str(len(pbs)) + "개" if len(pbs) > 1 else "플랜 B"}</span><span class="nm">{e(nm)}</span><small>{"하루 대안 일정 · 휴무 요일 확인" if pbs else "날씨나 컨디션이 안 좋을 때 바꿀 일정"}</small></button>')
+            w(sheet(f"alt-{i}", "대안 일정" if len(plan_bs(d)) > 1 else "플랜 B", f"{i}일차 · {md(d['date'])}", planb_html(d)))
         if d.get("places"):
             w('<div><div class="sub">장소 ' + str(len(d["places"])) + '곳 · 누르면 상세</div><div class="pchips">')
             dlgs = []

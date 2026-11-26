@@ -1538,3 +1538,5 @@ a.trip{align-content:start}
 .simple.tl tr .swap-to{display:block;font-size:13px;font-weight:700;color:var(--acc)}
 .simple.tl tr.visited td.t::after{content:"✓";display:block;color:#34c759;font-weight:800}
 .simple.tl tr.visited::before{background:#34c759;box-shadow:0 0 0 2px #34c759}
+.pb-label{justify-self:start;font-size:12px;font-weight:800;letter-spacing:.02em;border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--accent,var(--pri)) 14%,transparent);color:var(--accent,var(--pri))}
+dialog.sheet .pbday+.pbday{padding-top:16px;border-top:.5px solid var(--sep)}
