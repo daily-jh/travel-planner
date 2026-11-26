@@ -1034,9 +1034,19 @@ document.querySelectorAll('.route').forEach(function(card){
   var fmt=function(n){ return Math.round(n).toLocaleString('ko-KR'); };
   function paint(){ var n=0, y=0;
     cards.forEach(function(c){ var on=!!mine[c.dataset.id], b=c.querySelector('.shop-add'); b.setAttribute('aria-pressed',on); b.textContent=on?'담았어요 ✓':'담기';
-      if(on){ n++; y+=+c.dataset.yen||0; } c.hidden=!(f==='all'||(f==='mine'?on:c.dataset.cat===f)); });
+      if(on){ n++; y+=+c.dataset.yen||0; } c.hidden=!(f==='all'||(f==='mine'?on:f==='top'?+c.dataset.stars>=5:c.dataset.cat===f)); });
     document.querySelector('.ss-n').textContent=n+'개'; document.querySelector('.ss-y').textContent='¥'+fmt(y);
     document.querySelector('.ss-w').textContent=C.rate&&y?'≈ ₩'+fmt(y*C.rate):''; }
+  // 정렬: 기본 순서·별점 높은 순·싼 순·비싼 순 (값 모르는 물건은 뒤로)
+  var box=document.querySelector('.shops'), so=document.querySelector('.shop-sort select'), SK='tp-shop-sort';
+  function sortBy(k){ var y=function(c){ return +c.dataset.yen||0; };
+    var cmp={ n:function(a,b){ return a.dataset.n-b.dataset.n; },
+      stars:function(a,b){ return (b.dataset.stars-a.dataset.stars)||(a.dataset.n-b.dataset.n); },
+      cheap:function(a,b){ return (!y(a))-(!y(b))||(y(a)-y(b)); },
+      pricey:function(a,b){ return (!y(a))-(!y(b))||(y(b)-y(a)); } }[k]||null;
+    if(!cmp||!box) return; cards.slice().sort(cmp).forEach(function(c){ c.style.animation='none'; box.appendChild(c); }); }
+  if(so){ try{ var sv=localStorage.getItem(SK); if(sv&&so.querySelector('option[value="'+sv+'"]')){ so.value=sv; sortBy(sv); } }catch(e){}
+    so.addEventListener('change',function(){ sortBy(so.value); try{localStorage.setItem(SK,so.value)}catch(e){} }); }
   document.addEventListener('click',function(ev){
     var b=ev.target.closest('[data-f]'); if(b){ f=b.dataset.f; document.querySelectorAll('[data-f]').forEach(function(x){x.setAttribute('aria-pressed',x===b)}); paint(); return; }
     var a=ev.target.closest('.shop-add'); if(a){ var id=a.closest('.shop').dataset.id; if(mine[id]) delete mine[id]; else mine[id]=1; try{localStorage.setItem(K,JSON.stringify(mine))}catch(e){} paint(); return; }
