@@ -39,6 +39,14 @@ EAT = {
 }
 
 
+# 주변 대안 '내 위치 근처에서 찾기' 단추: (보여 줄 이름, 지도 검색어). 현지어로 찾아야 결과가 많다
+NEAR_KW = {
+    "ja-JP": [("라멘", "ラーメン"), ("카페", "カフェ"), ("편의점", "コンビニ"), ("드럭스토어", "ドラッグストア"), ("화장실", "公衆トイレ"),
+              ("코인로커", "コインロッカー"), ("ATM", "セブン銀行 ATM"), ("약국", "薬局")],
+    "ko-KR": [("맛집", "맛집"), ("카페", "카페"), ("편의점", "편의점"), ("약국", "약국"), ("화장실", "공중화장실"), ("주차장", "주차장")],
+}
+
+
 def _hm(s):
     m = re.match(r"(\d{1,2}):(\d{2})", s or "")
     return int(m.group(1)) * 60 + int(m.group(2)) if m else None
@@ -113,10 +121,15 @@ def sheets(t):
     e, rich = B.e, B.rich
     out = []
     if t.get("vouchers"):
-        out.append(B.sheet("tool-qr", "QR·바우처", "입국 QR, 탑승권, 예약 화면을 한곳에", '''<p class="vault-note"><b>이 휴대폰 안에만 저장돼요.</b> 사이트·서버·공유 링크 어디에도 올라가지 않아요. 캡처 사진이나 예약번호를 넣어 두면 인터넷이 없어도 바로 열려요. 휴대폰 화면 잠금은 꼭 켜 두세요.</p>
+        out.append(B.sheet("tool-qr", "QR·바우처", "입국 QR, 탑승권, 예약 화면을 한곳에", '''<p class="vault-note"><b>이 휴대폰 안에만 저장돼요.</b> 사이트·서버·공유 링크 어디에도 올라가지 않아요. 캡처 사진·PDF나 예약번호를 넣어 두면 인터넷이 없어도 바로 열려요. 휴대폰 화면 잠금은 꼭 켜 두세요.</p>
+<ul class="vault-tips"><li><b>두 사람 것</b> 탑승권처럼 사람마다 다른 건 한 칸에 여러 장 넣고 크게 보기에서 옆으로 넘겨요</li><li><b>QR만 크게</b> 캡처 속 QR을 찾아 화면 가득 보여 줘요 · 보는 동안 화면이 꺼지지 않아요</li><li><b>다 썼어요</b> 누르면 아래로 접혀요 · 오늘 쓸 칸이 맨 위에 와요</li></ul>
 <ul class="vault" aria-live="polite"></ul>
-<form class="vault-add"><input name="label" placeholder="칸 직접 추가 (예: 렌터카 예약)" maxlength="30" required><button class="btn primary" type="submit">추가</button></form>'''))
-        out.append('<dialog class="vaultview" aria-label="QR 크게 보기"><img alt=""><p class="vv-t"></p><p class="vv-hint">화면 밝기를 올리면 잘 읽혀요 · 누르면 닫혀요</p></dialog>')
+<form class="vault-add"><input name="label" placeholder="칸 직접 추가 (예: 렌터카 예약)" maxlength="30" required><button class="btn primary" type="submit">추가</button></form>
+<div class="vault-move"><p><b>새 휴대폰·일행 휴대폰으로 옮기기</b> 보관함을 파일 하나로 만들어 에어드롭으로 보내고, 받은 쪽에서 가져오기를 눌러요. 사진이 그대로 들어 있으니 일행에게만 보내요.</p>
+<div class="row"><button type="button" class="btn vault-out">파일로 내보내기</button><label class="btn vault-in">가져오기<input type="file" accept="application/json,.json" hidden></label></div></div>'''))
+        out.append('<dialog class="vaultview" aria-label="QR 크게 보기"><button type="button" class="vv-close" aria-label="닫기">✕</button><img alt=""><p class="vv-t"></p>'
+                   '<div class="vv-bar"><button type="button" class="vv-prev" aria-label="이전 장">‹</button><span class="vv-n"></span><button type="button" class="vv-crop" hidden></button><button type="button" class="vv-next" aria-label="다음 장">›</button></div>'
+                   '<p class="vv-hint">화면 밝기를 최대로 올리면 잘 읽혀요 · 사진을 누르면 확대 · 빈 곳을 누르면 닫혀요</p></dialog>')
     lc = B.lang(t)["code"]
     if lc in EAT and not B.domestic(t):
         E = EAT[lc]
@@ -133,10 +146,15 @@ def sheets(t):
 <div class="ings" data-sep="{e(E["sep"])}" data-rko="{e(E["remove"][0])}" data-rja="{e(E["remove"][1])}" data-ako="{e(E["allergy"][0])}" data-aja="{e(E["allergy"][1])}">{chips}</div>
 <div class="row"><button type="button" class="btn primary" data-ing="remove">빼 주세요 보여 주기</button><button type="button" class="btn" data-ing="allergy">알레르기 보여 주기</button></div>'''))
     if t.get("areas"):
-        out.append(B.sheet("tool-near", "주변 대안", "줄이 너무 길거나 문을 닫았을 때", '''<div class="near-top"><div class="seg near-f" role="group" aria-label="종류"><button type="button" data-nf="all" aria-pressed="true">전체</button><button type="button" data-nf="eat" aria-pressed="false">식사</button><button type="button" data-nf="cafe" aria-pressed="false">카페</button><button type="button" data-nf="shop" aria-pressed="false">쇼핑</button></div>
-<button type="button" class="btn near-gps">내 위치로 찾기</button></div>
+        kws = NEAR_KW["ko-KR" if B.domestic(t) else B.lang(t)["code"]] if (B.domestic(t) or B.lang(t)["code"] in NEAR_KW) else []
+        chips = "".join(f'<button type="button" data-nkw="{e(q)}" aria-pressed="false">{e(k)}</button>' for k, q in kws)
+        out.append(B.sheet("tool-near", "주변 대안", "줄이 너무 길거나 문을 닫았을 때", f'''<div class="near-top"><div class="seg near-f" role="group" aria-label="종류"><button type="button" data-nf="all" aria-pressed="true">전체</button><button type="button" data-nf="eat" aria-pressed="false">식사</button><button type="button" data-nf="cafe" aria-pressed="false">카페</button><button type="button" data-nf="shop" aria-pressed="false">쇼핑</button></div>
+<button type="button" class="btn near-gps">◎ 내 위치로 찾기</button></div>
+<div class="near-map" hidden><div class="nm-frame"><iframe title="내 위치 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+<div class="nm-bar"><span class="nm-cap"></span><button type="button" class="nm-me">내 위치만</button><a class="nm-open" href="#" target="_blank" rel="noopener">{B.MAP["name"]} 앱 ↗</a></div>
+{f'<p class="nm-kh">내 위치 근처에서 바로 찾기 · 실제 영업 여부는 지도 앱이 보여 줘요</p><div class="nm-kw">{chips}</div>' if chips else ''}</div>
 <p class="near-where lead"></p><ul class="near" aria-live="polite"></ul>
-<p class="lead" style="font-size:12.5px;margin:12px 0 0">아직 일정에 넣지 않은 후보예요. 영업시간은 업종별 보통 시간으로 어림했어요 <span class="chk">확인 필요</span> 가기 전에 지도에서 오늘 영업을 확인해요. 위치는 휴대폰 안에서만 쓰고 어디에도 보내지 않아요.</p>'''))
+<p class="lead" style="font-size:12.5px;margin:12px 0 0">아직 일정에 넣지 않은 후보예요. 영업시간은 업종별 보통 시간으로 어림했어요 <span class="chk">확인 필요</span> 가기 전에 지도에서 오늘 영업을 확인해요. '길찾기'는 지도 앱에서 지금 내 위치부터 걷는 길을 열어요. 위치는 이 휴대폰 안에서만 쓰고, 페이지 안 지도를 그릴 때만 구글 지도에 넘겨요.</p>'''))
     tp = t.get("transit_pass")
     if tp:
         price = tp["price"]

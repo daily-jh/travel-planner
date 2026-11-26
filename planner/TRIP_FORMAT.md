@@ -54,14 +54,14 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `currency` | `{"code","symbol","name","fallback_krw_per_100"}` | 환율 계산. 국내 여행이면 빼도 된다 |
 | `lang` | `{"code":"ja-JP","name":"일본어","icon":"あ","taxi":"{stay}までお願いします"}` | 회화 이름·음성 언어·택시 카드 문장. 없으면 일본어 |
 | `local_tz_note` | 문자열 | "한국과 시차 없음" 등 |
-| `phrases` | `[{"cat", "items":[[한국어, 현지어, 발음]]}]` | 현지 회화 (분류 6개 안팎) |
+| `phrases` | `[{"cat", "items":[[한국어, 현지어, 발음]]}]` | 그 여행에만 쓰는 회화 (지명·가게 이름이 들어간 문장). 나라 공통 회화는 `planner/countries/<코드>.json`의 `phrases`에 있고 같은 분류끼리 뒤에 합쳐진다 (일본 약 240문장). 같은 현지어 문장은 한 번만 |
 | `packing` | `[{"cat", "items":[[물건, "기내"|"위탁"]]}]` | 캐리어 짐 |
 | `packing_note` | 문자열 (선택) | 짐 팝업 부제. 없으면 "5월 초 강릉 날씨 기준"처럼 자동 |
 | `emergency` | `[[이름, 번호]]` | 경찰·구급·영사콜센터 같은 공공 번호만 (국내: 112·119·1330) |
 | `emergency_link` | URL | 총영사관 등 |
 | `flights` | `[{"date","dep","from","to","no","airline","dep_tz"}]` | 지금 카드의 '공항 도착까지' 계산 |
 | `areas` (선택) | `{"권역": [위도, 경도]}` | 주변 대안의 거리 계산용 동네 중심 좌표. `blocks.area`·`candidates.area`가 이 이름을 쓴다 |
-| `vouchers` (선택) | `[{"id","label","hint","when"}]` | QR·바우처 칸 **이름만**. 번호·QR 사진은 여행자가 각자 휴대폰에 넣는다 (사이트·링크에 안 올라감). 예약번호를 여기에 쓰지 말 것 |
+| `vouchers` (선택) | `[{"id","label","hint","when"}]` | QR·바우처 칸 **이름만**. 번호·QR 사진·PDF는 여행자가 각자 휴대폰에 넣는다 (사이트·링크에 안 올라감). 한 칸에 여러 장(두 사람 탑승권), QR 자동 잘라 크게, 다 쓴 칸 접기, 파일로 옮기기(에어드롭) 지원. 예약번호를 여기에 쓰지 말 것 |
 | `transit_pass` (선택) | `{"name","price","fare_note","touch","days":[{"date","rides":[[구간, 요금]]}]}` | 1일권 손익. 날마다 지하철 탈 구간과 편도 요금 |
 | `original` (선택) | `{"title","by","version","note","prep":[항목],"days":[{"date","lines":[줄],"groups":[{"cat","items":[[원문, "언제 들르는지", "w"]]}]}]}` | 일정을 짠 사람이 보낸 원래 목록. 홈의 **시간순 일정** 바로 아래에 날짜별로 접혀서 나와요. `items` 둘째 칸은 시간표에서 들르는 때(예: `"15:10"`, `"화요일 휴무 → 5일차 점심으로"`), 셋째 칸 `"w"`는 못 가거나 옮긴 곳이라 주황 글씨 |
 | `leftover` (선택) | `{"title","tips":[[제목, 설명]],"airport":[[언제, 할 일]]}` | 귀국 날 동전 털기·공항 순서 |
