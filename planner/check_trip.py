@@ -132,8 +132,8 @@ def check(folder):
             if not pl.get("hours"):
                 warn.append(f"{tag} '{pl.get('name')}' 영업시간이 비었어요. 모르면 {{확인 필요}}")
 
-        pb = d.get("plan_b")
-        if pb:
+        _pb = d.get("plan_b")
+        for pb in (_pb if isinstance(_pb, list) else [_pb] if _pb else []):
             if [r.get("slot") for r in pb.get("simple", [])] != SLOTS:
                 err.append(f"{tag} plan_b.simple 도 {'·'.join(SLOTS)} 6칸이어야 해요")
             if not pb.get("title"):
