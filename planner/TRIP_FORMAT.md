@@ -60,7 +60,7 @@ python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 | `packing_note` | 문자열 (선택) | 짐 팝업 부제. 없으면 "5월 초 강릉 날씨 기준"처럼 자동 |
 | `emergency` | `[[이름, 번호]]` | 경찰·구급·영사콜센터 같은 공공 번호만 (국내: 112·119·1330) |
 | `emergency_link` | URL | 총영사관 등 |
-| `flights` | `[{"date","dep","from","to","no","airline","dep_tz"}]` | 지금 카드의 '공항 도착까지' 계산 |
+| `flights` | `[{"date","dep","from","to","no","airline","dep_tz","aircraft","seatmap_url"}]` | 지금 카드의 '공항 도착까지' 계산. `aircraft`(선택)는 **내 좌석** 그림의 기종: `B737-800` `B737-8` `A320` `A321` `A321neo` `A330-300` `B777-300ER` `B787-9` `A350-900` (planner/seat.js `AC`). `seatmap_url`(선택)은 항공사 실제 좌석 배치 링크. **좌석번호는 여기에 쓰지 말 것**: 각자 휴대폰에서 넣거나 예약 메일 붙여넣기로 채운다 |
 | `areas` (선택) | `{"권역": [위도, 경도]}` | 주변 대안의 거리 계산용 동네 중심 좌표. `blocks.area`·`candidates.area`가 이 이름을 쓴다 |
 | `vouchers` (선택) | `[{"id","label","hint","when"}]` | QR·바우처 칸 **이름만**. 번호·QR 사진·PDF는 여행자가 각자 휴대폰에 넣는다 (사이트·링크에 안 올라감). 한 칸에 여러 장(두 사람 탑승권), QR 자동 잘라 크게, 다 쓴 칸 접기, 파일로 옮기기(에어드롭) 지원. 예약번호를 여기에 쓰지 말 것 |
 | `transit_pass` (선택) | `{"name","price","fare_note","touch","days":[{"date","rides":[[구간, 요금]]}]}` | 1일권 손익. 날마다 지하철 탈 구간과 편도 요금 |

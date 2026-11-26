@@ -235,13 +235,15 @@
       return {when:dd?dd.v:'',label:hit?hit.label:label,num:memo,hit:hit,flight:fl?fl[1]+fl[2]:''}; }
     var vmIn=document.querySelector('.vm-in'), vmOut=document.querySelector('.vm-out'), vmRes=null;
     var vmGo=document.querySelector('.vm-go'); if(vmGo) vmGo.addEventListener('click',function(){ var tx=(vmIn.value||'').trim(); if(!tx){ say('메일 내용을 먼저 붙여 넣어 주세요.'); return; }
-      vmRes=mailParse(tx); vmOut.hidden=false; vmOut.label.value=vmRes.label; vmOut.when.value=vmRes.when; vmOut.num.value=vmRes.num;
-      vmOut.querySelector('.vm-hit').textContent=vmRes.hit?'이미 있는 "'+vmRes.hit.label+'" 칸에 번호를 넣어요.':(vmRes.when||vmRes.num?'찾은 걸 확인하고 고쳐서 만들어요.':'날짜·번호를 못 찾았어요. 직접 적어 주세요.'); });
+      vmRes=mailParse(tx); vmRes.seat=window.TPSeat?window.TPSeat.scan(tx):null; var sc=vmRes.seat&&vmRes.seat.it&&(vmRes.seat.seats.length||vmRes.seat.ac)?vmRes.seat:null; vmOut.hidden=false; vmOut.label.value=vmRes.label; vmOut.when.value=vmRes.when; vmOut.num.value=vmRes.num;
+      vmOut.querySelector('.vm-hit').textContent=(vmRes.hit?'이미 있는 "'+vmRes.hit.label+'" 칸에 번호를 넣어요.':(vmRes.when||vmRes.num?'찾은 걸 확인하고 고쳐서 만들어요.':'날짜·번호를 못 찾았어요. 직접 적어 주세요.'))
+        +(sc?' '+sc.it.f.no+' '+(sc.seats.length?'좌석 '+sc.seats.join('·'):'')+(sc.ac?(sc.seats.length?', ':'')+'기종 '+sc.ac:'')+'도 \'내 좌석\'에 넣어요.':''); });
     if(vmOut) vmOut.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(vmOut), l=String(f.get('label')||'').trim().slice(0,30), w=String(f.get('when')||''), n=String(f.get('num')||'').trim().slice(0,80);
       var id=vmRes&&vmRes.hit&&vmRes.hit.label===l?vmRes.hit.id:null;
       if(!id){ id='m'+Date.now().toString(36); V.mine.push({id:id,label:l,when:w}); }
       if(n) V.t[id]=V.t[id]?(V.t[id].indexOf(n)>=0?V.t[id]:(n+' · '+V.t[id]).slice(0,80)):n;
-      LS.set(VK,V); vmOut.hidden=true; vmIn.value=''; vmRes=null; var d=vmOut.closest('details'); if(d) d.open=false; paintVault(); say('"'+l+'" 칸을 '+(id[0]==='m'?'만들었어요':'채웠어요')+'. 캡처나 PDF도 넣어 두세요.'); });
+      var seatMsg=vmRes&&vmRes.seat&&window.TPSeat?window.TPSeat.apply(vmRes.seat):'';
+      LS.set(VK,V); vmOut.hidden=true; vmIn.value=''; vmRes=null; var d=vmOut.closest('details'); if(d) d.open=false; paintVault(); say('"'+l+'" 칸을 '+(id[0]==='m'?'만들었어요':'채웠어요')+(seatMsg?' · 좌석 '+seatMsg:'')+'. 캡처나 PDF도 넣어 두세요.'); });
 
     // 크게 보기: 흰 화면 가득, 여러 장은 좌우로 넘기기, 'QR만'·'전체' 바꾸기, 누르면 확대, 보는 동안 화면이 꺼지지 않게
     var vv=document.querySelector('.vaultview'), cur={id:null,k:0,full:false}, lock=null;
