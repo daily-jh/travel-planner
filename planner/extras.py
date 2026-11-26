@@ -44,7 +44,7 @@ def tiles(t):
     x = [("t-rep", "tool-rep", "▥", "여행 리포트", '<small>지출·픽·기록 차트</small>'),
          ("t-cut", "tool-cut", "▤", "네컷 사진", '<small>스티커 사진 프레임</small>')]
     if t.get("_shopping"):
-        x.append(("t-shop", "href:shopping/", "¥", "쇼핑 리스트", f'<small>{len(t["_shopping"]["items"])}개 · 가격·생김새</small>'))
+        x.append(("t-shop", "href:shopping/", "¥", "쇼핑 리스트", f'<small>{len(t["_shopping"]["items"])}개 · 별점·가격·살 곳</small>'))
     return x
 
 
@@ -368,7 +368,18 @@ TF_STORES = [
     {"id": "airport", "label": "공항 출국장 면세점", "kw": "공항", "tf": False, "note": "출국장 면세점은 처음부터 세금이 빠진 값이라 따로 모을 필요가 없어요"},
     {"id": "etc", "label": "기타 가게", "kw": "", "tf": True},
 ]
-FOOD_CATS = {"후쿠오카 한정 기념품", "마트 식품·조미료", "편의점 먹거리", "과자·디저트"}  # 소비세 8%
+FOOD_CATS = {"후쿠오카 한정 기념품", "후쿠오카 현지인 단골", "라멘·즉석면", "마트 식품·조미료", "일본인 장바구니 단골", "편의점 먹거리", "과자·디저트"}  # 소비세 8%
+
+
+def shop_stars(it):
+    """AI 추천 별점(1~5)과 한 줄 이유"""
+    n = it.get("stars")
+    if not n:
+        return ""
+    n = max(1, min(5, int(n)))
+    why = f'<span class="shop-pick">{B.e(it["pick"])}</span>' if it.get("pick") else ""
+    return (f'<p class="shop-stars"><span class="shop-st" role="img" aria-label="AI 추천 별 {n}개 중 5개">'
+            f'{"★" * n}<i>{"★" * (5 - n)}</i></span><small>AI 추천</small>{why}</p>')
 
 
 def shopping_page(slug, t, data):
@@ -380,18 +391,18 @@ def shopping_page(slug, t, data):
     for it in items:
         if it["cat"] not in cats:
             cats.append(it["cat"])
-    chips = '<button type="button" data-f="all" aria-pressed="true">전체</button>' + "".join(
+    chips = '<button type="button" data-f="all" aria-pressed="true">전체</button><button type="button" data-f="top" aria-pressed="false">★5 꼭 사기</button>' + "".join(
         f'<button type="button" data-f="{e(c)}" aria-pressed="false">{e(c)}</button>' for c in cats) + '<button type="button" data-f="mine" aria-pressed="false">담은 것</button>'
     cards = []
     store_opts = "".join(f'<option value="{s["id"]}">{e(s["label"])}</option>' for s in TF_STORES)
     for n, it in enumerate(items):
         won = f'₩{round(it["price_yen"] * rate / 100) * 100:,}' if rate and it.get("price_yen") else ""
-        price = f'¥{it["price_yen"]:,}' if it.get("price_yen") else "참고가"
+        price = (("약 " if it.get("approx") else "") + f'¥{it["price_yen"]:,}') if it.get("price_yen") else "참고가"
         food = "1" if it["cat"] in FOOD_CATS else "0"
-        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="{e(it.get("id") or f"s{n}")}" data-yen="{it.get("price_yen") or 0}" data-where="{e(it.get("where", ""))}" data-food="{food}">
+        cards.append(f'''<article class="shop" data-cat="{e(it["cat"])}" data-id="{e(it.get("id") or f"s{n}")}" data-yen="{it.get("price_yen") or 0}" data-where="{e(it.get("where", ""))}" data-food="{food}" data-stars="{it.get("stars") or 0}" data-n="{n}">
 {shop_art(slug, it)}
 <div class="shop-b"><small class="shop-cat">{e(it["cat"])}{(" · " + e(it["brand"])) if it.get("brand") else ""}</small><h3>{e(it["ko"])}</h3>
-<p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>{f'<p class="shop-local"><span>현지인 픽</span> {e(it["local"])}</p>' if it.get("local") else ""}
+<p class="shop-ja" lang="ja">{e(it.get("ja", ""))}</p>{shop_stars(it)}{f'<p class="shop-local"><span>현지인 픽</span> {e(it["local"])}</p>' if it.get("local") else ""}
 <div class="shop-price"><b>{price}</b><span>{won}</span><em>{e(it.get("size", ""))}</em></div>
 <p class="shop-src">{e(it.get("price_note") or "")}</p>
 <p class="shop-why">{e(it.get("why", ""))}</p>
@@ -406,12 +417,13 @@ def shopping_page(slug, t, data):
 <div class="topbar">{B.brand("../../../")}<a class="back" href="../">{e(t.get("short", ""))} 여행</a></div>
 <div class="eyebrow">SHOPPING LIST · {e(t.get("short", ""))}·일본</div>
 <h1>꼭 사 올 <em>쇼핑 리스트</em></h1>
-<p>편의점, 마트, 드러그스토어, 기념품 {len(items)}가지를 가격과 사진으로 정리했어요. 일본 현지인이 실제로 자주 사는 것은 “현지인 픽”으로 표시했어요. 사진을 누르면 크게 보여요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
+<p>라멘, 마트 식품, 과자, 의약품, 화장품, 기념품 {len(items)}가지를 별점·가격과 함께 골랐어요. 별 5개는 꼭 사 올 것, “약”이 붙은 값은 참고가예요. 담기를 누르면 이 휴대폰에 저장되고 합계가 계산돼요.</p>
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 <section class="shop-sum card" aria-live="polite"><div><small>담은 것</small><b class="ss-n">0개</b></div><div><small>합계</small><b class="ss-y">¥0</b><span class="ss-w"></span></div><div class="ss-tf"><small>면세 (2026-11 바뀜)</small><span>세금 포함으로 내고 출국할 때 돌려받아요 · 같은 가게 하루 ¥5,000 이상(세금 제외, 일반 상품은 세금 포함 ¥5,500·식품은 ¥5,400쯤)</span></div></section>
 <section class="card tfx-card"><h3>가게별 면세 계산</h3><p class="lead" style="margin:0 0 10px;font-size:13px">담은 물건을 살 곳별로 모았어요. 물건 카드의 ‘살 곳’을 바꾸면 다시 계산해요. 같은 가게에서 <b>같은 날</b> 산 것만 합쳐져요. 여권을 꼭 챙겨요.</p><div class="tfx" aria-live="polite"></div></section>
 <div class="shop-f seg" role="group" aria-label="분류">{chips}</div>
+<div class="shop-sort"><label><span>정렬</span><select aria-label="정렬"><option value="n">기본 순서</option><option value="stars">별점 높은 순</option><option value="cheap">싼 순</option><option value="pricey">비싼 순</option></select></label><small>{e(data.get("stars_note", ""))}</small></div>
 <section class="shops">{"".join(cards)}</section>
 <section class="card shop-notes"><h3>사기 전에</h3><ul>{notes}</ul><p class="lead" style="font-size:13px;margin:8px 0 0">가격은 {e(srcs)} 기준 일반 판매가(세금 포함)예요. 가게·시기마다 달라요. 사진은 위키미디어 커먼즈의 자유 이용 사진이라 지금 파는 포장과 다를 수 있어요. 사진이 없는 제품은 포장 색과 모양을 단순하게 그렸으니, 아마존재팬에서 보기를 눌러 실제 포장을 확인해요.</p></section>
 </main>
@@ -419,7 +431,7 @@ def shopping_page(slug, t, data):
 <dialog class="bigshow" aria-label="크게 보여주기"><b lang="ja"></b><small></small><span>화면을 누르면 닫혀요</span></dialog>
 <footer><div class="wrap">원화는 ¥100 ≈ ₩{cur.get("fallback_krw_per_100", "")}로 어림했어요.</div></footer>
 <script type="application/json" id="shop-cfg">{json.dumps({"trip": slug, "rate": rate, "tf_min": 5000, "stores": TF_STORES}, ensure_ascii=False)}</script>'''
-    og = {"title": f'{t.get("short", "")} 쇼핑 리스트', "desc": f"편의점·마트·드러그스토어 {len(items)}가지, 가격과 생김새", "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/shopping/"}
+    og = {"title": f'{t.get("short", "")} 쇼핑 리스트', "desc": f"라멘·식료품·과자·의약품 {len(items)}가지, 별점·가격·살 곳", "image": f"trips/{slug}/og.png", "path": f"trips/{slug}/shopping/"}
     return B.page(f'{t.get("short", "")} 쇼핑 리스트', body, 3, t.get("theme", "hakata"), og=og).replace("<body class=\"", "<body class=\"shop-page ", 1)
 
 

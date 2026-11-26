@@ -105,7 +105,7 @@ create policy "remove" on picks for delete using (true);
 
 - **여행 리포트**: 이 휴대폰의 함께 쓴 돈, 픽, 여행 기록으로 날짜별 지출(예상 범위와 비교), 분류별·낸 사람별 지출, 픽 나눔, 다녀온 곳을 차트로 보여 줘요.
 - **네컷 사진**: 사진관 스티커 사진처럼 사진 네 장을 세로 네컷 또는 2×2 프레임에 담아요. 프레임은 여행지(그 여행 손그림 `landmark`를 크게, 검정 펜선), 테마(표지 그라데이션), 파스텔(테마 옅은 색), 흰색, 검정 다섯 가지예요. 여행지 외에는 사이트처럼 시스템 글꼴·둥근 모서리·테마 색만 써요. 칸은 비워 둔 채 시작해요. 인생네컷처럼 칸을 고르고 아래 사진 목록(여행 기록 사진 + '사진 추가')에서 눌러 넣고, 사진을 끌어 위치를, 두 손가락이나 −/+로 크기를 맞추고, ↑↓로 칸 순서를 바꿔요. 새 여행도 `theme`과 `landmark.art`만 있으면 저절로 맞춰져요. 사진은 휴대폰 밖으로 나가지 않아요.
-- **쇼핑 리스트**: `trips/<폴더>/shopping.json`이 있으면 `trips/<폴더>/shopping/` 페이지가 생겨요. 상품마다 `cat, ko, ja, brand, size, price_yen, price_note, where, why, look, url, shape, colors`. 그림은 `shape`(box·bag·bottle·can·tube·jar·pack·stick·cup·onigiri·sheet·tin)와 `colors` 3개로 단순하게 그려요.
+- **쇼핑 리스트**: `trips/<폴더>/shopping.json`이 있으면 `trips/<폴더>/shopping/` 페이지가 생겨요. 상품마다 `cat, ko, ja, brand, size, price_yen, price_note, where, why, look, url, shape, colors`. 그림은 `shape`(box·bag·bottle·can·tube·jar·pack·stick·cup·onigiri·sheet·tin)와 `colors` 3개로 단순하게 그려요. 추천은 `stars`(1~5, AI 추천 별점)와 `pick`(한 줄 이유), 값을 못 확인한 참고가는 `approx: true`(화면에 "약 ¥"). 맨 위 `stars_note`는 별점 기준 설명이에요.
 
 ## 여행지 안내: 면세 환급·에티켓·역사·문화
 
