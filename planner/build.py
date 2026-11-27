@@ -588,7 +588,7 @@ def render_trip(slug, t):
             '<button type="button" class="btn" data-sync="protect">비밀번호 걸어 보내기</button>'
             '<button type="button" class="btn" data-backup="export">여행 기록 백업</button>'
             '<label class="btn">백업 복원 <input type="file" accept=".json,application/json" data-backup="import" aria-label="여행 기록 백업 파일 선택"></label>'
-            '<p class="lead">백업에는 이 기기의 지출·선택·체크·좌석 등을 담아요. 사진과 바우처는 각 도구에서 따로 관리해 주세요.</p>'
+            '<p class="lead">백업에는 이 기기의 캐리어 짐·건너뛴 일정·대체 장소·지출·선택·체크·좌석 등을 담아요. 사진과 바우처는 각 도구에서 따로 관리해 주세요.</p>'
             f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일정 링크만 보내기</button></div>'))
     w(sheet("find", "이 여행에서 찾기", "장소·일정·도구·준비물을 한 번에", '<label class="search"><input class="find-q" type="search" placeholder="예: 라멘, 면세, 택시, 3일차" aria-label="찾을 말" autocomplete="off" enterkeyhint="search"></label><ul class="find-r" aria-live="polite"></ul>'))
     w(sheet("sync-in", "기록을 받았어요", "", '<div class="sync-body"></div><div class="row"><button type="button" class="btn primary" data-sync="merge">내 기록과 합치기</button><button type="button" class="btn" data-close>나중에</button></div>'))

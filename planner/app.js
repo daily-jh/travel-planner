@@ -805,6 +805,13 @@ document.querySelectorAll('.route').forEach(function(card){
     var person=function(n){return names.indexOf(n)>=0};
     var index=function(v){return Number.isInteger(v)&&v>=0&&v<=1000};
     var bools=function(v){return fields(v,function(x){return typeof x==='boolean'})};
+    if(isBackup){
+      if(!optional(p.bag,function(b){return map(b)&&bools(b.c)&&list(b.mine,function(x){
+        return map(x)&&ids(x.id)&&str(x.it,40)&&(x.wh==='기내'||x.wh==='위탁');
+      })})) return false;
+      if(!optional(p.plan,function(plan){return map(plan)&&fields(plan.s,function(v){return v===1||typeof v==='boolean'})
+        &&fields(plan.w,function(v){return str(v,500)&&!/[<>]/.test(v)})})) return false;
+    }
     return optional(p.picks,function(v){return fields(v,function(x){return list(x,person)})})
       &&optional(p.ex,function(v){return list(v,function(x){
         return map(x)&&ids(x.id)&&optional(x.t,stamp)&&optional(x.e,stamp)&&amount(x.amt)&&x.amt>0
@@ -834,7 +841,7 @@ document.querySelectorAll('.route').forEach(function(card){
       }
     return true;
   }
-  var backupGroups={exp:'ex',exdel:'exdel',ck:'ck',dl:'dl','check-time':'checkTime',pool:'pool',ch:'ch',mem:'mem',seat:'seat',picks:'picks'};
+  var backupGroups={bag:'bag',plan:'plan',exp:'ex',exdel:'exdel',ck:'ck',dl:'dl','check-time':'checkTime',pool:'pool',ch:'ch',mem:'mem',seat:'seat',picks:'picks'};
   document.addEventListener('click',function(e){
     if(!e.target.closest('[data-backup="export"]')) return;
     try{

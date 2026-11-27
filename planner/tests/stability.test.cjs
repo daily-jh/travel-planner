@@ -11,6 +11,10 @@ test('share schema accepts legacy values and timestamped unchecks', () => {
   const scope = {slug: 'test', names: ['A'], isPool: who => who === '공금카드'};
   const validate = vm.runInNewContext(validators + '\nvalidateSync', scope);
   const base = {v: 1, trip: 'test', from: 'A'};
+  const backup = {...base, bag: {c: {coat:true}, mine:[{id:'coat', it:'겉옷', wh:'기내'}]}, plan:{s:{'blk-1-1':1}, w:{'blk-1-2':'미술관'}}};
+  assert.equal(validate(backup,true),true);
+  assert.equal(validate({...backup,bag:{c:{},mine:[{}]}},true),false);
+  assert.equal(validate({...backup,plan:{s:[],w:{}}},true),false);
   const exp = {id: 'entry-1', amt: 1000, who: '공금카드', cat: '식사', what: '식사', date: '2/28'};
   assert.equal(validate({...base, ck: {ready: true}, ex: [exp]}), true);
   assert.equal(validate({...base, dl: {ticket: false}, checkTime: {dl: {ticket: 100}}, ex: [{...exp, fx: 9.5}]}), true);
