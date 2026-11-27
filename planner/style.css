@@ -1645,3 +1645,14 @@ ul.near li.on{box-shadow:inset 0 0 0 1.5px var(--pri)}
 .seat-addf{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .seat-addf input{font:inherit;padding:8px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);color:var(--ink);min-width:0;flex:1 1 120px}
 .seat-note{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+#travel-work > details { margin-block: .75rem; }
+#travel-work summary { cursor: pointer; padding-block: .65rem; }
+#travel-work label { display: inline-grid; gap: .3rem; margin: .4rem .6rem .4rem 0; max-width: 100%; }
+#travel-work input:not([type=checkbox]), #travel-work select {
+  font: inherit; color: inherit; border: 1px solid #bbc3c9; border-radius: .5rem;
+  padding: .45rem; max-width: 100%; min-width: 0; box-sizing: border-box;
+}
+#travel-work .btn { margin: .25rem .35rem .25rem 0; }
+#travel-work details details { border-top: 1px solid #ddd; padding-block: .25rem; }
+#travel-work img { display: block; max-width: 100%; height: auto; }

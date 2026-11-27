@@ -34,7 +34,7 @@ def asset_ver(*paths):
 
 _P = os.path.dirname(os.path.abspath(__file__))
 ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py", "together.py", "seat.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js")))}
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js", "workspace.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -768,7 +768,7 @@ def render_trip(slug, t):
                         + ('<em class="dl-tag" hidden></em>' if (title, n) in dlk else "") + '</span></li>' for n, x in enumerate(items)) + '</ul></div>')
         w('</div></section>')
     w(extras.export_section(slug, t))
-    w('</main>')
+    w('<p><a class="btn" href="../../#travel-work">전체 장소 보관함 · 여행 만들기</a></p></main>')
     if FEEDBACK:
         w(f'<section id="feedback"><div class="card fbcard"><h3>의견 보내기</h3><p class="lead" style="margin:0 0 10px">바꾸고 싶은 곳, 가고 싶은 곳이 있으면 {e(SITE.get("feedback_name", ""))}에게 문자로 알려 주세요. 버튼을 누르면 내용이 적힌 문자 창이 열리고, 받는 사람은 연락처에서 고르면 돼요.</p>'
           f'<div class="row">{fb(t.get("short", "") + " 여행 전체", "문자로 의견 보내기")}</div></div></section>')
@@ -929,6 +929,36 @@ def render_home(trips):
         cards.append(f'<a class="trip theme-{e(t.get("theme", "hakata"))} c-{e(color)}{" has-cover" if has_og else ""}" href="trips/{e(slug)}/">{cover}<span class="dday" data-start="{t["start"]}" data-end="{t["end"]}">{s:%Y.%m}</span>'
                      f'<span class="ttl">{e(t["title"].replace("*", ""))}</span><span class="when">{s:%Y.%m.%d} — {z:%m.%d} · {n}박 {n + 1}일 · {e(t.get("country", ""))}</span>'
                      f'<span class="intro">{e(t.get("intro", ""))}</span></a>')
+    catalog = []
+    for slug, trip in trips:
+        spots = {p["name"]: p for day in trip["days"] for p in day.get("places", [])}
+        for candidate in trip.get("candidates", []):
+            name = candidate["name"]
+            spots[name] = {**spots.get(name, {}), **candidate}
+        for name, spot in spots.items():
+            catalog.append({"name": name, "trip": slug, "city": trip["short"], "query": spot.get("query") or name,
+                            "hours": spot.get("hours") or spot.get("open", ""), "category": spot.get("category", ""),
+                            "area": spot.get("area", ""), "source": spot.get("source_url", "")})
+    originals = []
+    for slug, trip in trips:
+        for day in trip["days"]:
+            visits = []
+            for block in day["blocks"]:
+                times = re.findall(r"\d{1,2}:\d{2}", block["time"])
+                if len(times) != 2 or block["type"] == "이동":
+                    continue
+                minutes = lambda value: sum(int(n)*m for n, m in zip(value.split(":"), (60, 1)))
+                duration = minutes(times[1]) - minutes(times[0])
+                if 5 <= duration <= 720:
+                    visits.append({"name": plain(block["place"]), "minutes": duration, "fixed": ""})
+            if visits:
+                originals.append({"title": trip["short"] + " · " + day["theme"], "city": trip["short"],
+                                "origin": day["route"]["stops"][0]["label"], "date": day["date"],
+                                "start": "09:00", "end": "21:00", "mode": MODE_KO.get(day["route"]["mode"], "자동차"),
+                                "gap": 20, "stops": visits})
+    originals_json = json.dumps(originals, ensure_ascii=False).replace("<", "\\u003c")
+    units = e(json.dumps({slug: (trip.get("currency") or {}).get("symbol", "₩") for slug, trip in trips}, ensure_ascii=False))
+    catalog_json = json.dumps(catalog, ensure_ascii=False).replace("<", "\\u003c")
     howto_sheet = sheet("howto", "새 여행 추가하기", "3단계", '''<ol>
 <li><code>trips/2027-03-fukuoka/trip.json</code>을 복사해서 <code>trips/연도-월-도시/trip.json</code>을 만들어요.</li>
 <li>날짜, 동선(<code>route.stops</code>의 이름과 지도 검색어. 해외는 구글, 국내는 네이버 지도), 시간표를 채워요. 일정 메모를 Claude에게 주면 이 형식으로 바꿔 줘요.</li>
@@ -943,6 +973,7 @@ def render_home(trips):
 </div><div class="kenjo" aria-hidden="true"></div></header>
 <main class="wrap">
 {deadlines.home_section(trips)}
+<section id="travel-work" data-units="{units}"><h2>내 여행 작업실</h2><script type="application/json" id="travel-catalog">{catalog_json}</script><script type="application/json" id="travel-originals">{originals_json}</script></section>
 <section><h2>여행 {len(trips)}개</h2><p class="lead">가까운 여행부터 보여요.</p><div class="trips">{"".join(cards)}</div></section>
 <section class="howto"><button type="button" class="gchip ov wide" data-open="howto"><span class="k">관리자용</span><span class="nm">새 여행 추가하는 방법</span><small>여행 파일을 하나 만들면 이 목록과 캘린더가 자동으로 바뀌어요</small></button></section>
 </main>
@@ -958,7 +989,7 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js", "workspace.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
