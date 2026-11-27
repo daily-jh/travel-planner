@@ -377,7 +377,9 @@ document.querySelectorAll('.route').forEach(function(card){
 (function(){
   var cfgEl=document.getElementById('trip-cfg'); if(!cfgEl) return;
   var C=JSON.parse(cfgEl.textContent), slug=C.trip;
-  var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+  var LS={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:writeLocal};
+  var esc=function(x){ return String(x||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); };
+  function writeLocal(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ say('기기에 저장하지 못했어요. 저장 공간이나 브라우저 설정을 확인해 주세요.'); return false; } }
   var fmt=function(n){return Math.round(n).toLocaleString('ko-KR')};
   var say=function(m){var t=document.querySelector('.toast'); if(!t) return; t.textContent=m; t.hidden=false; clearTimeout(say.t); say.t=setTimeout(function(){t.hidden=true},3200);};
   var tzNow=function(tz){return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))};
@@ -399,7 +401,7 @@ document.querySelectorAll('.route').forEach(function(card){
     document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-fx]'); if(b){ fxIn.value=b.dataset.fx; fx(); } var d=ev.target.closest('[data-dir]'); if(d) fxDir(d.dataset.dir); });
     fxDir('f');
     if(cur.code) fetch('https://open.er-api.com/v6/latest/'+cur.code).then(function(r){return r.json()}).then(function(j){
-      if(j&&j.rates&&j.rates.KRW){ rate=j.rates.KRW; fx();
+      if(j&&j.rates&&Number.isFinite(j.rates.KRW)&&j.rates.KRW>0){ rate=j.rates.KRW; fx(); if(POOL) renderEx();
         var t=(j.time_last_update_utc||'').slice(5,16);
         fxRate.textContent=sym+'100 ≈ ₩'+fmt(rate*100)+' · '+t+' 기준 환율';
         if(fxMini) fxMini.textContent=sym+'100 ≈ ₩'+fmt(rate*100); }
@@ -412,20 +414,26 @@ document.querySelectorAll('.route').forEach(function(card){
   var RAIN={}, rq=+new URLSearchParams(location.search).get('rain'); // 미리보기: ?rain=70
   if(rq) (C.days||[]).forEach(function(d){RAIN[d.date]=rq});
   window.tpRain=RAIN; // planner/comfort.js 가 '오늘 챙길 것'에 우산을 더할 때 읽는다
+  wx&&wx.addEventListener('click',function(e){ if(e.target.closest('[data-wx-retry]')) loadWx(); });
   function loadWx(){
     if(!wx||!C.geo||wx.dataset.done) return; wx.dataset.done=1;
-    var st=new Date(C.start), en=new Date(C.end), now=new Date(), days=(st-now)/864e5, url, label;
+    var today=new Intl.DateTimeFormat('sv-SE',{timeZone:C.timezone||'Asia/Tokyo'}).format(new Date()), days=(Date.parse(C.start)-Date.parse(today))/864e5, url, label;
     var p='latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone='+encodeURIComponent(C.timezone||'Asia/Tokyo')+'';
-    if(days<=15){ url='https://api.open-meteo.com/v1/forecast?'+p+',precipitation_probability_max&start_date='+C.start+'&end_date='+C.end; label='예보'; }
-    else { var y=function(s){var d=new Date(s);d.setFullYear(d.getFullYear()-1);return d.toISOString().slice(0,10)}; url='https://archive-api.open-meteo.com/v1/archive?'+p+'&start_date='+y(C.start)+'&end_date='+y(C.end); label='작년 같은 날'; }
-    var nowBox=document.createElement('div'); nowBox.className='wxnow'; wx.before(nowBox);
+    var archive='https://archive-api.open-meteo.com/v1/archive?'+p;
+    var forecast='https://api.open-meteo.com/v1/forecast?'+p+',precipitation_probability_max';
+    var recent=(Date.parse(today)-Date.parse(C.end))/864e5;
+    if(recent>=6){ url=archive+'&start_date='+C.start+'&end_date='+C.end; label='여행 당시 과거 날씨 자료'; }
+    else if(days<=15){ var maxDate=new Date(Date.parse(today)+15*864e5).toISOString().slice(0,10); url=forecast+'&start_date='+C.start+'&end_date='+(C.end<maxDate?C.end:maxDate); label='최근 날씨 및 예보'; }
+    else { var y=function(s){var d=new Date(s);d.setUTCFullYear(d.getUTCFullYear()-1);return d.toISOString().slice(0,10)}; url='https://archive-api.open-meteo.com/v1/archive?'+p+'&start_date='+y(C.start)+'&end_date='+y(C.end); label='작년 같은 날'; }
+    var nowBox=wx.previousElementSibling;
+    if(!nowBox||!nowBox.classList.contains('wxnow')){ nowBox=document.createElement('div'); nowBox.className='wxnow'; wx.before(nowBox); }
     fetch('https://api.open-meteo.com/v1/forecast?latitude='+C.geo.lat+'&longitude='+C.geo.lon+'&current=temperature_2m,apparent_temperature,weather_code,precipitation,wind_speed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone='+encodeURIComponent(C.timezone||'Asia/Tokyo')+'')
       .then(function(r){return r.json()}).then(function(j){ var c=j.current; if(!c) throw 0;
         nowBox.innerHTML='<div class="wn-l"><small>지금 '+(C.geo.city||'')+' · '+c.time.slice(11,16)+'</small><b>'+Math.round(c.temperature_2m)+'°</b><span>'+WMO(c.weather_code)+' · 체감 '+Math.round(c.apparent_temperature)+'°</span></div>'
           +'<div class="wn-r"><span>최고 '+Math.round(j.daily.temperature_2m_max[0])+'° / 최저 '+Math.round(j.daily.temperature_2m_min[0])+'°</span><span>바람 '+Math.round(c.wind_speed_10m/3.6)+'m/s · 습도 '+c.relative_humidity_2m+'%</span>'+(c.precipitation>0?'<span>☂ '+c.precipitation+'mm</span>':'')+'</div>';
         if(wxMini) wxMini.textContent='지금 '+Math.round(c.temperature_2m)+'° '+WMO(c.weather_code);
       }).catch(function(){ nowBox.remove(); });
-    fetch(url).then(function(r){return r.json()}).then(function(j){
+    fetch(url).then(function(r){if(!r.ok) throw new Error('weather'); return r.json()}).then(function(j){
       var d=j.daily; if(!d) throw 0;
       var h='<h4 class="wxh">여행 날짜 날씨</h4><p class="lead" style="margin:0 0 10px">'+label+' 기준이에요.</p><ul class="wxl">';
       for(var i=0;i<d.time.length;i++){ var dd=new Date(C.start); dd.setDate(dd.getDate()+i);
@@ -434,7 +442,7 @@ document.querySelectorAll('.route').forEach(function(card){
       wx.innerHTML=h+'</ul>'; nowMode(); document.dispatchEvent(new Event('tp-rain'));
       var mx=Math.max.apply(null,d.temperature_2m_max), mn=Math.min.apply(null,d.temperature_2m_min);
       if(wxMini&&!/지금/.test(wxMini.textContent)) wxMini.textContent=Math.round(mn)+'°~'+Math.round(mx)+'° ('+label+')';
-    }).catch(function(){ wx.innerHTML='<p class="lead">날씨를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; });
+    }).catch(function(){ delete wx.dataset.done; wx.innerHTML='<p class="lead">날씨를 불러오지 못했어요.</p><button type="button" class="btn" data-wx-retry>다시 시도</button>'; });
   }
   loadWx();
 
@@ -465,42 +473,45 @@ document.querySelectorAll('.route').forEach(function(card){
   var EK='tp-exp-'+slug, XK='tp-exdel-'+slug, ex=LS.get(EK,[]), names=(C.travelers||[]).map(function(x){return x.name});
   var exf=document.querySelector('.exf'), exl=document.querySelector('.exlist'), exs=document.querySelector('.exsum'), exc=document.querySelector('.excat'), exMini=document.querySelector('.ex-mini');
   var krw=function(v){ return rate&&cur.symbol?' <small>₩'+fmt(v*rate)+'</small>':''; };
-  ex.forEach(function(x){ if(!x.id) x.id=rid(); });
+  if(ex.some(function(x){return !x.id})){ ex.forEach(function(x){if(!x.id) x.id=rid();}); LS.set(EK,ex); }
   // 공금: 커플통장·트래블카드(원)와 현금(현지 돈) 두 지갑. 넣은 돈에서 '공금 카드/현금'으로 낸 지출을 뺀다
   var POOLK='tp-pool-'+slug, pool=LS.get(POOLK,{card:0,cash:0}), editing={}, POOL={'공금카드':'card','공금현금':'cash'};
-  var isPool=function(w){ return !!POOL[w]; }, whoName=function(w){ return w==='공금카드'?'공금 카드':w==='공금현금'?'공금 현금':w; };
+  var isPool=function(w){ return Object.hasOwn(POOL,w); }, whoName=function(w){ return w==='공금카드'?'공금 카드':w==='공금현금'?'공금 현금':w; };
   var toKrw=function(v){ return cur.symbol&&cur.symbol!=='₩'?(rate?v*rate:0):v; };
+  function paymentRate(){ return !cur.symbol||cur.symbol==='₩'?1:(rate>0?rate:undefined); }
   function renderPool(){
-    var s0=cur.symbol||'₩', local=s0!=='₩', sp={card:0,cash:0}; ex.forEach(function(x){ var k=POOL[x.who]; if(k) sp[k]+=x.amt; });
-    var W=[{k:'card',name:'커플통장·트래블카드',unit:'₩',put:pool.card||0,used:toKrw(sp.card),usedL:sp.card},{k:'cash',name:'현금'+(local?' ('+(cur.name||s0)+')':''),unit:s0,put:pool.cash||0,used:sp.cash,usedL:sp.cash}];
-    var allPut=(pool.card||0)+toKrw(pool.cash||0), allLeft=allPut-toKrw(sp.card)-toKrw(sp.cash);
+    var s0=cur.symbol||'₩', local=s0!=='₩', sp={card:0,cash:0}, cardKrw=0;
+    ex.forEach(function(x){ var k=isPool(x.who)?POOL[x.who]:null; if(k) sp[k]+=x.amt;
+      if(k==='card') cardKrw+=Number.isFinite(x.fx)?Math.round(x.amt*x.fx):toKrw(x.amt); });
+    var W=[{k:'card',name:'커플통장·트래블카드',unit:'₩',put:pool.card||0,used:cardKrw,usedL:sp.card},{k:'cash',name:'현금'+(local?' ('+(cur.name||s0)+')':''),unit:s0,put:pool.cash||0,used:sp.cash,usedL:sp.cash}];
+    var allPut=(pool.card||0)+toKrw(pool.cash||0), allLeft=allPut-cardKrw-toKrw(sp.cash);
     var need=C.need&&rate&&local?[C.need[0]*rate,C.need[1]*rate]:(C.need&&!local?C.need:null);
-    var h='<div class="pool-h"><h3>공금</h3><span>'+(allPut?(allLeft<0?'모자람 <b>₩'+fmt(-allLeft):'남은 돈 <b>₩'+fmt(allLeft)):'쓴 돈 <b>₩'+fmt(toKrw(sp.card)+toKrw(sp.cash)))+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
+    var h='<div class="pool-h"><h3>공금</h3><span>'+(allPut?(allLeft<0?'모자람 <b>₩'+fmt(-allLeft):'남은 돈 <b>₩'+fmt(allLeft)):'쓴 돈 <b>₩'+fmt(cardKrw+toKrw(sp.cash)))+'</b></span></div><div class="pool-w">'+W.map(function(w){ var left=w.put-w.used, pct=w.put?Math.min(100,Math.max(0,w.used/w.put*100)):0;
       var ed=editing[w.k]||!w.put, val=ed?'<label class="pw-in"><span>넣은 돈 '+w.unit+'</span><input type="number" inputmode="numeric" min="0" step="1000" enterkeyhint="done" data-pool-in="'+w.k+'" value="'+(w.put||'')+'" placeholder="0" aria-label="'+w.name+' 넣은 돈"></label><button type="button" class="btn primary pw-save" data-pool-save="'+w.k+'">저장</button>'
         :'<span class="pw-amt"><small>넣은 돈</small><b>'+w.unit+fmt(w.put)+'</b><em>✓ 저장됨</em></span><button type="button" class="btn pw-edit" data-pool-edit="'+w.k+'">수정</button>';
       return '<div class="pw pw-'+w.k+(left<0&&w.put?' over':'')+'"><div class="pw-t"><b>'+w.name+'</b><div class="pw-v">'+val+'</div></div>'
         +'<div class="pw-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'
         +'<div class="pw-n"><span>쓴 돈 '+(w.k==='card'&&local?s0+fmt(w.usedL)+' ≈ ₩'+fmt(w.used):w.unit+fmt(w.used))+'</span><b>'+(!w.put?'넣은 돈을 적으면 남은 돈이 보여요':(left<0?'모자람 ':'남음 ')+w.unit+fmt(Math.abs(left)))+'</b></div></div>'; }).join('')+'</div>';
     if(need) h+='<p class="pool-need">총 필요 예산(식비·입장료) ₩'+fmt(need[0])+'~'+fmt(need[1])+' · 공금 '+(allPut?(allPut>=need[1]?'넉넉해요':allPut>=need[0]?'예상 범위 안이에요':'₩'+fmt(need[0]-allPut)+' 더 있으면 최소 예산이에요'):'금액을 넣으면 비교해 드려요')+'</p>';
-    h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드는 현지 돈으로 적어도 환율(₩'+fmt(rate*100)+'/'+s0+'100)로 바꿔 빼요.':'')+' 이 휴대폰에 저장돼요.</p>';
+    h+='<p class="pool-foot">함께 쓴 돈에서 \'공금 카드\'나 \'공금 현금\'으로 적으면 여기서 빠져요.'+(local?' 카드 잔액에는 기록할 때의 환율을 적용해요. 환율이 없는 예전 기록은 현재 환율로 추정해요.':'')+' 이 휴대폰에 저장돼요.</p>';
     document.querySelectorAll('[data-pool]').forEach(function(box){ var fo=box.contains(document.activeElement)?document.activeElement.dataset.poolIn:null; box.innerHTML=h; if(fo){ var i=box.querySelector('[data-pool-in="'+fo+'"]'); if(i){ i.focus(); var v=i.value; i.value=''; i.value=v; } } });
   }
   // 넣은 돈: 저장 버튼·완료·입력 칸 벗어나기에 저장되고, 치는 중에도 바로 기기에 써 둔다. 저장되면 금액과 '수정' 버튼만 보인다
-  function poolPut(k,v,done){ pool[k]=Math.max(0,parseFloat(v)||0); pool.t=Date.now(); LS.set(POOLK,pool); if(done){ editing[k]=false; renderPool(); } }
+  function poolPut(k,v,done){ var amount=Number(v); if(!Number.isFinite(amount)||amount<0) return false; var next=Object.assign({},pool); next[k]=amount; next[k+'T']=Date.now(); if(!LS.set(POOLK,next)) return false; pool=next; if(done){ editing[k]=false; renderPool(); } return true; }
   document.addEventListener('input',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i) poolPut(i.dataset.poolIn,i.value,false); });
   document.addEventListener('change',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i) poolPut(i.dataset.poolIn,i.value,!!(+i.value)); });
   document.addEventListener('keydown',function(ev){ var i=ev.target.closest('[data-pool-in]'); if(i&&ev.key==='Enter'){ ev.preventDefault(); poolPut(i.dataset.poolIn,i.value,true); } });
-  document.addEventListener('click',function(ev){ var sv=ev.target.closest('[data-pool-save]'); if(sv){ var box=sv.closest('.pw'), i=box&&box.querySelector('[data-pool-in]'); if(i) poolPut(sv.dataset.poolSave,i.value,true); say&&say('공금을 저장했어요. 수정하기 전까지 이 휴대폰에 남아요.'); return; }
+  document.addEventListener('click',function(ev){ var sv=ev.target.closest('[data-pool-save]'); if(sv){ var box=sv.closest('.pw'), i=box&&box.querySelector('[data-pool-in]'); if(i&&poolPut(sv.dataset.poolSave,i.value,true)) say('공금을 저장했어요. 수정하기 전까지 이 휴대폰에 남아요.'); return; }
     var e=ev.target.closest('[data-pool-edit]'); if(e){ var k=e.dataset.poolEdit; editing[k]=true; renderPool(); var box=ev.target.closest('[data-pool]'); var ni=box&&box.querySelector('[data-pool-in="'+k+'"]'); if(ni){ ni.focus(); ni.select&&ni.select(); } } });
   window.addEventListener('storage',function(ev){ if(ev.key===POOLK){ pool=LS.get(POOLK,pool); renderPool(); } });
   function renderEx(){
     renderPool();
-    if(!exl) return; var s0=cur.symbol||'₩', tot=0, ptot=0, paid={}, byCat={}, byDay={}; names.forEach(function(n){paid[n]=0});
+    if(!exl) return; var s0=cur.symbol||'₩', tot=0, ptot=0, paid=Object.create(null), byCat=Object.create(null), byDay=Object.create(null); names.forEach(function(n){paid[n]=0});
     ex.forEach(function(x){ tot+=x.amt; if(isPool(x.who)) ptot+=x.amt; else paid[x.who]=(paid[x.who]||0)+x.amt; byCat[x.cat||'기타']=(byCat[x.cat||'기타']||0)+x.amt; byDay[x.date]=(byDay[x.date]||0)+x.amt; });
     var day=null, rows=[];
     ex.map(function(x,i){return [x,i]}).reverse().forEach(function(p){ var x=p[0];
-      if(x.date!==day){ day=x.date; rows.push('<li class="exday"><span>'+day+'</span><b>'+s0+fmt(byDay[day])+'</b></li>'); }
-      rows.push('<li'+(exf&&exf.dataset.edit===x.id?' class="editing"':'')+'><span class="w" role="button" tabindex="0" data-edit="'+x.id+'" aria-label="고치기">'+x.what.replace(/</g,'&lt;')+'<small>'+(x.cat||'기타')+' · '+whoName(x.who)+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
+      if(x.date!==day){ day=x.date; rows.push('<li class="exday"><span>'+esc(day)+'</span><b>'+s0+fmt(byDay[day])+'</b></li>'); }
+      rows.push('<li'+(exf&&exf.dataset.edit===x.id?' class="editing"':'')+'><span class="w" role="button" tabindex="0" data-edit="'+esc(x.id)+'" aria-label="고치기">'+x.what.replace(/</g,'&lt;')+'<small>' +esc(x.cat||'기타')+' · '+esc(whoName(x.who))+(x.tf?' · 면세':'')+'</small></span><b>'+s0+fmt(x.amt)+'</b><button type="button" class="del" data-del="'+p[1]+'" aria-label="삭제">✕</button></li>'); });
     exl.innerHTML=rows.join('');
     var share=names.length?tot/names.length:0, own=tot-ptot, oshare=names.length?own/names.length:0, line='';
     if(names.length===2&&own>0){ var a=names[0],b=names[1],d=paid[a]-oshare;
@@ -508,9 +519,9 @@ document.querySelectorAll('.route').forEach(function(card){
     else if(names.length===2) line='공금으로만 써서 나눌 돈이 없어요';
     exs.innerHTML=ex.length?'<div><small>총 지출</small><b>'+s0+fmt(tot)+'</b>'+krw(tot)+'</div><div><small>1인당</small><b>'+s0+fmt(share)+'</b>'+krw(share)+'</div><div class="settle"><small>개인 돈 정산'+(ptot?' (공금 '+s0+fmt(ptot)+' 제외)':'')+'</small><span>'+line+'</span></div>':'<p class="lead" style="margin:0">아직 기록이 없어요. 위에 쓴 돈을 적어 보세요.</p>';
     var cs=Object.keys(byCat).sort(function(x,y){return byCat[y]-byCat[x]});
-    exc.innerHTML=cs.length?'<div class="catbar">'+cs.map(function(c,i){return '<i style="flex:'+byCat[c]+'" class="cb'+i+'"></i>'}).join('')+'</div><div class="catleg">'+cs.map(function(c,i){return '<span><i class="cb'+i+'"></i>'+c+' '+s0+fmt(byCat[c])+'</span>'}).join('')+'</div>':'';
+    exc.innerHTML=cs.length?'<div class="catbar">'+cs.map(function(c,i){return '<i style="flex:'+byCat[c]+'" class="cb'+i+'"></i>'}).join('')+'</div><div class="catleg">'+cs.map(function(c,i){return '<span><i class="cb'+i+'"></i>'+esc(c)+' '+s0+fmt(byCat[c])+'</span>'}).join('')+'</div>':'';
     var tfs=ex.filter(function(x){return x.tf}), tft=0; tfs.forEach(function(x){tft+=x.amt});
-    var tfBox=document.querySelector('.extf'); if(tfBox) tfBox.innerHTML=tfs.length?'<h4>면세로 산 것 '+tfs.length+'건</h4><ul>'+tfs.map(function(x){return '<li><span>'+x.date+' '+x.what.replace(/</g,'&lt;')+'</span><b>'+s0+fmt(x.amt)+'</b></li>'}).join('')+'</ul><p>합계 <b>'+s0+fmt(tft)+'</b> · 돌려받을 소비세 많아야 '+s0+fmt(tft/11)+'. 출국 날 체크인 전에 세관 확인을 받아야 돌려받아요. 가게별 기준은 <button type="button" class="linkbtn" data-open="tool-tf">면세 환급</button>에서 확인해요.</p>':'';
+    var tfBox=document.querySelector('.extf'); if(tfBox) tfBox.innerHTML=tfs.length?'<h4>면세로 산 것 '+tfs.length+'건</h4><ul>'+tfs.map(function(x){return '<li><span>'+esc(x.date)+' '+x.what.replace(/</g,'&lt;')+'</span><b>'+s0+fmt(x.amt)+'</b></li>'}).join('')+'</ul><p>합계 <b>'+s0+fmt(tft)+'</b> · 돌려받을 소비세 많아야 '+s0+fmt(tft/11)+'. 출국 날 체크인 전에 세관 확인을 받아야 돌려받아요. 가게별 기준은 <button type="button" class="linkbtn" data-open="tool-tf">면세 환급</button>에서 확인해요.</p>':'';
     if(exMini) exMini.textContent=ex.length?'총 '+s0+fmt(tot):'기록하고 나눠요';
   }
   if(exf){
@@ -531,14 +542,24 @@ document.querySelectorAll('.route').forEach(function(card){
     exl.addEventListener('click',function(ev){ var w=ev.target.closest('[data-edit]'); if(w) exLoad(w.dataset.edit); });
     exl.addEventListener('keydown',function(ev){ var w=ev.target.closest('[data-edit]'); if(w&&(ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); exLoad(w.dataset.edit); } });
     exf.addEventListener('submit',function(ev){ ev.preventDefault(); var f=new FormData(exf), who=exf.querySelector('[data-payer][aria-pressed="true"]'), cat=exf.querySelector('[data-cat][aria-pressed="true"]');
-      var amt=parseFloat(f.get('amt')); if(!amt) return;
-      if(exf.dataset.edit){ var y=ex.filter(function(z){return z.id===exf.dataset.edit})[0];
-        if(y){ var tfe=exf.querySelector('.exf-tf'); y.what=String(f.get('what')).slice(0,40); y.amt=amt; y.who=who?who.dataset.payer:y.who; y.cat=cat?cat.dataset.cat:y.cat; y.tf=(tfe&&tfe.getAttribute('aria-pressed')==='true')||undefined; y.e=Date.now(); if(tfe) tfe.setAttribute('aria-pressed','false'); }
-        LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); nowMode(); return; }
+      var amt=parseFloat(f.get('amt')); if(!Number.isFinite(amt)||amt<=0) return;
+      if(exf.dataset.edit){ var y=ex.find(function(z){return z.id===exf.dataset.edit});
+        var original=y&&Object.assign({},y);
+        if(y){ var tfe=exf.querySelector('.exf-tf'); y.what=String(f.get('what')).slice(0,40); y.amt=amt; y.who=who?who.dataset.payer:y.who; y.cat=cat?cat.dataset.cat:y.cat; y.tf=(tfe&&tfe.getAttribute('aria-pressed')==='true')||undefined; if(y.who==='공금카드'&&!Number.isFinite(y.fx)) y.fx=paymentRate(); y.e=Date.now(); if(tfe) tfe.setAttribute('aria-pressed','false'); }
+        if(!LS.set(EK,ex)){ if(y) Object.assign(y,original,{fx:original.fx}); return; } exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); nowMode(); return; }
       var d=localNow(); var tfb=exf.querySelector('.exf-tf'), tf=tfb&&tfb.getAttribute('aria-pressed')==='true'; if(tfb) tfb.setAttribute('aria-pressed','false');
-      ex.push({id:rid(),t:Date.now(),tf:tf||undefined,what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:'공금카드',cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
-      LS.set(EK,ex); exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); nowMode(); });
-    exl.addEventListener('click',function(ev){ var b=ev.target.closest('[data-del]'); if(!b) return; var gone=ex.splice(+b.dataset.del,1)[0]; if(gone) LS.set(XK,LS.get(XK,[]).concat(gone.id)); if(gone&&exf.dataset.edit===gone.id){ exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); } LS.set(EK,ex); renderEx(); nowMode(); });
+      ex.push({id:rid(),t:Date.now(),fx:(!who||who.dataset.payer==='공금카드')?paymentRate():undefined,tf:tf||undefined,what:String(f.get('what')).slice(0,40),amt:amt,who:who?who.dataset.payer:'공금카드',cat:cat?cat.dataset.cat:'기타',date:(d.getMonth()+1)+'/'+d.getDate()});
+      if(!LS.set(EK,ex)){ ex.pop(); return; } exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; renderEx(); nowMode(); });
+    exl.addEventListener('click',function(ev){
+      var b=ev.target.closest('[data-del]'); if(!b) return;
+      var index=+b.dataset.del, gone=ex[index]; if(!gone) return;
+      var next=ex.filter(function(x,i){return i!==index}), writes={};
+      writes[EK]=JSON.stringify(next); writes[XK]=JSON.stringify(LS.get(XK,[]).concat(gone.id));
+      if(!commitRecords(writes)) return;
+      ex=next;
+      if(exf.dataset.edit===gone.id){ exf.querySelector('[name=what]').value=''; exf.querySelector('[name=amt]').value=''; exMode(null); }
+      renderEx(); nowMode();
+    });
     renderEx();
   }
 
@@ -605,11 +626,13 @@ document.querySelectorAll('.route').forEach(function(card){
     if(pkMini) pkMini.textContent=n+' / '+lis.length+' 완료'; }
   // 예약 알림과 같은 항목(data-dlid)은 '했어요'와 한 몸: 어느 쪽을 눌러도 둘 다 바뀐다 (planner/deadlines.js)
   var DLK='tp-dl-'+slug;
-  function dlSet(id,on){ var v=LS.get(DLK,{}); if(on) v[id]=true; else delete v[id]; LS.set(DLK,v); document.dispatchEvent(new CustomEvent('tp-dl')); }
-  (function(){ var v=LS.get(DLK,{}), ch=false; lis.forEach(function(li){ var id=li.dataset.dlid; if(!id) return; var on=!!(ck[li.dataset.ck]||v[id]);
+  var CTK='tp-check-time-'+slug, checkTime=LS.get(CTK,{ck:{},dl:{}});
+  function markCheck(group,id){ checkTime[group][id]=Date.now(); LS.set(CTK,checkTime); }
+  function dlSet(id,on){ var v=LS.get(DLK,{}); v[id]=on; LS.set(DLK,v); document.dispatchEvent(new CustomEvent('tp-dl')); }
+  (function(){ var v=LS.get(DLK,{}), ch=false; lis.forEach(function(li){ var id=li.dataset.dlid; if(!id) return; var on=Object.hasOwn(v,id)?!!v[id]:!!ck[li.dataset.ck];
     if(on!==!!ck[li.dataset.ck]){ ck[li.dataset.ck]=on; ch=true; } if(on&&!v[id]) dlSet(id,true); }); if(ch) LS.set(CK,ck); })();
-  document.addEventListener('tp-dl-set',function(ev){ lis.forEach(function(li){ if(li.dataset.dlid===ev.detail.id){ ck[li.dataset.ck]=ev.detail.on; LS.set(CK,ck); renderCk(); nowMode(); } }); });
-  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; LS.set(CK,ck); if(li.dataset.dlid) dlSet(li.dataset.dlid,ck[li.dataset.ck]); renderCk(); nowMode(); };
+  document.addEventListener('tp-dl-set',function(ev){ markCheck('dl',ev.detail.id); lis.forEach(function(li){ if(li.dataset.dlid===ev.detail.id){ ck[li.dataset.ck]=ev.detail.on; markCheck('ck',li.dataset.ck); LS.set(CK,ck); renderCk(); nowMode(); } }); });
+  lis.forEach(function(li){ var t=function(){ ck[li.dataset.ck]=!ck[li.dataset.ck]; markCheck('ck',li.dataset.ck); LS.set(CK,ck); if(li.dataset.dlid){ markCheck('dl',li.dataset.dlid); dlSet(li.dataset.dlid,ck[li.dataset.ck]); } renderCk(); nowMode(); };
     li.addEventListener('click',t); li.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){e.preventDefault();t();} }); });
   renderCk();
 
@@ -617,7 +640,6 @@ document.querySelectorAll('.route').forEach(function(card){
   var nc=document.querySelector('.nowcard');
   var tm=function(s){ var m=(s||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; };
   var ymd=function(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-  var esc=function(x){ return String(x||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); };
   var hm=function(m){ return (m>=60?Math.floor(m/60)+'시간 ':'')+(m%60)+'분'; };
   function spentOn(d){ var k=(d.getMonth()+1)+'/'+d.getDate(), t=0; ex.forEach(function(x){ if(x.date===k) t+=x.amt; }); return t; }
   function chip(cls,txt,open){ return '<span class="bc '+cls+'"'+(open?' data-open="'+open+'" role="button" tabindex="0"':'')+'>'+txt+'</span>'; }
@@ -720,10 +742,130 @@ document.querySelectorAll('.route').forEach(function(card){
   var PK='tp-picks-'+slug, myName=function(){ try{return localStorage.getItem('tp-me')||''}catch(e){return ''} };
   var b64e=function(a){ var s=''; for(var i=0;i<a.length;i++) s+=String.fromCharCode(a[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
   var b64d=function(x){ var s=atob(x.replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a; };
-  function pack(o){ var raw=new TextEncoder().encode(JSON.stringify(o)); if(!window.CompressionStream) return Promise.resolve('j'+b64e(raw));
+  async function pack(o){ var raw=new TextEncoder().encode(JSON.stringify(o)); if(raw.length>SYNC_LIMIT) throw new Error('record length'); if(!window.CompressionStream) return Promise.resolve('j'+b64e(raw));
     return new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer().then(function(b){return 'z'+b64e(new Uint8Array(b))}).catch(function(){return 'j'+b64e(raw)}); }
-  function unpack(x){ var a=b64d(x.slice(1)); if(x[0]==='j') return Promise.resolve(JSON.parse(new TextDecoder().decode(a)));
-    return new Response(new Blob([a]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text().then(JSON.parse); }
+  var SYNC_LIMIT=1024*1024;
+  async function shareKey(password,salt){
+    var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:600000,hash:'SHA-256'},
+      base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  }
+  async function sealShare(code,password){
+    var header=crypto.getRandomValues(new Uint8Array(28));
+    var key=await shareKey(password,header.slice(0,16));
+    var body=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:header.slice(16)},key,new TextEncoder().encode(code)));
+    var bytes=new Uint8Array(header.length+body.length); bytes.set(header); bytes.set(body,header.length);
+    return 'e'+b64e(bytes);
+  }
+  async function openShare(code){
+    if(code[0]!=='e') return unpack(code);
+    if(code.length>SYNC_LIMIT||!window.crypto||!crypto.subtle) throw new Error('protected link');
+    var bytes=b64d(code.slice(1)); if(bytes.length<45) throw new Error('protected record');
+    var password=prompt('공유자가 알려 준 기록 비밀번호를 입력해 주세요.');
+    if(password===null) return null;
+    var key=await shareKey(password,bytes.slice(0,16));
+    var plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(16,28)},key,bytes.slice(28));
+    var inner=new TextDecoder('utf-8',{fatal:true}).decode(plain);
+    if(!/^[jz][\w-]+$/.test(inner)) throw new Error('protected format');
+    return unpack(inner);
+  }
+  async function unpack(x){
+    if(x.length>SYNC_LIMIT) throw new Error('link length');
+    var a=b64d(x.slice(1)), decoder=new TextDecoder('utf-8',{fatal:true});
+    if(x[0]==='j') return JSON.parse(decoder.decode(a));
+    var reader=new Blob([a]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    var size=0, out='';
+    try{
+      while(true){
+        var chunk=await reader.read(); if(chunk.done) break;
+        size+=chunk.value.length; if(size>SYNC_LIMIT) throw new Error('record size');
+        out+=decoder.decode(chunk.value,{stream:true});
+      }
+      return JSON.parse(out+decoder.decode());
+    }finally{ await reader.cancel(); }
+  }
+  function safeRecord(v,depth){
+    if(depth>8) return false;
+    if(Array.isArray(v)) return v.length<=5000&&v.every(function(x){return safeRecord(x,depth+1)});
+    if(v&&typeof v==='object') return Object.keys(v).length<=5000&&Object.keys(v).every(function(k){
+      return k.length<=120&&!Object.hasOwn(Object.prototype,k)&&k!=='prototype'&&safeRecord(v[k],depth+1);
+    });
+    return v===null||typeof v==='boolean'||Number.isFinite(v)||(typeof v==='string'&&v.length<=5000);
+  }
+  function validateSync(p,isBackup){
+    var map=function(v){return !!v&&typeof v==='object'&&!Array.isArray(v)};
+    var stamp=function(v){return Number.isSafeInteger(v)&&v>=0&&v<=Date.now()+864e5};
+    var str=function(v,n){return typeof v==='string'&&v.length<=n};
+    var list=function(v,f){return Array.isArray(v)&&v.every(f)};
+    var fields=function(v,f){return map(v)&&Object.values(v).every(f)};
+    var optional=function(v,f){return v==null||f(v)};
+    var amount=function(v){return Number.isFinite(v)&&v>=0&&v<=1e12};
+    var ids=function(v){return str(v,80)&&/^[\w-]+$/.test(v)};
+    if(!safeRecord(p,0)||!map(p)||p.v!==1||p.trip!==slug||(!isBackup&&names.indexOf(p.from)<0)) return false;
+    var person=function(n){return names.indexOf(n)>=0};
+    var index=function(v){return Number.isInteger(v)&&v>=0&&v<=1000};
+    var bools=function(v){return fields(v,function(x){return typeof x==='boolean'})};
+    return optional(p.picks,function(v){return fields(v,function(x){return list(x,person)})})
+      &&optional(p.ex,function(v){return list(v,function(x){
+        return map(x)&&ids(x.id)&&optional(x.t,stamp)&&optional(x.e,stamp)&&amount(x.amt)&&x.amt>0
+          &&str(x.what,40)&&(person(x.who)||isPool(x.who))&&optional(x.cat,function(c){return str(c,40)})
+          &&str(x.date,10)&&/^\d{1,2}\/\d{1,2}$/.test(x.date)&&optional(x.fx,function(f){return amount(f)&&f>0});
+      })})
+      &&optional(p.exdel,function(v){return list(v,ids)})&&optional(p.ck,bools)&&optional(p.dl,bools)
+      &&optional(p.checkTime,function(v){return map(v)&&optional(v.ck,function(x){return fields(x,stamp)})&&optional(v.dl,function(x){return fields(x,stamp)})})
+      &&optional(p.pool,function(v){return map(v)&&optional(v.card,amount)&&optional(v.cash,amount)&&[v.t,v.cardT,v.cashT].every(function(x){return optional(x,stamp)})})
+      &&optional(p.ch,function(v){return map(v)&&optional(v.v,function(x){return fields(x,function(y){return fields(y,index)})})
+        &&optional(v.f,function(x){return fields(x,function(y){return map(y)&&index(y.i)&&str(y.by,80)&&optional(y.t,stamp)})})
+        &&optional(v.r,function(x){return fields(x,stamp)})&&optional(v.n,function(x){return fields(x,index)})})
+      &&optional(p.mem,function(v){return map(v)&&optional(v.a,function(x){return fields(x,function(y){return fields(y,function(z){return str(z,300)})})})})
+      &&optional(p.seat,function(v){return map(v)&&optional(v.f,function(x){return fields(x,function(y){return map(y)&&optional(y.ac,function(z){return str(z,20)})
+        &&optional(y.s,function(z){return fields(z,function(w){return str(w,3)&&/^(?:\d{1,2}[A-Z])?$/.test(w)})})})})
+        &&optional(v.x,function(x){return list(x,function(y){return map(y)&&str(y.no,8)&&optional(y.date,function(z){return str(z,10)})&&optional(y.route,function(z){return str(z,30)})})})});
+  }
+  function commitRecords(writes){
+      var before={}, written=[];
+      try{
+        Object.keys(writes).forEach(function(k){before[k]=localStorage.getItem(k)});
+        Object.keys(writes).forEach(function(k){localStorage.setItem(k,writes[k]); written.push(k)});
+      }catch(e){
+        var restored=true;
+        written.reverse().forEach(function(k){try{if(before[k]===null) localStorage.removeItem(k); else localStorage.setItem(k,before[k]);}catch(err){restored=false;}});
+        say(restored?'저장 공간이 부족하거나 저장이 차단되어 기록을 저장하지 못했어요.':'일부 기록을 되돌리지 못했어요. 이 화면을 닫기 전에 기존 기록을 확인해 주세요.'); return false;
+      }
+    return true;
+  }
+  var backupGroups={exp:'ex',exdel:'exdel',ck:'ck',dl:'dl','check-time':'checkTime',pool:'pool',ch:'ch',mem:'mem',seat:'seat',picks:'picks'};
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('[data-backup="export"]')) return;
+    try{
+      var records={};
+      Object.keys(backupGroups).forEach(function(group){
+        var raw=localStorage.getItem('tp-'+group+'-'+slug);
+        if(raw!==null) records[group]=JSON.parse(raw);
+      });
+      var data=JSON.stringify({kind:'tp-trip-backup',v:1,trip:slug,records:records},null,2);
+      if(new Blob([data]).size>SYNC_LIMIT) throw new Error('backup size');
+      var url=URL.createObjectURL(new Blob([data],{type:'application/json'})), link=document.createElement('a');
+      link.href=url; link.download=slug+'-backup.json'; link.click();
+      setTimeout(function(){URL.revokeObjectURL(url)},1000);
+    }catch(err){ say('백업을 읽거나 만들지 못했어요.'); }
+  });
+  document.addEventListener('change',async function(e){
+    var input=e.target.closest('[data-backup="import"]'); if(!input||!input.files.length) return;
+    var file=input.files[0]; input.value='';
+    try{
+      if(file.size>SYNC_LIMIT) throw new Error('backup size');
+      var data=JSON.parse(await file.text()), writes={}, payload={v:1,trip:slug,from:names[0]||""};
+      if(!data||data.kind!=='tp-trip-backup'||data.v!==1||data.trip!==slug||!data.records||Array.isArray(data.records)||typeof data.records!=='object') throw new Error('backup');
+      Object.keys(data.records).forEach(function(group){
+        if(!Object.hasOwn(backupGroups,group)) throw new Error('backup group');
+        payload[backupGroups[group]]=data.records[group];
+        writes['tp-'+group+'-'+slug]=JSON.stringify(data.records[group]);
+      });
+      if(!validateSync(payload,true)||Object.values(data.records).some(function(v){return v===null})) throw new Error('backup records');
+      if(confirm('백업에 있는 항목으로 이 기기의 기록을 바꿀까요?')&&commitRecords(writes)) location.reload();
+    }catch(err){say('이 백업을 열 수 없어요. 같은 여행에서 만든 파일인지 확인해 주세요.');}
+  });
   var syncMe=document.querySelector('.sync-me');
   function paintSync(){ if(!syncMe) return; var me=myName();
     syncMe.innerHTML='<small>보내는 사람</small><div class="exf-who">'+(C.travelers||[]).map(function(x){ return '<button type="button" class="tone-'+(x.tone||'pri')+'" data-syncme="'+esc(x.name)+'" aria-pressed="'+(x.name===me)+'">'+esc(x.name)+'</button>'; }).join('')+'</div>'; }
@@ -732,50 +874,80 @@ document.querySelectorAll('.route').forEach(function(card){
   document.addEventListener('click',function(ev){
     var w=ev.target.closest('[data-syncme]'); if(w){ var pb=document.querySelector('.pp-who [data-me="'+w.dataset.syncme+'"]'); if(pb) pb.click(); paintSync(); return; }
     var b=ev.target.closest('[data-sync]'); if(!b) return;
-    if(b.dataset.sync==='send'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
-      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{}),pool:LS.get('tp-pool-'+slug,null),seat:LS.get('tp-seat-'+slug,null)}).then(function(code){
+    if(b.dataset.sync==='send'||b.dataset.sync==='protect'){ var me=myName(); if(!me){ say('먼저 보내는 사람을 골라 주세요.'); return; }
+      var password;
+      if(b.dataset.sync==='protect'){
+        if(!window.crypto||!crypto.subtle){ say('이 브라우저에서는 비밀번호 링크를 만들 수 없어요.'); return; }
+        password=prompt('기록에 사용할 비밀번호를 정해 주세요. 최소 12자이며 링크와 별도로 전달하세요.');
+        if(password===null) return;
+        if(password.trim().length<12||password.length>200){ say('기록 비밀번호는 12자 이상, 200자 이하로 정해 주세요.'); return; }
+      }
+      pack({v:1,trip:slug,from:me,picks:LS.get(PK,{}),ex:ex,exdel:LS.get(XK,[]),ck:ck,checkTime:checkTime,dl:LS.get('tp-dl-'+slug,{}),ch:LS.get('tp-ch-'+slug,{}),mem:LS.get('tp-mem-'+slug,{}),pool:LS.get('tp-pool-'+slug,null),seat:LS.get('tp-seat-'+slug,null)}).then(function(code){return password?sealShare(code,password):code;}).then(function(code){
+        if(code.length>SYNC_LIMIT) throw new Error('link length');
         var url=location.origin+location.pathname+'#sync='+code, title=me+'의 여행 기록';
         if(navigator.share){ navigator.share({title:title,text:title+' (열면 내 휴대폰 기록과 합쳐져요)',url:url}).catch(function(){}); return; }
         if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function(){ say('링크를 복사했어요. 카카오톡이나 문자에 붙여 넣어 보내세요.'); },function(){ prompt('이 링크를 복사해서 보내세요',url); });
-        else prompt('이 링크를 복사해서 보내세요',url); }); }
-    if(b.dataset.sync==='merge'&&incoming){ var p=incoming, me2=myName(), mine=LS.get(PK,{});
+        else prompt('이 링크를 복사해서 보내세요',url); }).catch(function(){say('공유 링크를 만들지 못했어요.');}); }
+    if(b.dataset.sync==='merge'&&incoming){ var p=incoming, me2=myName(), mine=LS.get(PK,{}), writes={};
+      var stage=function(k,v){writes[k]=JSON.stringify(v)};
       if(p.from) Object.keys(mine).forEach(function(k){ mine[k]=mine[k].filter(function(n){return n!==p.from}); if(!mine[k].length) delete mine[k]; });
       Object.keys(p.picks||{}).forEach(function(k){ (p.picks[k]||[]).forEach(function(n){ if(n===me2&&p.from) return; var a=mine[k]=mine[k]||[]; if(a.indexOf(n)<0) a.push(n); }); });
       Object.keys(mine).forEach(function(k){ if(!mine[k].length) delete mine[k]; });
-      var tomb=LS.get(XK,[]).concat(p.exdel||[]).filter(function(v,i,a){return a.indexOf(v)===i}), seen={}, all=[];
+      var tomb=LS.get(XK,[]).concat(p.exdel||[]).filter(function(v,i,a){return a.indexOf(v)===i}), seen=Object.create(null), all=[];
       ex.concat(p.ex||[]).forEach(function(x){ if(!x||!x.id||tomb.indexOf(x.id)>=0||!(+x.amt>0)) return;
-        var y={id:String(x.id),t:+x.t||0,e:+x.e||undefined,tf:x.tf?true:undefined,what:String(x.what||'').slice(0,40),amt:+x.amt,who:String(x.who||''),cat:String(x.cat||'기타'),date:String(x.date||'')};
+        var y={id:String(x.id),t:+x.t||0,e:+x.e||undefined,tf:x.tf?true:undefined,fx:x.fx,what:String(x.what||'').slice(0,40),amt:+x.amt,who:String(x.who||''),cat:String(x.cat||'기타'),date:String(x.date||'')};
         if(y.id in seen){ var o=all[seen[y.id]]; if((y.e||y.t)>(o.e||o.t)) all[seen[y.id]]=y; return; } seen[y.id]=all.length; all.push(y); });
       all.sort(function(a,b){return a.t-b.t});
-      Object.keys(p.ck||{}).forEach(function(k){ if(p.ck[k]) ck[k]=true; });
-      var dl=LS.get('tp-dl-'+slug,{}); Object.keys(p.dl||{}).forEach(function(k){ if(p.dl[k]) dl[k]=true; }); LS.set('tp-dl-'+slug,dl); // 예약 '했어요'
-      LS.set(PK,mine); LS.set(XK,tomb); LS.set(EK,all); LS.set(CK,ck);
+      var nextTimes=LS.get(CTK,{ck:{},dl:{}}), incomingTimes=p.checkTime||{};
+      function mergeCheck(group,key){
+        var values=LS.get(key,{});
+        Object.keys(p[group]||{}).forEach(function(id){
+          var t=(incomingTimes[group]||{})[id]||0, old=nextTimes[group][id]||0;
+          if(t>old||(t===old&&(t? !p[group][id]:p[group][id]))){ values[id]=p[group][id]; if(t) nextTimes[group][id]=t; }
+        });
+        stage(key,values);
+      }
+      mergeCheck('ck',CK); mergeCheck('dl',DLK); stage(CTK,nextTimes);
+      stage(PK,mine); stage(XK,tomb); stage(EK,all);
       // 함께 고르기: 보낸 사람의 표는 그 사람 것으로, 정한 곳은 내가 아직 안 정한 줄만 / 돌아보기: 보낸 사람의 답
       var chm=LS.get('tp-ch-'+slug,{v:{},f:{},n:{}}), chi=p.ch||{}; chm.v=chm.v||{}; chm.f=chm.f||{}; chm.n=chm.n||{};
       Object.keys(chi.v||{}).forEach(function(k){ var o=chi.v[k]||{}; if(p.from&&o[p.from]!=null) (chm.v[k]=chm.v[k]||{})[p.from]=+o[p.from]; });
-      Object.keys(chi.f||{}).forEach(function(k){ var f=chi.f[k]; if(f&&!chm.f[k]) chm.f[k]={i:+f.i,by:String(f.by||''),t:+f.t||0}; });
-      Object.keys(chi.n||{}).forEach(function(k){ chm.n[k]=Math.max(+chm.n[k]||0,+chi.n[k]||0); }); LS.set('tp-ch-'+slug,chm);
+      chm.r=chm.r||{};
+      Object.keys(chi.r||{}).forEach(function(k){
+        var t=chi.r[k]; if(t<=(chm.r[k]||0)) return;
+        chm.r[k]=t;
+        if(chm.f[k]&&(chm.f[k].t||0)<=t) delete chm.f[k];
+        if(!chi.f||!chi.f[k]||(chi.f[k].t||0)<=t) delete chm.v[k];
+      });
+      Object.keys(chi.f||{}).forEach(function(k){
+        var f=chi.f[k], current=chm.f[k], t=f.t||0;
+        if(chm.r[k]&&t<=chm.r[k]) return;
+        if(!current||t>(current.t||0)||(t===(current.t||0)&&JSON.stringify([f.i,f.by])>JSON.stringify([current.i,current.by])))
+          chm.f[k]={i:f.i,by:f.by,t:t};
+      });
+      Object.keys(chi.n||{}).forEach(function(k){ chm.n[k]=Math.max(+chm.n[k]||0,+chi.n[k]||0); }); stage('tp-ch-'+slug,chm);
       var mm=LS.get('tp-mem-'+slug,{a:{}}), mi=p.mem||{}; mm.a=mm.a||{};
-      Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); LS.set('tp-mem-'+slug,mm);
-      var pm=LS.get('tp-pool-'+slug,{}), pi=p.pool; if(pi&&(+pi.t||0)>(+pm.t||0)) LS.set('tp-pool-'+slug,{card:+pi.card||0,cash:+pi.cash||0,t:+pi.t}); // 공금: 나중에 저장한 쪽
+      Object.keys(mi.a||{}).forEach(function(k){ var o=mi.a[k]||{}; if(p.from&&o[p.from]) (mm.a[k]=mm.a[k]||{})[p.from]=String(o[p.from]).slice(0,300); }); stage('tp-mem-'+slug,mm);
+      var pm=LS.get('tp-pool-'+slug,{}), pi=p.pool; if(pi){ ['card','cash'].forEach(function(k){ var t=pi[k+'T']??pi.t??0, prev=pm[k+'T']??pm.t??0; if(pi[k]!=null&&(t>prev||(t===prev&&pi[k]>(pm[k]||0)))){ pm[k]=pi[k]; pm[k+'T']=t; } }); stage(POOLK,pm); }
       // 내 좌석: 보낸 사람 자리는 그 사람 것으로, 다른 자리·기종은 내가 비워 둔 것만
       var sm=LS.get('tp-seat-'+slug,{f:{},x:[]}), si=p.seat||{}; sm.f=sm.f||{}; sm.x=sm.x||[];
       Object.keys(si.f||{}).forEach(function(k){ var o=si.f[k]||{}, r=sm.f[k]=sm.f[k]||{s:{}}; r.s=r.s||{}; if(!r.ac&&o.ac) r.ac=String(o.ac).slice(0,20);
         Object.keys(o.s||{}).forEach(function(n){ var v=String(o.s[n]||'').slice(0,3); if(v&&(n===p.from||!r.s[n])) r.s[n]=v; }); });
       (si.x||[]).forEach(function(f){ if(f&&f.no&&!sm.x.some(function(y){return y.no===f.no&&y.date===f.date})) sm.x.push({no:String(f.no).slice(0,8),date:String(f.date||'').slice(0,10),route:String(f.route||'').slice(0,30)}); });
-      if(p.seat) LS.set('tp-seat-'+slug,sm);
+      if(p.seat) stage('tp-seat-'+slug,sm);
+      if(!commitRecords(writes)) return;
       try{sessionStorage.setItem('tp-toast',(p.from||'일행')+'의 기록과 합쳤어요.')}catch(e){}
       history.replaceState(null,'',location.pathname+location.search); location.reload(); }
   });
   var syncIn=document.getElementById('sync-in');
   if(syncIn) syncIn.addEventListener('close',function(){ if(/^#sync=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search); });
-  function readSync(){ var m=location.hash.match(/^#sync=([jz][\w-]+)$/), d=syncIn; if(!m||!d) return;
-    unpack(m[1]).then(function(p){ if(!p||p.trip!==slug) throw 0; incoming=p;
+  function readSync(){ incoming=null; var hash=location.hash; var m=location.hash.match(/^#sync=([jze][\w-]+)$/), d=syncIn; if(!m||!d) return;
+    openShare(m[1]).then(function(p){ if(location.hash!==hash||p===null) return; if(!validateSync(p)) throw new Error('invalid record'); incoming=p;
       var np=Object.keys(p.picks||{}).filter(function(k){return !p.from||(p.picks[k]||[]).indexOf(p.from)>=0}).length, nc2=Object.keys(p.ck||{}).filter(function(k){return p.ck[k]}).length;
       var sm=d.querySelector('.sheet-h small'); if(sm) sm.textContent=(p.from||'일행')+' 님이 보냈어요';
-      d.querySelector('.sync-body').innerHTML='<ul class="sync-sum"><li><b>'+np+'</b><span>픽</span></li><li><b>'+(p.ex||[]).length+'</b><span>지출</span></li><li><b>'+nc2+'</b><span>출발 전 체크</span></li></ul><p class="lead" style="margin:12px 0 0;font-size:14px">합치면 '+esc(p.from||'일행')+' 님의 픽이 최신으로 바뀌고, 지출·체크·끝낸 예약은 양쪽 것을 모두 모아요. 내 픽은 그대로예요.</p>';
+      d.querySelector('.sync-body').innerHTML='<ul class="sync-sum"><li><b>'+np+'</b><span>픽</span></li><li><b>'+(p.ex||[]).length+'</b><span>지출</span></li><li><b>'+nc2+'</b><span>출발 전 체크</span></li></ul><p class="lead" style="margin:12px 0 0;font-size:14px">합치면 '+esc(p.from||'일행')+' 님의 픽이 최신으로 바뀌고, 지출은 양쪽 기록을 모으고, 체크와 예약은 최근 변경을 반영해요. 내 픽은 그대로예요.</p>';
       if(d.showModal){ d.showModal(); document.body.classList.add('sheet-open'); }
-    }).catch(function(){ say('이 링크는 열 수 없어요. 링크가 잘렸거나 다른 여행의 기록이에요.'); history.replaceState(null,'',location.pathname+location.search); });
+    }).catch(function(){ if(location.hash!==hash) return; say('기록을 열 수 없어요. 링크, 여행 또는 기록 비밀번호를 확인해 주세요.'); history.replaceState(null,'',location.pathname+location.search); });
    }
   readSync(); window.addEventListener('hashchange',readSync);
   try{ var tmsg=sessionStorage.getItem('tp-toast'); if(tmsg){ sessionStorage.removeItem('tp-toast'); setTimeout(function(){say(tmsg)},400); } }catch(e){}

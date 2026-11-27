@@ -1,0 +1,26 @@
+name: Travel checks
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python planner/check_trip.py
+      - run: python planner/build.py
+      - run: node --check _site/assets/app.js
+      - run: node --check _site/sw.js
+      - run: python -m unittest discover -s planner/tests
+      - run: node --test planner/tests/stability.test.cjs

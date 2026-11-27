@@ -46,7 +46,7 @@
   }
   document.addEventListener('click',function(ev){
     var b=ev.target.closest&&ev.target.closest('.dl-done'); if(!b) return;
-    var li=b.closest('li.dl'), k=li.dataset.store, v=get(k); v[li.dataset.id]=!v[li.dataset.id]; if(!v[li.dataset.id]) delete v[li.dataset.id]; put(k,v);
+    var li=b.closest('li.dl'), k=li.dataset.store, v=get(k); v[li.dataset.id]=!v[li.dataset.id]; put(k,v);
     li.classList.add('pop'); setTimeout(function(){ li.classList.remove('pop'); },450);
     document.dispatchEvent(new CustomEvent('tp-dl-set',{detail:{id:li.dataset.id,on:!!v[li.dataset.id]}}));
     paint();

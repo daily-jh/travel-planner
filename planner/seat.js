@@ -87,10 +87,11 @@
     var opts=Object.keys(AC).map(function(k){ return '<option value="'+k+'"'+(k===ac?' selected':'')+'>'+AC[k].n+'</option>'; }).join('');
     var h='<section class="seat-f" data-k="'+esc(it.k)+'"><div class="seat-h"><b>'+esc([f.airline,f.no].filter(Boolean).join(' '))+'</b><small>'+esc(dl+(f.dep?' '+f.dep:'')+(f.from||f.to?' · '+(f.from||'')+' → '+(f.to||''):(f.route?' · '+f.route:'')))+'</small>'
       +(it.own?'<button type="button" class="seat-rm" data-srm aria-label="이 항공편 지우기">✕</button>':'')+'</div>'
-      +'<label class="seat-ac">기종 <select data-sac>'+opts+'</select>'+(r.ac?'':'<em>모르면 보통 기종으로 보여요</em>')+'</label>'
+      +'<label class="seat-ac">기종 <select data-sac>'+opts+'</select>'+(r.ac?'':'<em>모르면 대표 배치로 표시해요</em>')+'</label>'
       +'<div class="seat-in">'+trav.map(function(x){ return '<label><span class="dot '+tone(x.name)+'"></span>'+esc(x.name)+'<input data-sn="'+esc(x.name)+'" value="'+esc(r.s[x.name]||'')+'" placeholder="예: 23A" maxlength="3" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>'; }).join('')+'</div>';
     if(seats.length) h+=overview(a,seats)+detail(a,seats)+words(a,seats);
     else h+='<p class="seat-empty">좌석번호를 넣으면 비행기 그림에 표시돼요. 온라인 체크인·좌석 지정 뒤 탑승권에 있어요.</p>';
+    h+='<p class="lead">기종의 일반적인 배치예요. 열·날개·좌석 종류는 항공사와 편명에 따라 달라질 수 있어요.</p>';
     if(f.seatmap_url) h+='<a class="seat-real" href="'+esc(f.seatmap_url)+'" target="_blank" rel="noopener">이 항공사 실제 좌석 배치 보기 ↗</a>';
     return h+'</section>'; }
 

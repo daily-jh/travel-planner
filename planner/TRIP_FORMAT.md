@@ -13,6 +13,10 @@ python planner/check_trip.py trips/2027-10-osaka
 python planner/build.py && node planner/tools/render-assets.js 2027-10-osaka
 ```
 
+## 캘린더 일정 ID
+
+일정 또는 추가 캘린더 일정 객체에 여행 내에서 고유한 id를 넣어요. 영문·숫자·밑줄·하이픈을 1~64자 쓸 수 있어요. 일정의 시간이나 장소를 수정해도 같은 일정이면 id를 유지하세요. 기존 여행의 id는 이미 배포된 캘린더 UID를 유지하도록 부여했어요.
+
 ## 글자 규칙 (모든 문자열)
 
 - `**굵게**` → 굵은 글씨
