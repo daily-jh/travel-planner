@@ -296,6 +296,56 @@
             "why": "1관 서가와 2관에서 사진집 읽기",
             "tip": "회동길 145 · 2관 20시까지"
           }
+        ],
+        "adjust_rows": [
+          {
+            "time": "10:30",
+            "text": "수원 출발",
+            "query": "파주 맛고을장단콩두부마을",
+            "mode": "driving"
+          },
+          {
+            "time": "12:20",
+            "text": "장단콩 점심",
+            "query": "파주 맛고을장단콩두부마을",
+            "mode": "driving"
+          },
+          {
+            "time": "13:20",
+            "text": "출판도시로 이동",
+            "query": "파주 미메시스 아트 뮤지엄",
+            "mode": "driving"
+          },
+          {
+            "time": "13:50",
+            "text": "미메시스 전시",
+            "query": "파주 미메시스 아트 뮤지엄",
+            "mode": "walking"
+          },
+          {
+            "time": "15:10",
+            "text": "북앤아트숍과 카페",
+            "query": "파주 미메시스 아트 뮤지엄",
+            "mode": "walking"
+          },
+          {
+            "time": "16:20",
+            "text": "지혜의숲 이동·독서",
+            "query": "파주 지혜의숲",
+            "mode": "driving"
+          },
+          {
+            "time": "18:10",
+            "text": "수원 복귀",
+            "query": "수원",
+            "mode": "driving"
+          },
+          {
+            "time": "20:10",
+            "text": "수원 도착 예상",
+            "query": "수원",
+            "mode": "driving"
+          }
         ]
       }
     }

@@ -34,7 +34,7 @@ def asset_ver(*paths):
 
 _P = os.path.dirname(os.path.abspath(__file__))
 ASSET_V = {"css": asset_ver(*(os.path.join(_P, f) for f in ("style.css", "themes.json", "extras.py", "guide.py", "together.py", "seat.py"))),
-           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js")))}
+           "js": asset_ver(*(os.path.join(_P, f) for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js")))}
 
 
 def fb(subject, label="의견 보내기"):
@@ -648,6 +648,10 @@ def render_trip(slug, t):
         r = d["route"]
         stops = r["stops"]
         w(f'<div id="day{i}" role="tabpanel" class="daypane c-{e(d["color"])}" data-date="{d["date"]}" style="scroll-margin-top:60px"><div class="dayhead"><div class="t">{i}일차 · {md(d["date"])} {e(d["theme"])}</div><div class="s">{rich(d.get("summary", ""))}</div></div><div class="stack">')
+        variants = [{"name": "기본 코스", "rows": [{"time": b["time"], "text": plain(b["place"]), "query": b.get("map_query") or plain(b["place"]).split("→")[-1].strip(), "mode": b.get("travel_mode") or r.get("mode", "walking")} for b in d["blocks"]]}]
+        for pb in plan_bs(d):
+            variants.append({"name": pb["title"], "rows": pb.get("adjust_rows") or pb["simple"]})
+        w(f'<details class="card adjust-day" data-date="{d["date"]}" data-drive="{int(r.get("mode") == "driving")}"><summary><b>오늘 코스 선택·시간 조정</b></summary><div class="adjust-controls"></div><ol class="adjust-list"></ol><div class="adjust-parking"></div><script type="application/json">{json.dumps(variants, ensure_ascii=False).replace("<", "&lt;")}</script></details>')
         if stops:
             day_fb = fb(t.get("short", "") + f" {i}일차 {md(d['date'])} 동선", "이 날 의견 보내기")
             w('<div class="card route"><h3>하루 동선</h3><ol>')
@@ -954,7 +958,7 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"))
     here = os.path.dirname(os.path.abspath(__file__))
     open(os.path.join(OUT, "assets", "app.js"), "w", encoding="utf-8").write(
-        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js")))
+        "\n".join(open(os.path.join(here, f), encoding="utf-8").read() for f in ("app.js", "live.js", "deadlines.js", "guide.js", "together.js", "seat.js", "day-adjust.js")))
     open(os.path.join(OUT, "assets", "style.css"), "w", encoding="utf-8").write(extras.theme_css() + open(os.path.join(here, "style.css"), encoding="utf-8").read())
     for f in ("favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og-home.png"):
         shutil.copy(os.path.join(here, "brand", f), os.path.join(OUT, "assets", f))
