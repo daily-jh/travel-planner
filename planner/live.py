@@ -121,7 +121,7 @@ def sheets(t):
     e, rich = B.e, B.rich
     out = []
     if t.get("vouchers"):
-        out.append(B.sheet("tool-qr", "QR·바우처", "입국 QR, 탑승권, 예약 화면을 한곳에", '''<p class="vault-note"><b>이 휴대폰 안에만 저장돼요.</b> 사이트·서버·공유 링크 어디에도 올라가지 않아요. 캡처 사진·PDF나 예약번호를 넣어 두면 인터넷이 없어도 바로 열려요. 휴대폰 화면 잠금은 꼭 켜 두세요.</p>
+        out.append(B.sheet("tool-qr", "QR·바우처", "입국 QR, 탑승권, 예약 화면을 한곳에", '''<p class="vault-note"><b>이 휴대폰 안에만 저장돼요.</b> 사이트·서버·공유 링크 어디에도 올라가지 않아요. 캡처 사진·PDF나 예약번호를 넣어 두면 인터넷이 없어도 바로 열려요. 브라우저에 암호화 없이 저장돼요. 공용 기기에는 저장하지 말고 휴대폰 화면 잠금을 켜 두세요.</p>
 <ul class="vault-tips"><li><b>두 사람 것</b> 탑승권처럼 사람마다 다른 건 한 칸에 여러 장 넣고 크게 보기에서 옆으로 넘겨요</li><li><b>QR만 크게</b> 캡처 속 QR을 찾아 화면 가득 보여 줘요 · 보는 동안 화면이 꺼지지 않아요</li><li><b>다 썼어요</b> 누르면 아래로 접혀요 · 오늘 쓸 칸이 맨 위에 와요</li></ul>
 <ul class="vault" aria-live="polite"></ul>
 <details class="vault-mail"><summary>✉︎ 예약 메일 붙여넣기로 칸 만들기</summary><p>예약 확인 메일·문자를 통째로 복사해 붙여 넣으면 날짜·시각·예약번호를 찾아 칸을 만들어요. 글은 이 휴대폰 안에서만 읽어요.</p>

@@ -5,7 +5,7 @@
 페이지 내용 자체가 암호문이라, 주소를 알아도 비밀번호 없이는 읽을 수 없다.)
 
   SITE_PASSWORD   공용 비밀번호. GitHub 저장소 Settings → Secrets and variables → Actions 에
-                  SITE_PASSWORD 라는 이름으로 넣는다. 비어 있으면 잠그지 않고 그대로 둔다.
+                  SITE_PASSWORD 라는 이름으로 넣는다. 배포에서 비어 있으면 중단한다.
 
 - 비밀번호 → PBKDF2-SHA256(60만 번) → 256비트 키. 페이지마다 새 IV 로 AES-GCM.
 - 브라우저는 비밀번호가 아니라 만든 키만 기기에 저장해서, 다음부터는 다시 묻지 않는다.
@@ -186,6 +186,8 @@ def lock_pages(key, site):
 
 def main():
     pw = os.environ.get("SITE_PASSWORD", "").strip()  # 시크릿에 붙여 넣다 따라온 공백·줄바꿈은 뺀다
+    if not pw and os.environ.get("REQUIRE_SITE_PASSWORD") == "1":
+        sys.exit("lock: 배포하려면 SITE_PASSWORD가 필요합니다.")
     if not pw:
         print("lock: SITE_PASSWORD 가 없어서 잠그지 않아요 (사이트가 누구에게나 열려 있어요).")
         return

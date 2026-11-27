@@ -560,8 +560,10 @@ dialog.sheet.welcome .sheet-b{padding-top:14px}
 @media (min-width:760px){.tools{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .tool{font:inherit;cursor:pointer;text-align:left;text-decoration:none;color:var(--ink);display:grid;gap:2px;align-content:start;min-width:0;border:none;border-radius:20px;padding:14px 12px 12px;background:var(--card);box-shadow:0 1px 1px rgba(0,0,0,.02),0 8px 24px -10px rgba(0,0,0,.10);transition:transform .15s var(--ease)}
 .tool:active{transform:scale(.96)}
-.tool .ti{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 10px -4px currentColor}
-.tool b{font-size:14.5px;font-weight:700;letter-spacing:-.02em}
+.tool:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.tool{transition:none}.tool:active{transform:none}}
+.tool .ti{background:#40518a;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 10px -4px currentColor}
+.tool b{font-size:14.5px;font-weight:700;letter-spacing:-.02em;overflow-wrap:anywhere}
 .tool small{font-size:12px;color:var(--label2);line-height:1.35;overflow:hidden;text-overflow:ellipsis}
 .t-wx .ti{background:linear-gradient(160deg,#5ac8fa,#007aff)} .t-fx .ti{background:linear-gradient(160deg,#ffd60a,#ff9f0a)} .t-ph .ti{background:linear-gradient(160deg,#ff6482,#ff2d55)}
 .t-ex .ti{background:linear-gradient(160deg,#5ef08a,#30b25a)} .t-pk .ti{background:linear-gradient(160deg,#bf8bff,#7d5cf0)} .t-tz .ti{background:linear-gradient(160deg,#8e8e93,#48484a)}
@@ -1485,6 +1487,8 @@ a.trip{align-content:start}
 .linkbtn{font:inherit;border:none;background:none;padding:0;color:var(--blue-ink,var(--pri));text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 
 /* ================================================================ 둘이 함께 (planner/together.py · together.js): 함께 고르기 · 돌아보기 */
+.t-carry .ti{background:linear-gradient(160deg,#277e82,#355e9e)}
+.t-les .ti{background:linear-gradient(160deg,#6e60c8,#4150a2)}
 .t-ch .ti{background:linear-gradient(160deg,#ff9f0a,#bf5af2)} .t-mem .ti{background:linear-gradient(160deg,#ffcc00,#ff6482)}
 .ch{margin:var(--sp-3) 0;padding:var(--sp-3);border-radius:var(--r-md);background:color-mix(in srgb,var(--acc-soft) 70%,transparent)}
 .ch h4{margin:0 0 2px;font-size:var(--fs-sub)} .ch-lead{margin:0 0 var(--sp-2);font-size:var(--fs-foot);color:var(--label2)}

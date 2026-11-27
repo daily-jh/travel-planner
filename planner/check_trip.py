@@ -69,9 +69,30 @@ def check(folder):
     slug = os.path.basename(os.path.normpath(folder))
     if not re.fullmatch(r"\d{4}-\d{2}-[a-z0-9-]+", slug):
         err.append(f"폴더 이름 '{slug}' 은 '연도-월-도시'(영문 소문자) 형식이어야 해요. 예: 2027-10-osaka")
+    if not isinstance(t, dict):
+        return ["trip.json의 최상위 값은 객체여야 해요"], [], {}
     for k in REQUIRED:
         if k not in t:
             err.append(f"필수 항목 '{k}' 이 없어요")
+    if err:
+        return err, warn, {}
+
+    days = t.get("days")
+    extras = t.get("calendar_extra", [])
+    if not isinstance(days, list) or any(not isinstance(d, dict) or
+            not isinstance(d.get("blocks"), list) or any(not isinstance(b, dict) for b in d["blocks"]) for d in days):
+        return ["days는 blocks 객체 목록을 포함한 날짜 목록이어야 해요"], warn, {}
+    if not isinstance(extras, list) or any(not isinstance(x, dict) for x in extras):
+        return ["calendar_extra는 일정 객체 목록이어야 해요"], warn, {}
+    ids = set()
+    for event in [b for d in days for b in d["blocks"]] + extras:
+        if "id" not in event:
+            continue
+        key = event["id"]
+        if not isinstance(key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", key) or key in ids:
+            err.append("일정 id는 여행 안에서 고유해야 하며 영문·숫자·밑줄·하이픈 1~64자만 쓸 수 있어요")
+        else:
+            ids.add(key)
     if err:
         return err, warn, {}
 

@@ -40,9 +40,10 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
           node planner/tools/render-pdf.js
-      # 공용 비밀번호: 저장소 Settings → Secrets → Actions 의 SITE_PASSWORD 로 모든 페이지를 암호화한다 (없으면 잠그지 않음)
+      # SITE_PASSWORD가 없으면 배포 아티팩트를 만들지 않는다
       - name: 비밀번호 잠금
         env:
+          REQUIRE_SITE_PASSWORD: "1"
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
         run: python planner/lock.py
       - uses: actions/upload-pages-artifact@v3

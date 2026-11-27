@@ -8,7 +8,7 @@
   var josa=function(w,a,b){ var c=String(w).charCodeAt(String(w).length-1); return w+((c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28)?a:b); };
 
   // ---------------------------------------------------------- 함께 고르기
-  var CK='tp-ch-'+slug, st=LS.get(CK,{v:{},f:{},n:{}}); st.v=st.v||{}; st.f=st.f||{}; st.n=st.n||{};
+  var CK='tp-ch-'+slug, st=LS.get(CK,{v:{},f:{},n:{}}); st.v=st.v||{}; st.f=st.f||{}; st.n=st.n||{}; st.r=st.r||{}; st.ra=st.ra||{};
   var opts=function(id){ var el=document.querySelector('.ch[data-ch="'+id+'"]'); return el?el.dataset.names.split('|'):[]; };
   function plan(id){ if(!window.TPPlan) return; var f=st.f[id]; window.TPPlan.set(id,f?opts(id)[f.i]:''); }
   function save(){ LS.set(CK,st); paint(); }
@@ -35,12 +35,12 @@
   }
   document.addEventListener('click',function(ev){
     var vb=ev.target.closest('[data-vote]'); if(vb){ var box=vb.closest('.ch'), id=box.dataset.ch, i=+vb.closest('.ch-o').dataset.i, n=vb.dataset.vote, v=st.v[id]=st.v[id]||{};
-      if(st.f[id]) delete st.f[id];
+      if(st.f[id]){ delete st.f[id]; st.ra[id]=st.r[id]=Date.now(); }
       if(v[n]===i) delete v[n]; else v[n]=i;
       var vs=names.map(function(x){return v[x]}); if(vs.every(function(x){return x!=null})&&vs.every(function(x){return x===vs[0]})) return decide(id,vs[0],names.length>1?'둘 다':names[0]);
       plan(id); save(); return; }
     var x=ev.target.closest('[data-chx]'); if(!x) return; var bx=x.closest('.ch'), cid=bx.dataset.ch, cv=st.v[cid]||{};
-    if(x.dataset.chx==='reset'){ var f=st.f[cid]; if(f&&names.indexOf(f.by)>=0&&st.n[f.by]) st.n[f.by]--; delete st.f[cid]; delete st.v[cid]; plan(cid); save(); return; }
+    if(x.dataset.chx==='reset'){ var f=st.f[cid]; if(f&&names.indexOf(f.by)>=0&&st.n[f.by]) st.n[f.by]--; delete st.f[cid]; st.ra[cid]=st.r[cid]=Date.now(); delete st.v[cid]; plan(cid); save(); return; }
     if(x.dataset.chx==='turn'){ var w=turn(); decide(cid,cv[w],w); return; }
     if(x.dataset.chx==='luck'){ var pool=names.map(function(n){return cv[n]}).filter(function(v,i,a){return v!=null&&a.indexOf(v)===i}), pick=pool[Math.floor(Math.random()*pool.length)];
       if(reduce) return decide(cid,pick,'운');
@@ -49,7 +49,7 @@
         cards.forEach(function(c){c.classList.remove('spin')}); decide(cid,pick,'운'); })(); }
   });
   // 공유 링크로 받은 결정은 처음 한 번 시간표에 반영한다
-  setTimeout(function(){ var ch=false; Object.keys(st.f).forEach(function(id){ if(!st.f[id].ap){ st.f[id].ap=1; plan(id); ch=true; } }); if(ch) LS.set(CK,st); paint(); },0);
+  setTimeout(function(){ var ch=false; Object.keys(st.r).forEach(function(id){ if(!st.f[id]&&st.r[id]>(st.ra[id]||0)){ plan(id); st.ra[id]=st.r[id]; ch=true; } }); Object.keys(st.f).forEach(function(id){ if(!st.f[id].ap){ st.f[id].ap=1; plan(id); ch=true; } }); if(ch) LS.set(CK,st); paint(); },0);
 
   // ---------------------------------------------------------- 돌아보기 · 오늘의 질문
   var MK='tp-mem-'+slug, mem=LS.get(MK,{a:{}}); mem.a=mem.a||{};

@@ -532,19 +532,19 @@ def render_trip(slug, t):
         cls, did, ic, name, sub = x
         tl = groups[TOOL_OF.get(cls, "local")]
         if cls == "t-taxi":
-            tl.append(f'<button type="button" class="tool {cls}" data-big="{e(lang(t)["taxi"].replace("{stay}", t["stay_ja"]))}" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
+            tl.append(f'<button type="button" class="tool {cls}" data-big="{e(lang(t)["taxi"].replace("{stay}", t["stay_ja"]))}" data-bigko="{e(t["stay"][0][1].split(" (")[0])}까지 가 주세요"><span class="ti" aria-hidden="true">{ic}</span><b>{name}</b>{sub}</button>')
             continue
         if did.startswith("href:"):
             ext = ' target="_blank" rel="noopener"' if did.startswith("href:http") else ""
-            tl.append(f'<a class="tool {cls}" href="{e(did[5:])}"{ext}><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
+            tl.append(f'<a class="tool {cls}" href="{e(did[5:])}"{ext}><span class="ti" aria-hidden="true">{ic}</span><b>{name}</b>{sub}</a>')
         elif cls == "t-go":
-            tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti">{ic}</span><b>{name}</b>{sub}</a>')
+            tl.append(f'<a class="tool {cls}" href="{gmap(t.get("stay_query") or city)}" target="_blank" rel="noopener"><span class="ti" aria-hidden="true">{ic}</span><b>{name}</b>{sub}</a>')
         else:
-            tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti">{ic}</span><b>{name}</b>{sub}</button>')
+            tl.append(f'<button type="button" class="tool {cls}" data-open="{did}"><span class="ti" aria-hidden="true">{ic}</span><b>{name}</b>{sub}</button>')
     w('<section id="tools" class="tools-sec">' + deadlines.trip_card(slug, t) + '<div class="nowcard card" hidden></div><h2>여행 도구</h2><div class="tgroups">' + "".join(
         f'<div class="tgrp" data-g="{g}"><h3>{lab}<em class="tg-now" hidden>지금</em></h3><div class="tools">' + "".join(groups[g]) + '</div></div>'
         for g, lab in TOOL_GROUPS if groups[g]) + '</div></section>')
-    w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행 날짜는 출발 16일 전부터 실제 예보, 그 전에는 작년 같은 날짜의 실제 날씨예요. 자료: Open-Meteo</p>'))
+    w(sheet("tool-wx", "날씨", e(city) + " · 지금과 여행 날짜", '<div class="wx" aria-live="polite"><p class="lead">불러오는 중이에요…</p></div><p class="lead" style="margin:12px 0 0;font-size:13px">여행이 가까워지면 예보를, 출발까지 시간이 남으면 작년 같은 날짜 자료를 보여 줘요. 다녀온 여행은 여행 당시의 과거 자료를 보여 줘요. 자료: Open-Meteo</p>'))
     if cur:
         w(sheet("tool-fx", "환율 계산", f'{e(cur.get("name", ""))} ↔ 원', f'<div class="fx" data-sym="{e(sym)}"><div class="fx-dir seg" role="group" aria-label="방향"><button type="button" data-dir="f" aria-pressed="true">{e(sym)} → ₩</button><button type="button" data-dir="k" aria-pressed="false">₩ → {e(sym)}</button></div>'
               f'<label class="fx-row"><span class="fx-from">{e(sym)}</span><input type="number" inputmode="decimal" class="fx-in" value="1000" aria-label="금액"></label>'
@@ -585,6 +585,10 @@ def render_trip(slug, t):
             '<li><b>받은 사람이 링크 열기</b><span>링크를 열면 무엇이 들어 있는지 보여 주고, 합치기를 누르면 그 휴대폰 기록과 합쳐져요.</span></li>'
             '<li><b>서로 한 번씩</b><span>둘이 한 번씩 보내면 양쪽이 같아져요. 기록은 링크 안에만 담기고 어디에도 올라가지 않아요.</span></li></ol>'
             '<div class="sync-me"></div><div class="row"><button type="button" class="btn primary" data-sync="send">내 기록 보내기</button>'
+            '<button type="button" class="btn" data-sync="protect">비밀번호 걸어 보내기</button>'
+            '<button type="button" class="btn" data-backup="export">여행 기록 백업</button>'
+            '<label class="btn">백업 복원 <input type="file" accept=".json,application/json" data-backup="import" aria-label="여행 기록 백업 파일 선택"></label>'
+            '<p class="lead">백업에는 이 기기의 지출·선택·체크·좌석 등을 담아요. 사진과 바우처는 각 도구에서 따로 관리해 주세요.</p>'
             f'<button class="btn share" type="button" data-title="{e(t.get("short", t["title"]))} 여행 일정">일정 링크만 보내기</button></div>'))
     w(sheet("find", "이 여행에서 찾기", "장소·일정·도구·준비물을 한 번에", '<label class="search"><input class="find-q" type="search" placeholder="예: 라멘, 면세, 택시, 3일차" aria-label="찾을 말" autocomplete="off" enterkeyhint="search"></label><ul class="find-r" aria-live="polite"></ul>'))
     w(sheet("sync-in", "기록을 받았어요", "", '<div class="sync-body"></div><div class="row"><button type="button" class="btn primary" data-sync="merge">내 기록과 합치기</button><button type="button" class="btn" data-close>나중에</button></div>'))
@@ -834,12 +838,21 @@ def render_ics(slug, t):
     tz = t.get("timezone", "Asia/Seoul")
     ev = []
 
-    def add(day, st, en, summary, loc, desc, url, alarm=0):
+    from hashlib import sha256
+    occurrences = {}
+
+    def add(day, st, en, summary, loc, desc, url, alarm=0, *, event_id=None, kind="slot"):
+        if event_id:
+            key = event_id
+        else:
+            label = f"{kind}|{day}|{summary}"
+            occurrences[label] = occurrences.get(label, 0) + 1
+            key = sha256(f"{label}|{occurrences[label]}".encode()).hexdigest()[:24]
         s = dt.datetime.combine(day, st)
         z = dt.datetime.combine(day, en)
         if z <= s:
             z = s + dt.timedelta(minutes=30)
-        L = ["BEGIN:VEVENT", f"UID:{s:%Y%m%dT%H%M}-{len(ev)}-{slug}@travel-planner",
+        L = ["BEGIN:VEVENT", f"UID:{key}-{slug}@travel-planner",
              f"DTSTAMP:{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%SZ}",
              f"DTSTART;TZID={tz}:{s:%Y%m%dT%H%M%S}", f"DTEND;TZID={tz}:{z:%Y%m%dT%H%M%S}",
              "SUMMARY:" + ics_escape(summary)]
@@ -855,7 +868,7 @@ def render_ics(slug, t):
 
     tm = lambda x: dt.time(*map(int, x.split(":")))
     for x in t.get("calendar_extra", []):
-        add(d_of(x["date"]), tm(x["start"]), tm(x["end"]), x["title"], x.get("location"), x.get("description"), gmap(x["location"]) if x.get("location") else None, x.get("alarm", 60))
+        add(d_of(x["date"]), tm(x["start"]), tm(x["end"]), x["title"], x.get("location"), x.get("description"), gmap(x["location"]) if x.get("location") else None, x.get("alarm", 60), event_id=x.get("id"), kind="extra")
     skip = t.get("calendar_skip", {})
     for d in t["days"]:
         day = d_of(d["date"])
@@ -876,7 +889,7 @@ def render_ics(slug, t):
             loc = q or (place if place != "미정" else "")
             fl = [k for k, _ in flags(b)]
             alarm = 180 if re.search(r"(?<![A-Za-z0-9])(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])\d{3,4}(?!\d)", b["what"]) else (60 if "rsv" in fl else 0)
-            add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None, alarm)
+            add(day, st, en, f"[{b['type']}] {place}", loc, desc, gmap(q or place) if loc else None, alarm, event_id=b.get("id"))
     cal = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//travel-planner//KO", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
            "X-WR-CALNAME:" + ics_escape(t.get("short", t["title"]) + " 여행"), "X-WR-TIMEZONE:" + tz]
     cal += vtimezone(tz, d_of(t["start"]))
