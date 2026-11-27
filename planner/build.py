@@ -463,7 +463,7 @@ def render_trip(slug, t):
     if trav:
         cfg = {"trip": slug, "travelers": trav, "supabase": {"url": SITE.get("supabase_url", ""), "key": SITE.get("supabase_anon_key", "")},
                "geo": t.get("geo"), "currency": t.get("currency"), "start": t["start"], "end": t["end"],
-               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)], "area": b.get("area", ""), "alert": b.get("alert")} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
+               "days": [{"date": d["date"], "blocks": [{"time": b["time"], "type": b["type"], "place": plain(b["place"]), "what": plain(b["what"]), "note": plain(b["note"]), "fl": [k for k, _ in flags(b)], "area": b.get("area", ""), "map_query": b.get("map_query", ""), "travel_mode": b.get("travel_mode") or (d.get("route") or {}).get("mode", "transit"), "alert": b.get("alert")} for b in d["blocks"]], "alt": bool(d.get("alternatives") or d.get("plan_b"))} for d in t["days"]],
                "budget": [[r[2], r[3]] for r in (t.get("budget") or {}).get("rows", [])[:len(t["days"])]],
                "flights": t.get("flights", []), "stay_ja": t.get("stay_ja", ""), "stay_query": t.get("stay_query", ""),
                "timezone": t.get("timezone", "Asia/Seoul" if DOM else "Asia/Tokyo"), "lang": lang(t)["code"],

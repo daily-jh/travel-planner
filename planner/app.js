@@ -686,8 +686,9 @@ document.querySelectorAll('.route').forEach(function(card){
     document.querySelectorAll('tr.now').forEach(function(tr){tr.classList.remove('now')});
     if(ci>=0) document.querySelectorAll('tr[data-open="blk-'+(di+1)+'-'+(ci+1)+'"]').forEach(function(tr){ tr.classList.add('now'); });
     var go=document.querySelector('.t-go'), tgt=nx>=0?bl[nx]:(ci>=0?bl[ci]:null), tgw=nx>=0?sw(nx):(ci>=0?sw(ci):'');
-    if(go&&tgt&&tgt.place){ var dest=(tgw||tgt.place.split('→').pop().trim())+' '+((C.geo||{}).city||'');
-      go.href=C.map==='naver'?'https://map.naver.com/p/search/'+encodeURIComponent(dest):'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode=transit';
+    if(go&&tgt&&tgt.place){ var replacement=(C.near||[]).find(function(x){return x.n===tgw});
+      var dest=(replacement&&replacement.q)||(!tgw&&tgt.map_query)||(tgw||tgt.place.split('→').pop().trim())+' '+((C.geo||{}).city||'');
+      go.href=C.map==='naver'?'https://map.naver.com/p/search/'+encodeURIComponent(dest):'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+'&travelmode='+encodeURIComponent(tgt.travel_mode||'transit');
       var m=go.querySelector('.go-mini'); if(m) m.textContent=tgw||tgt.place.split('→').pop().trim(); }
     document.dispatchEvent(new CustomEvent('tp-now',{detail:{di:di,ci:ci,nx:nx,mins:mins,skip:sk,swap:sw}}));
   }

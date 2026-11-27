@@ -110,8 +110,8 @@ def cfg_extra(t):
     """trip-cfg JSON 에 더할 것: 권역 좌표, 주변 대안 후보, 시간표 줄 권역·마감."""
     near = []
     for c in t.get("candidates", []):
-        if c["status"] in ("off", "alt") and c.get("open"):
-            near.append({"n": c["name"], "c": c.get("category", ""), "g": c["group"], "a": c.get("area", ""), "o": c["open"],
+        if c["status"] in ("off", "alt") and (c.get("open") or t.get("include_unknown_hours")):
+            near.append({"n": c["name"], "c": c.get("category", ""), "g": c["group"], "a": c.get("area", ""), "o": c.get("open", ""),
                          "r": c.get("rating", ""), "m": c.get("memo", ""), "q": c.get("query") or c["name"], "s": c["status"]})
     return {"areas": t.get("areas", {}), "near": near,
             "vouchers": [{k: v["id"] if k == "id" else B.plain(v.get(k, "")) for k in ("id", "label", "hint", "when")} for v in t.get("vouchers", [])]}
